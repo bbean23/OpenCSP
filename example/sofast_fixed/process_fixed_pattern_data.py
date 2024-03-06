@@ -48,7 +48,8 @@ def process(
     print(f'  Y {focal_lengths_xy[1]:.3f} m')
 
     # Plot slope image
-    figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
+    figure_control = rcfg.RenderControlFigure(
+        tile_array=(1, 1), tile_square=True)
     axis_control_m = rca.meters()
 
     fig_mng = fm.setup_figure(figure_control, axis_control_m, title='')
@@ -71,7 +72,8 @@ def example_process_fixed_pattern_printed_target():
     file_camera = join(dir_base, "calibration_files/camera.h5")
     file_facet = join(dir_base, "calibration_files/Facet_NSTTF.json")
     file_ori = join(dir_base, 'fixed_pattern/spatial_orientation.h5')
-    file_dot_locs = join(dir_base, 'fixed_pattern/dot_locations_printed_target.h5')
+    file_dot_locs = join(
+        dir_base, 'fixed_pattern/dot_locations_printed_target.h5')
     file_meas = join(dir_base, 'fixed_pattern/measurement_printed_target_1.h5')
     dir_output = join(dirname(__file__), 'data/output/printed_target')
 

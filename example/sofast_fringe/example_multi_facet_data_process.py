@@ -18,6 +18,7 @@ import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render_control.RenderControlAxis as rca
 import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlMirror as rcm
+from opencsp.common.lib.opencsp_path.opencsp_root_path import opencsp_code_dir
 
 
 def example_driver():
@@ -99,7 +100,8 @@ def example_driver():
     ensemble: FacetEnsemble = sofast.get_optic()
 
     # Generate plots
-    figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
+    figure_control = rcfg.RenderControlFigure(
+        tile_array=(1, 1), tile_square=True)
     mirror_control = rcm.RenderControlMirror(
         centroid=True, surface_normals=True, norm_res=1
     )

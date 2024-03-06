@@ -33,7 +33,8 @@ def example_driver():
     view_distortion(cam, ax1, ax2, ax3)
 
     # Save image
-    dir_save = os.path.join(os.path.dirname(__file__), 'data/output/camera_distortion')
+    dir_save = os.path.join(os.path.dirname(__file__),
+                            'data/output/camera_distortion')
     if not os.path.exists(dir_save):
         os.makedirs(dir_save)
     fig.savefig(os.path.join(dir_save, 'distortion_plot.png'))

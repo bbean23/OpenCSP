@@ -28,12 +28,14 @@ def plot_sofast_single_facet(
     """
     # Load data
     optic_meas = lsd.load_facet_from_hdf(data_file)
-    optic_ref = lsd.load_ideal_facet_from_hdf(data_file, focal_length_paraboloid)
+    optic_ref = lsd.load_ideal_facet_from_hdf(
+        data_file, focal_length_paraboloid)
 
     # Define scene
     v_target_center = Vxyz((0, 0, 56.57))
     v_target_normal = Vxyz((0, 1, 0))
-    source = LightSourceSun.from_given_sun_position(Uxyz((0, 0, -1)), resolution=20)
+    source = LightSourceSun.from_given_sun_position(
+        Uxyz((0, 0, -1)), resolution=20)
 
     # Define reference optic position/orientation
     rot = Rotation.from_euler('x', [22.5], degrees=True)
@@ -80,7 +82,8 @@ def plot_sofast_facet_ensemble(
     # Define scene
     v_target_center = Vxyz((0, 0, 56.57))
     v_target_normal = Vxyz((0, 1, 0))
-    source = LightSourceSun.from_given_sun_position(Uxyz((0, 0, -1)), resolution=20)
+    source = LightSourceSun.from_given_sun_position(
+        Uxyz((0, 0, -1)), resolution=20)
 
     # Define reference optic position/orientation
     rot = Rotation.from_euler('x', [22.5], degrees=True)

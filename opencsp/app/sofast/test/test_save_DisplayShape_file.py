@@ -23,7 +23,8 @@ def test_save_physical_setup_file():
     ft.create_directories_if_necessary(dir_output)
 
     # Define data files
-    file_screen_distortion_data = join(dir_input, 'screen_distortion_data_100_100.h5')
+    file_screen_distortion_data = join(
+        dir_input, 'screen_distortion_data_100_100.h5')
     file_cam = join(dir_input, 'camera_rvec_tvec.csv')
 
     # Load data

@@ -36,7 +36,8 @@ class TestMulti(unittest.TestCase):
             )
 
         # Directory Setup
-        file_dataset = os.path.join(base_dir, 'calculations_facet_ensemble/data.h5')
+        file_dataset = os.path.join(
+            base_dir, 'calculations_facet_ensemble/data.h5')
         file_measurement = os.path.join(base_dir, 'measurement_ensemble.h5')
         print(f'Using dataset: {os.path.abspath(file_dataset)}')
 
@@ -100,7 +101,8 @@ class TestMulti(unittest.TestCase):
         ensemble_data = load_hdf5_datasets(datasets, file_dataset)
         ensemble_data = DefinitionEnsemble(
             Vxyz(ensemble_data['v_facet_locations']),
-            [Rotation.from_rotvec(r) for r in ensemble_data['r_facet_ensemble']],
+            [Rotation.from_rotvec(r)
+             for r in ensemble_data['r_facet_ensemble']],
             ensemble_data['ensemble_perimeter'],
             Vxyz(ensemble_data['v_centroid_ensemble']),
         )
@@ -131,7 +133,8 @@ class TestMulti(unittest.TestCase):
             surface_data.append(data)
 
         # Run SOFAST
-        sofast.process_optic_multifacet(facet_data, ensemble_data, surface_data)
+        sofast.process_optic_multifacet(
+            facet_data, ensemble_data, surface_data)
 
         # Store data
         cls.data_test = {'slopes_facet_xy': [], 'surf_coefs_facet': []}
