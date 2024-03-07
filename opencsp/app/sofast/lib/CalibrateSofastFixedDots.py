@@ -188,10 +188,8 @@ class CalibrateSofastFixedDots:
         self._dot_image_points_indices = Vxy((indices_x, indices_y), dtype=int)
 
         # Save all indices as matrix
-        self._dot_image_points_indices_x = np.arange(
-            self._x_min, self._x_max + 1)
-        self._dot_image_points_indices_y = np.arange(
-            self._y_min, self._y_max + 1)
+        self._dot_image_points_indices_x = np.arange(self._x_min, self._x_max + 1)
+        self._dot_image_points_indices_y = np.arange(self._y_min, self._y_max + 1)
 
     def _calculate_camera_poses(self) -> None:
         """Calculates 3d camera poses"""
@@ -241,8 +239,7 @@ class CalibrateSofastFixedDots:
         points_xyz = []
         int_dists = []
         for dot_idx in tqdm(range(self._num_dots), desc='Intersecting rays'):
-            dot_image_pts_xy = [pt[dot_idx]
-                                for pt in self._dot_image_points_xy]
+            dot_image_pts_xy = [pt[dot_idx] for pt in self._dot_image_points_xy]
             point, dists = ph.triangulate(
                 [self._camera] * self._num_images,
                 self._rots_cams,
@@ -256,8 +253,7 @@ class CalibrateSofastFixedDots:
                 indices = self._dot_image_points_indices[dot_idx]
                 idx_x = indices.x[0] - self._x_min
                 idx_y = indices.y[0] - self._y_min
-                self._dot_points_xyz_mat[idx_y,
-                                         idx_x, :] = point.data.squeeze()
+                self._dot_points_xyz_mat[idx_y, idx_x, :] = point.data.squeeze()
 
         self._dot_intersection_dists = np.array(int_dists)
         lt.info('Dot ray intersections mean intersection error: '
@@ -273,14 +269,10 @@ class CalibrateSofastFixedDots:
         """Prints ray intersection mean, average, and standard deviation
         """
         print('Dot ray intersections:')
-        print(
-            f'   Mean intersection error: {self._dot_intersection_dists.mean() * 1000:.1f} mm')
-        print(
-            f'   Min intersection error: {self._dot_intersection_dists.min() * 1000:.1f} mm')
-        print(
-            f'   Max intersection error: {self._dot_intersection_dists.max() * 1000:.1f} mm')
-        print(
-            f'   STDEV of intersection errors: {self._dot_intersection_dists.std() * 1000:.1f} mm')
+        print(f'   Mean intersection error: {self._dot_intersection_dists.mean() * 1000:.1f} mm')
+        print(f'   Min intersection error: {self._dot_intersection_dists.min() * 1000:.1f} mm')
+        print(f'   Max intersection error: {self._dot_intersection_dists.max() * 1000:.1f} mm')
+        print(f'   STDEV of intersection error: {self._dot_intersection_dists.std() * 1000:.1f} mm')
 
     def _plot_common_dots(self) -> None:
         """Plots common dots on images"""
