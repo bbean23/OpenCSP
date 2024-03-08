@@ -1,13 +1,13 @@
 import copy
 import functools
+from opencsp.app.sofast.lib.DefinitionEnsemble import DefinitionEnsemble
+from opencsp.app.sofast.lib.DefinitionFacet import DefinitionFacet
 
+from opencsp.app.sofast.lib.DisplayShape import DisplayShape
 from opencsp.app.sofast.lib.ImageCalibrationGlobal import ImageCalibrationGlobal
 from opencsp.app.sofast.lib.ImageCalibrationScaling import ImageCalibrationScaling
-from opencsp.app.sofast.lib.Measurement import Measurement
+from opencsp.app.sofast.lib.MeasurementSofastFringe import MeasurementSofastFringe
 from opencsp.common.lib.camera.Camera import Camera
-import opencsp.common.lib.deflectometry.Display as disp
-import opencsp.common.lib.deflectometry.EnsembleData as ed
-import opencsp.common.lib.deflectometry.FacetData as fd
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -46,7 +46,7 @@ class Configuration():
             Defines surface fitting parameters, one dict per facet. See
             SlopeSolver documentation for more information.
         """
-        from opencsp.app.sofast.lib.Sofast import Sofast  # import here to avoid a circular loop
+        from opencsp.app.sofast.lib.ProcessSofastFringe import ProcessSofastFringe  # import here to avoid a circular loop
 
         self.file_measurement_dir_name_ext = file_measurement_dir_name_ext
         self.file_camera_dir_name_ext = file_camera_dir_name_ext
@@ -65,12 +65,12 @@ class Configuration():
                                    f'but ensemble_data expects {self.ensemble_data.num_facets:d} facets.')
             # validate the surface data
             for sd in self.surface_data:
-                Sofast._check_surface_data(sd)
+                ProcessSofastFringe._check_surface_data(sd)
 
     @functools.cached_property
     def measurement(self):
         """ Loads and returns the measurement instance. Always returns the same instance. """
-        return Measurement.load_from_hdf(self.file_measurement_dir_name_ext)
+        return MeasurementSofastFringe.load_from_hdf(self.file_measurement_dir_name_ext)
 
     @functools.cached_property
     def camera(self):
@@ -80,7 +80,7 @@ class Configuration():
     @functools.cached_property
     def display(self):
         """ Loads and returns the display instance. Always returns the same instance. """
-        return disp.Display.load_from_hdf(self.file_display_dir_name_ext)
+        return DisplayShape.load_from_hdf(self.file_display_dir_name_ext)
 
     @functools.cached_property
     def calibration(self):
@@ -93,7 +93,7 @@ class Configuration():
     @functools.cached_property
     def ensemble_data(self):
         """ Loads and returns the ensemble instance. Always returns the same instance. """
-        return ed.EnsembleData.load_from_json(self.file_ensemble_data_dir_name_ext)
+        return DefinitionEnsemble.load_from_json(self.file_ensemble_data_dir_name_ext)
 
     @functools.cached_property
     def facet_data(self):
@@ -103,7 +103,7 @@ class Configuration():
         # Load one or more facet files
         if isinstance(file_facet_data_dir_name_ext, str):
             file_facet_data_dir_name_ext = [file_facet_data_dir_name_ext]
-        facets = list(map(fd.FacetData.load_from_json, file_facet_data_dir_name_ext))
+        facets = list(map(DefinitionFacet.load_from_json, file_facet_data_dir_name_ext))
 
         return facets
 
