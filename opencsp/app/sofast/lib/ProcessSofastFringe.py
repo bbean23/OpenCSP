@@ -13,6 +13,7 @@ from opencsp.common.lib.csp.Facet import Facet
 from opencsp.common.lib.csp.FacetEnsemble import FacetEnsemble
 from opencsp.common.lib.csp.MirrorPoint import MirrorPoint
 import opencsp.app.sofast.lib.calculation_data_classes as cdc
+from opencsp.app.sofast.lib.Configuration import Configuration
 from opencsp.app.sofast.lib.DisplayShape import DisplayShape as Display
 from opencsp.app.sofast.lib.DefinitionEnsemble import DefinitionEnsemble
 from opencsp.app.sofast.lib.DefinitionFacet import DefinitionFacet
@@ -157,7 +158,7 @@ class ProcessSofastFringe:
     """
 
     def __init__(
-        self, measurement: Measurement, camera: Camera, display: Display
+        self, configuration: Configuration
     ) -> 'ProcessSofastFringe':
         """
         SOFAST processing class.
@@ -173,11 +174,9 @@ class ProcessSofastFringe:
 
         """
         # Store data
-        self.measurement = measurement
-        self.display = display
-        self.camera = camera
+        self.conf = configuration
         self.orientation = SpatialOrientation(
-            display.r_cam_screen, display.v_cam_screen_cam
+            self.conf.display.r_cam_screen, self.conf.display.v_cam_screen_cam
         )
 
         # Define default calculation parameters
@@ -236,19 +235,13 @@ class ProcessSofastFringe:
         if len(fields_exp) > 0:
             raise ValueError(f'Missing fields in surface_data dictionary: {fields_exp}')
 
-    def process_optic_undefined(self, surface_data: dict) -> None:
+    def process_optic_undefined(self) -> None:
         """
         Processes optic geometry, screen intersection points, and solves
-        for slops for undefined optical surface.
-
-        Parameters
-        ----------
-        surface_data : dict
-            See Sofast documentation or Sofast.help() for more details.
-
+        for slopes for a single undefined optical surface.
         """
         # Check input data
-        self._check_surface_data(surface_data)
+        self._check_surface_data(self.conf.surface_data[0])
 
         # Process optic/setup geometry
         self._process_optic_undefined_geometry()
@@ -257,11 +250,9 @@ class ProcessSofastFringe:
         self._process_display()
 
         # Solve slopes
-        self._solve_slopes([surface_data])
+        self._solve_slopes()
 
-    def process_optic_singlefacet(
-        self, facet_data: DefinitionFacet, surface_data: dict
-    ) -> None:
+    def process_optic_singlefacet(self) -> None:
         """
         Processes optic geometry, screen intersection points, and solves
         for slops for single facet optic.
@@ -275,23 +266,18 @@ class ProcessSofastFringe:
 
         """
         # Check input data
-        self._check_surface_data(surface_data)
+        self._check_surface_data(self.conf.surface_data[0])
 
         # Process optic/setup geometry
-        self._process_optic_singlefacet_geometry(facet_data)
+        self._process_optic_singlefacet_geometry()
 
         # Process display ray intersection points
         self._process_display()
 
         # Solve slopes
-        self._solve_slopes([surface_data])
+        self._solve_slopes()
 
-    def process_optic_multifacet(
-        self,
-        facet_data: list[DefinitionFacet],
-        ensemble_data: DefinitionEnsemble,
-        surface_data: list[dict],
-    ) -> None:
+    def process_optic_multifacet(self) -> None:
         """
         Processes optic geometry, screen intersection points, and solves
         for slops for multi-facet optic.
@@ -307,20 +293,20 @@ class ProcessSofastFringe:
 
         """
         # Check inputs
-        if len(facet_data) != len(surface_data):
+        if len(self.conf.facet_data) != len(self.conf.surface_data):
             raise ValueError(
-                f'Length of facet_data does not equal length of surface data; facet_data={len(facet_data)}, surface_data={len(surface_data)}'
+                f'Length of facet_data does not equal length of surface data; facet_data={len(self.conf.facet_data)}, surface_data={len(self.conf.surface_data)}'
             )
-        list(map(self._check_surface_data, surface_data))
+        list(map(self._check_surface_data, self.conf.surface_data))
 
         # Process optic/setup geometry
-        self._process_optic_multifacet_geometry(facet_data, ensemble_data)
+        self._process_optic_multifacet_geometry()
 
         # Process display ray intersection points
         self._process_display()
 
         # Solve slopes
-        self._solve_slopes(surface_data)
+        self._solve_slopes()
 
         # Calculate facet pointing
         self._calculate_facet_pointing()
@@ -341,7 +327,7 @@ class ProcessSofastFringe:
             self.params.mask_filt_thresh,
             self.params.mask_thresh_active_pixels,
         ]
-        mask_raw = ip.calc_mask_raw(self.measurement.mask_images, *params)
+        mask_raw = ip.calc_mask_raw(self.conf.measurement.mask_images, *params)
 
         # Process optic geometry
         (
@@ -353,9 +339,9 @@ class ProcessSofastFringe:
         ) = po.process_undefined_geometry(
             mask_raw,
             self.params.mask_keep_largest_area,
-            self.measurement.optic_screen_dist,
+            self.conf.measurement.optic_screen_dist,
             self.orientation,
-            self.camera,
+            self.conf.camera,
             self.params.geometry_data_debug,
         )
 
@@ -363,7 +349,7 @@ class ProcessSofastFringe:
         self.data_facet_def = None
         self.data_ensemble_def = None
 
-    def _process_optic_singlefacet_geometry(self, facet_data: DefinitionFacet) -> None:
+    def _process_optic_singlefacet_geometry(self) -> None:
         """
         Processes optic geometry for single facet.
 
@@ -389,7 +375,7 @@ class ProcessSofastFringe:
             self.params.mask_filt_thresh,
             self.params.mask_thresh_active_pixels,
         ]
-        mask_raw = ip.calc_mask_raw(self.measurement.mask_images, *params)
+        mask_raw = ip.calc_mask_raw(self.conf.measurement.mask_images, *params)
 
         # If enabled, keep only the largest mask area
         if self.params.mask_keep_largest_area:
@@ -403,23 +389,21 @@ class ProcessSofastFringe:
             self.data_image_processing_facet,
             self.data_error,
         ) = po.process_singlefacet_geometry(
-            facet_data,
+            self.conf.facet_data[0],
             mask_raw,
-            self.measurement.measure_point,
-            self.measurement.optic_screen_dist,
+            self.conf.measurement.measure_point,
+            self.conf.measurement.optic_screen_dist,
             self.orientation,
-            self.camera,
+            self.conf.camera,
             self.params.geometry_params,
             self.params.geometry_data_debug,
         )
 
         # Save data
-        self.data_facet_def = [facet_data.copy()]
+        self.data_facet_def = [self.conf.facet_data[0].copy()]
         self.data_ensemble_def = None
 
-    def _process_optic_multifacet_geometry(
-        self, facet_data: list[DefinitionFacet], ensemble_data: DefinitionEnsemble
-    ) -> None:
+    def _process_optic_multifacet_geometry(self) -> None:
         """
         Processes optic geometry for an ensemble of facets.
 
@@ -432,13 +416,13 @@ class ProcessSofastFringe:
 
         """
         # Get number of facets
-        self.num_facets = ensemble_data.num_facets
+        self.num_facets = self.conf.ensemble_data.num_facets
         self.optic_type = 'multi'
 
         # Check inputs
-        if len(facet_data) != self.num_facets:
+        if len(self.conf.facet_data) != self.num_facets:
             raise ValueError(
-                f'Given length of facet data is {len(facet_data):d} but ensemble_data expects {ensemble_data.num_facets:d} facets.'
+                f'Given length of facet data is {len(self.conf.facet_data):d} but ensemble_data expects {self.conf.ensemble_data.num_facets:d} facets.'
             )
 
         # Calculate mask
@@ -448,7 +432,7 @@ class ProcessSofastFringe:
             self.params.mask_filt_thresh,
             self.params.mask_thresh_active_pixels,
         ]
-        mask_raw = ip.calc_mask_raw(self.measurement.mask_images, *params)
+        mask_raw = ip.calc_mask_raw(self.conf.measurement.mask_images, *params)
 
         if self.params.mask_keep_largest_area:
             warnings.warn(
@@ -464,20 +448,20 @@ class ProcessSofastFringe:
             self.data_image_processing_facet,
             self.data_error,
         ) = po.process_multifacet_geometry(
-            facet_data,
-            ensemble_data,
+            self.conf.facet_data,
+            self.conf.ensemble_data,
             mask_raw,
-            self.measurement.measure_point,
+            self.conf.measurement.measure_point,
             self.orientation,
-            self.camera,
-            self.measurement.optic_screen_dist,
+            self.conf.camera,
+            self.conf.measurement.optic_screen_dist,
             self.params.geometry_params,
             self.params.geometry_data_debug,
         )
 
         # Initialize data dictionaries
-        self.data_facet_def = [f.copy() for f in facet_data]
-        self.data_ensemble_def = ensemble_data.copy()
+        self.data_facet_def = [f.copy() for f in self.conf.facet_data]
+        self.data_ensemble_def = self.conf.ensemble_data.copy()
 
     def _process_display(self) -> None:
         """
@@ -485,10 +469,10 @@ class ProcessSofastFringe:
         and optic coordinates.
 
         """
-        x_ims = self.measurement.fringe_images_x_calibrated
-        y_ims = self.measurement.fringe_images_y_calibrated
-        x_periods = self.measurement.fringe_periods_x
-        y_periods = self.measurement.fringe_periods_y
+        x_ims = self.conf.measurement.fringe_images_x_calibrated
+        y_ims = self.conf.measurement.fringe_images_y_calibrated
+        x_periods = self.conf.measurement.fringe_periods_x
+        y_periods = self.conf.measurement.fringe_periods_y
 
         for idx_facet in range(self.num_facets):
             # Get current processed mask layer
@@ -507,7 +491,7 @@ class ProcessSofastFringe:
             ].v_screen_points_fractional_screens = v_screen_points_fractional_screens
 
             # Undistort screen points (display coordinates)
-            v_screen_points_screen = self.display.interp_func(
+            v_screen_points_screen = self.conf.display.interp_func(
                 v_screen_points_fractional_screens
             )  # meters, display coordinates
             self.data_geometry_facet[
@@ -544,7 +528,7 @@ class ProcessSofastFringe:
 
             # Calculate pixel pointing directions (camera coordinates)
             u_pixel_pointing_cam = ip.calculate_active_pixels_vectors(
-                mask_processed, self.camera
+                mask_processed, self.conf.camera
             )
             # Convert to optic coordinates
             u_pixel_pointing_facet = u_pixel_pointing_cam.rotate(ori.r_cam_optic)
@@ -560,16 +544,9 @@ class ProcessSofastFringe:
                 idx_facet
             ].v_screen_points_facet = v_screen_points_facet
 
-    def _solve_slopes(self, surface_data: list[dict]) -> None:
+    def _solve_slopes(self) -> None:
         """
         Solves slopes of each active pixel for each facet.
-
-        Parameters
-        ----------
-        surface_data : list[dict]
-            List containing one dictionary for each facet being processed.
-            See SlopeSolver documentation for details.
-
         """
         # Check inputs
         if self.data_geometry_facet is None:
@@ -607,7 +584,7 @@ class ProcessSofastFringe:
                 'dist_optic_screen': self.data_geometry_facet[
                     facet_idx
                 ].measure_point_screen_distance,
-                'surface_data': surface_data[facet_idx],
+                'surface_data': self.conf.surface_data[facet_idx],
                 'debug': self.params.slope_solver_data_debug,
             }
 
@@ -624,7 +601,7 @@ class ProcessSofastFringe:
             self.data_characterization_facet.append(slope_solver.get_data())
 
         # Save input surface parameters data
-        self.data_surface_params = [s.copy() for s in surface_data]
+        self.data_surface_params = [s.copy() for s in self.conf.surface_data]
 
     def _calculate_facet_pointing(
         self, reference: Literal['average'] | int = 'average'
