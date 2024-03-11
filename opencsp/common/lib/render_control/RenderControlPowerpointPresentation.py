@@ -65,6 +65,8 @@ class RenderControlPowerpointPresentation:
         slide.save()
 
     def save(self, dest_path_name_ext: str, overwrite=False):
+        dest_path_name_ext = ft.norm_path(dest_path_name_ext)
+
         # check if the file already exists
         if ft.file_exists(dest_path_name_ext):
             if not overwrite:
@@ -113,6 +115,7 @@ class RenderControlPowerpointPresentation:
             slide = pps_slide.render(self, layout, tmp_render_path)
 
         # check if the file already exists
+        lt.info(f"Saving powerpoint presentation to {dest_path_name_ext}")
         if ft.file_exists(dest_path_name_ext):
             # check again, just to be safe
             if not overwrite:
