@@ -48,57 +48,57 @@ class Configuration():
         """
         from opencsp.app.sofast.lib.ProcessSofastFringe import ProcessSofastFringe  # import here to avoid a circular loop
 
-        self.file_measurement_dir_name_ext = file_measurement_dir_name_ext
-        self.file_camera_dir_name_ext = file_camera_dir_name_ext
-        self.file_display_dir_name_ext = file_display_dir_name_ext
-        self.file_calibration_dir_name_ext = file_calibration_dir_name_ext
-        self.file_ensemble_data_dir_name_ext = file_ensemble_data_dir_name_ext
-        self.file_facet_data_dir_name_ext = file_facet_data_dir_name_ext
-        self.surface_data = surface_data or []
+        self._file_measurement_dir_name_ext = file_measurement_dir_name_ext
+        self._file_camera_dir_name_ext = file_camera_dir_name_ext
+        self._file_display_dir_name_ext = file_display_dir_name_ext
+        self._file_calibration_dir_name_ext = file_calibration_dir_name_ext
+        self._file_ensemble_data_dir_name_ext = file_ensemble_data_dir_name_ext
+        self._file_facet_data_dir_name_ext = file_facet_data_dir_name_ext
+        self._surface_data = surface_data or []
 
         # check input for errors
-        if self.file_facet_data_dir_name_ext != None:
+        if self._file_facet_data_dir_name_ext != None:
             # validate the facet data
             if not self._validate_num_facets():
                 lt.error_and_raise(ValueError, 'Error in Sofast Configuration(): ' +
                                    f'Given length of facet data is {len(self.facet_data):d} ' +
                                    f'but ensemble_data expects {self.ensemble_data.num_facets:d} facets.')
             # validate the surface data
-            for sd in self.surface_data:
+            for sd in self._surface_data:
                 ProcessSofastFringe._check_surface_data(sd)
 
     @functools.cached_property
     def measurement(self):
         """ Loads and returns the measurement instance. Always returns the same instance. """
-        return MeasurementSofastFringe.load_from_hdf(self.file_measurement_dir_name_ext)
+        return MeasurementSofastFringe.load_from_hdf(self._file_measurement_dir_name_ext)
 
     @functools.cached_property
     def camera(self):
         """ Loads and returns the camera instance. Always returns the same instance. """
-        return Camera.load_from_hdf(self.file_camera_dir_name_ext)
+        return Camera.load_from_hdf(self._file_camera_dir_name_ext)
 
     @functools.cached_property
     def display(self):
         """ Loads and returns the display instance. Always returns the same instance. """
-        return DisplayShape.load_from_hdf(self.file_display_dir_name_ext)
+        return DisplayShape.load_from_hdf(self._file_display_dir_name_ext)
 
     @functools.cached_property
     def calibration(self):
         """ Loads and returns the calibration instance. Always returns the same instance. """
         try:
-            return ImageCalibrationGlobal.load_from_hdf(self.file_calibration_dir_name_ext)
+            return ImageCalibrationGlobal.load_from_hdf(self._file_calibration_dir_name_ext)
         except:
-            return ImageCalibrationScaling.load_from_hdf(self.file_calibration_dir_name_ext)
+            return ImageCalibrationScaling.load_from_hdf(self._file_calibration_dir_name_ext)
 
     @functools.cached_property
     def ensemble_data(self):
         """ Loads and returns the ensemble instance. Always returns the same instance. """
-        return DefinitionEnsemble.load_from_json(self.file_ensemble_data_dir_name_ext)
+        return DefinitionEnsemble.load_from_json(self._file_ensemble_data_dir_name_ext)
 
     @functools.cached_property
     def facet_data(self):
         """ Loads and returns the facet_data instance(s). Always returns the same instance. """
-        file_facet_data_dir_name_ext = self.file_facet_data_dir_name_ext
+        file_facet_data_dir_name_ext = self._file_facet_data_dir_name_ext
 
         # Load one or more facet files
         if isinstance(file_facet_data_dir_name_ext, str):
@@ -106,6 +106,21 @@ class Configuration():
         facets = list(map(DefinitionFacet.load_from_json, file_facet_data_dir_name_ext))
 
         return facets
+
+    @functools.cached_property
+    def surface_data(self):
+        return copy.deepcopy(self._surface_data)
+
+    def reset(self):
+        """ Clear the various cached properties of this instance. The next time
+        the properties are retrieved they will be recomputed. """
+        del self.measurement
+        del self.camera
+        del self.display
+        del self.calibration
+        del self.ensemble_data
+        del self.facet_data
+        del self.surface_data
 
     def _validate_num_facets(self):
         # attempt to load the facets
