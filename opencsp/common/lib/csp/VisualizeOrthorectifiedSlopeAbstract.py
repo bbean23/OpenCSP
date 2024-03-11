@@ -143,6 +143,7 @@ class VisualizeOrthorectifiedSlopeAbstract:
         quiver_density: float | None = None,
         quiver_scale: float | None = 50,
         quiver_color: str = 'white',
+        colorbar: bool = True
     ) -> None:
         """Plots orthorectified image of mirror slope
 
@@ -163,6 +164,8 @@ class VisualizeOrthorectifiedSlopeAbstract:
             Scale of quiver arrows, None for default.
         quiver_color : str
             Color of quiver arrows.
+        colorbar : bool, optional
+            If True, then plot the color bar. False to omit. Default is True.
         """
         # Check inputs
         if type_ not in ['x', 'y', 'magnitude']:
@@ -213,7 +216,7 @@ class VisualizeOrthorectifiedSlopeAbstract:
 
         # Plot image on axes
         extent = (left - res / 2, right + res / 2, bottom - res / 2, top + res / 2)
-        self._plot_orthorectified_image(image, axis, 'jet', extent, clims, 'mrad')
+        self._plot_orthorectified_image(image, axis, 'jet', extent, clims, 'mrad', colorbar=colorbar)
 
         # Add quiver arrows
         if quiver_density is not None:
@@ -365,9 +368,11 @@ class VisualizeOrthorectifiedSlopeAbstract:
         extent: tuple[float, float, float, float],
         clims: tuple[float, float],
         cmap_title: str,
+        colorbar: bool = True
     ):
         """Plots orthorectified image on axes"""
         plt_im = axis.imshow(image, cmap, origin='lower', extent=extent)
         plt_im.set_clim(clims)
-        plt_cmap = plt.colorbar(plt_im, ax=axis)
-        plt_cmap.ax.set_ylabel(cmap_title, rotation=270, labelpad=15)
+        if colorbar:
+            plt_cmap = plt.colorbar(plt_im, ax=axis)
+            plt_cmap.ax.set_ylabel(cmap_title, rotation=270, labelpad=15)
