@@ -1,4 +1,3 @@
-import copy
 import dataclasses
 
 import cv2
@@ -76,10 +75,5 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImagesProcessor):
             ret = [self.apply_mapping_jet_custom(operable)]
         else:
             ret = [self.apply_mapping_jet(operable, self.opencv_map)]
-
-        # add to the algorithm images
-        algorithm_images = copy.copy(operable.algorithm_images)
-        algorithm_images[self] = [ret[0].primary_image]
-        ret = [dataclasses.replace(ret[0], algorithm_images=algorithm_images)]
 
         return ret

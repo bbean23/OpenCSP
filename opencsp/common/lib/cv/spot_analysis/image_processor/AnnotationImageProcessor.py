@@ -1,4 +1,3 @@
-import copy
 import dataclasses
 
 import matplotlib.pyplot as plt
@@ -39,11 +38,6 @@ class AnnotationImageProcessor(AbstractSpotAnalysisImagesProcessor):
         # build the return value
         cacheable_image = CacheableImage(new_image, source_path=operable.primary_image.source_path)
         ret = dataclasses.replace(operable, primary_image=cacheable_image)
-
-        # add to the algorithm images
-        algorithm_images = copy.copy(operable.algorithm_images)
-        algorithm_images[self] = [ret.primary_image]
-        ret = dataclasses.replace(ret, algorithm_images=algorithm_images)
 
         return [ret]
 

@@ -54,43 +54,39 @@ class PeakFlux:
             ImageType.NULL: lambda operable, operables: "off" in operable.primary_image_source_path,
         }
 
-        self.image_processors: list[AbstractSpotAnalysisImagesProcessor] = [
-            CroppingImageProcessor(*self.crop_box),
-            AverageByGroupImageProcessor(group_assigner, group_trigger),
-            EchoImageProcessor(),
-            SupportingImagesCollectorImageProcessor(supporting_images_map),
-            NullImageSubtractionImageProcessor(),
-            ConvolutionImageProcessor(kernel="box", diameter=3),
-            View3dImageProcessor(crop_to_threshold=20, max_resolution=(100, 100), interactive=False),
-            BcsLocatorImageProcessor(record_visualization=True),
-            HotspotImageProcessor(desired_shape=21, draw_debug_view=False, record_visualization=True),
-            ViewCrossSectionImageProcessor(
+        image_processors = {
+            'Crop': CroppingImageProcessor(*self.crop_box),
+            'AvgG': AverageByGroupImageProcessor(group_assigner, group_trigger),
+            'Echo': EchoImageProcessor(),
+            'Coll': SupportingImagesCollectorImageProcessor(supporting_images_map),
+            'Nsub': NullImageSubtractionImageProcessor(),
+            'Conv': ConvolutionImageProcessor(kernel="box", diameter=3),
+            'View': View3dImageProcessor(crop_to_threshold=20, max_resolution=(100, 100), interactive=False),
+            'BcsL': BcsLocatorImageProcessor(record_visualization=True),
+            'HotL': HotspotImageProcessor(desired_shape=21, draw_debug_view=False, record_visualization=True),
+            'Vcx1': ViewCrossSectionImageProcessor(
                 self.get_bcs_origin, 'BCS', single_plot=False, crop_to_threshold=20, interactive=False
             ),
-            ViewCrossSectionImageProcessor(
+            'Vcx2': ViewCrossSectionImageProcessor(
                 self.get_peak_origin, 'Hotspot', single_plot=False, crop_to_threshold=20, interactive=False
             ),
-            PopulationStatisticsImageProcessor(initial_min=0, initial_max=255),
-            FalseColorImageProcessor(),
-            AnnotationImageProcessor(),
-            PowerpointImageProcessor(
-                save_dir=outdir,
-                save_name="processing_pipeline",
-                overwrite=True,
-                operable_title_slides=True,
-                include_primary_image=False,
-                include_algorithm_images=True,
-                include_processor_types=[
-                    ConvolutionImageProcessor,
-                    BcsLocatorImageProcessor,
-                    View3dImageProcessor,
-                    HotspotImageProcessor,
-                    ViewCrossSectionImageProcessor,
-                    FalseColorImageProcessor,
-                    AnnotationImageProcessor,
-                ],
-            ),
-        ]
+            'Stat': PopulationStatisticsImageProcessor(initial_min=0, initial_max=255),
+            'Fclr': FalseColorImageProcessor(),
+            'Anno': AnnotationImageProcessor(),
+        }
+        pptx_processor = PowerpointImageProcessor(
+            save_dir=outdir,
+            save_name="processing_pipeline",
+            overwrite=True,
+            processors_per_slide=[
+                [image_processors['Coll'], image_processors['Nsub'], image_processors['Conv']],
+                [image_processors['BcsL'], image_processors['HotL']],
+                [image_processors['Vcx1'], image_processors['Vcx2']],
+                [image_processors['Fclr'], image_processors['Anno']],
+            ],
+        )
+        self.image_processors = list(image_processors.values()) + [pptx_processor]
+
         self.spot_analysis = sa.SpotAnalysis(
             experiment_name, self.image_processors, save_dir=outdir, save_overwrite=True
         )

@@ -213,7 +213,9 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImagesProcessor, A
 
         return [ret]
 
-    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool) -> tuple[SpotAnalysisOperable, list[rcfr.RenderControlFigureRecord]]:
+    def visualize_operable(
+        self, operable: SpotAnalysisOperable, is_last: bool
+    ) -> tuple[SpotAnalysisOperable, list[rcfr.RenderControlFigureRecord]]:
         """
         Calls _visualize_operable() and registers the visualizations as
         algorithm_images on the given operable.

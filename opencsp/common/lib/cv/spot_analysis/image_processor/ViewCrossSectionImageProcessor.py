@@ -58,7 +58,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             inspect hot spots on images with very concentrated values. By
             default None.
         """
-        label_for_name = "" if label.strip() == "" else "_"+label
+        label_for_name = "" if label.strip() == "" else "_" + label
         super().__init__(self.__class__.__name__ + label_for_name, interactive)
 
         self.cross_section_location = cross_section_location

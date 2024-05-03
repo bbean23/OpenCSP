@@ -19,7 +19,6 @@ import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render_control.RenderControlAxis as rca
 import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
-import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -48,7 +47,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImagesProcessor):
         desired_shape: int | tuple,
         style: rcps.RenderControlPointSeq = None,
         draw_debug_view: bool | Callable[[SpotAnalysisOperable], bool] = False,
-        record_visualization=False
+        record_visualization=False,
     ):
         """
         Parameters
