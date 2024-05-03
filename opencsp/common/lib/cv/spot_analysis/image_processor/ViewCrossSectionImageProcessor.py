@@ -132,7 +132,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
 
         return self.fig_records
 
-    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool):
+    def _visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool):
         image = operable.primary_image.nparray
 
         # get the cross section pixel location
@@ -192,6 +192,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         # draw
         for view in self.views:
             view.show(block=False, legend=self.single_plot)
+
+        return self.fig_records
 
     def close_figures(self):
         for view in self.views:

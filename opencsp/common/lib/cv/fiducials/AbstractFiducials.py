@@ -10,6 +10,7 @@ import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.geometry.RegionXY as reg
 import opencsp.common.lib.geometry.Vxyz as v3
 import opencsp.common.lib.render.figure_management as fm
+import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.log_tools as lt
 
@@ -158,11 +159,8 @@ class AbstractFiducials(ABC):
             axes.imshow(image)
             self.render(axes)
 
-            # Render
-            canvas.draw()
-
             # Convert back to a numpy array
-            new_image = np.asarray(canvas.buffer_rgba())
+            new_image = rcfr.RenderControlFigureRecord.figure_to_array(fig)
             new_image = new_image.astype(image.dtype)
 
             # Return the updated image

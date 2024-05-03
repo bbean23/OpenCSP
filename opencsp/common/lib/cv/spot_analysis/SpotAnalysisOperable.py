@@ -33,8 +33,27 @@ class SpotAnalysisOperable:
     This should be used as the secondary source of this information, after
     primary_image.source_path. """
     supporting_images: dict[ImageType, CacheableImage] = field(default_factory=dict)
-    """ The supporting images, if any, that were provided with the
-    associated input primary image. """
+    """
+    The supporting images, if any, that were provided with the associated input
+    primary image. These images will be used as part of the computation.
+
+    See Also
+    --------
+    algorithm_images
+    """
+    algorithm_images: dict[any, list[CacheableImage]] = field(default_factory=dict)
+    """
+    The images produced by the image processors as they operate on this
+    instance. These images are used for debugging and automatic powerpoint
+    generation.
+
+    The keys should be AbstractSpotAnalysisImageProcessors (missing type hint to
+    avoid cyclic import dependencies).
+
+    See Also
+    --------
+    supporting_images
+    """
     previous_operables: tuple[list['SpotAnalysisOperable'] | None, Any | None] = (None, None)
     """
     The operable that was used to generate this operable, and the
@@ -113,6 +132,7 @@ class SpotAnalysisOperable:
                 primary_image,
                 primary_image_source_path,
                 supporting_images,
+                self.algorithm_images,
                 self.previous_operables,
                 self.given_fiducials,
                 self.found_fiducials,
@@ -124,7 +144,14 @@ class SpotAnalysisOperable:
             )
 
     def __sizeof__(self) -> int:
-        return sys.getsizeof(self.primary_image) + sum([sys.getsizeof(im) for im in self.supporting_images.values()])
+        all_algorithm_images: list[CacheableImage] = []
+        for processor in self.algorithm_images:
+            all_algorithm_images += self.algorithm_images[processor]
+
+        primary_image_size = sys.getsizeof(self.primary_image)
+        supporting_images_size = sum([sys.getsizeof(im) for im in self.supporting_images.values()])
+        algorithm_images_size = sum([sys.getsizeof(im) for im in all_algorithm_images])
+        return primary_image_size + supporting_images_size + algorithm_images_size
 
     def replace_use_default_values(
         self, supporting_images: dict[ImageType, CacheableImage] = None, data: 'SpotAnalysisOperable' = None

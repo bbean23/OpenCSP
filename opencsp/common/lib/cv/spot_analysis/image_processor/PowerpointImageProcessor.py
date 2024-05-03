@@ -124,10 +124,20 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
         if self.one_operable_per_processor:
             previous_operables = previous_operables[:1]
 
-        # add the image for this step
+        # make sure we have a list to add to
         if previous_processor not in processor_images:
             processor_images[previous_processor] = []
+
+        # add the primary image for this step
         processor_images[previous_processor].append(operable.primary_image)
+
+        # add the supporting images for this step
+        # TODO
+
+        # add the algorithm images for this step
+        if previous_processor in operable.algorithm_images:
+            for image in operable.algorithm_images[previous_processor]:
+                processor_images[previous_processor].append(image)
 
         # go back another step
         for previous_operable in previous_operables:
