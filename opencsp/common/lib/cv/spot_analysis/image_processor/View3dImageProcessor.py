@@ -1,3 +1,5 @@
+import copy
+import dataclasses
 from typing import Callable
 
 import cv2 as cv
@@ -116,12 +118,7 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
         # draw
         self.view.show(block=False)
 
-        # add to the algorithm images
-        algorithm_images = operable.algorithm_images
-        cacheable = CacheableImage(self.fig_record.to_array())
-        algorithm_images[self] = [cacheable]
-
-        return [self.fig_record]
+        return operable, [self.fig_record]
 
     def close_figures(self):
         with et.ignored(Exception):

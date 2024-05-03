@@ -9,6 +9,7 @@ from opencsp.common.lib.cv.fiducials.BcsFiducial import BcsFiducial
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisImagesStream import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 import opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperableAttributeParser as saoap
+from opencsp.common.lib.cv.spot_analysis.VisualizationCoordinator import VisualizationCoordinator
 from opencsp.common.lib.cv.spot_analysis.image_processor import *
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.log_tools as lt
@@ -60,8 +61,8 @@ class PeakFlux:
             SupportingImagesCollectorImageProcessor(supporting_images_map),
             NullImageSubtractionImageProcessor(),
             ConvolutionImageProcessor(kernel="box", diameter=3),
-            BcsLocatorImageProcessor(record_visualization=True),
             View3dImageProcessor(crop_to_threshold=20, max_resolution=(100, 100), interactive=False),
+            BcsLocatorImageProcessor(record_visualization=True),
             HotspotImageProcessor(desired_shape=21, draw_debug_view=False, record_visualization=True),
             ViewCrossSectionImageProcessor(
                 self.get_bcs_origin, 'BCS', single_plot=False, crop_to_threshold=20, interactive=False

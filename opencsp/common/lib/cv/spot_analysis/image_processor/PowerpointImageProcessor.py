@@ -3,6 +3,7 @@ import os
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
+from opencsp.common.lib.cv.spot_analysis.image_processor import AbstractVisualizationImageProcessor
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImagesProcessor,
 )
@@ -142,6 +143,7 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
         self,
         operable: SpotAnalysisOperable,
         processor_images: dict[AbstractSpotAnalysisImagesProcessor, list[CacheableImage]],
+        recursion_index=0
     ):
         """
         Follows the chain of operables backwards to get a list of all images
@@ -174,7 +176,20 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
         # go back another step
         for previous_operable in previous_operables:
-            self._get_per_processor_images(previous_operable, processor_images)
+            self._get_per_processor_images(previous_operable, processor_images, recursion_index=recursion_index+1)
+
+        # add missing visualization images
+        if recursion_index == 0:
+            visualization_processors = filter(lambda proc: isinstance(
+                proc, AbstractVisualizationImageProcessor), processor_images.keys())
+            for processor in visualization_processors:
+                if not self.include_algorithm_images:
+                    continue
+                if processor not in operable.algorithm_images:
+                    continue
+                for algorithm_image in operable.algorithm_images[processor]:
+                    if algorithm_image not in processor_images[processor]:
+                        processor_images[processor].append(algorithm_image)
 
         # remove any processors that don't match the limited types
         if self.include_processor_types is not None:

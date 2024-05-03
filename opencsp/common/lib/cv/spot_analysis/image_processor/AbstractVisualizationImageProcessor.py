@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+import copy
+import dataclasses
 from typing import Callable
 
 import numpy as np
@@ -142,7 +144,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImagesProcessor, A
     @abstractmethod
     def _visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool
-    ) -> list[rcfr.RenderControlFigureRecord]:
+    ) -> tuple[SpotAnalysisOperable, list[rcfr.RenderControlFigureRecord]]:
         """
         Updates the figures for this instance with the data from the given operable.
         """
@@ -197,34 +199,42 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImagesProcessor, A
         return ret
 
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
+        ret = operable
+
         if self.has_visualization_coordinator:
             # let the visualization coordinator determine when we visualize an operable
             if self.visualization_coordinator.is_visualize(self, operable, is_last):
-                self.visualization_coordinator.visualize(self, operable, is_last)
+                ret = self.visualization_coordinator.visualize(self, operable, is_last)
         else:
             # no coordinator, always visualize the operable
             if not self.initialized_figure_records:
                 self.init_figure_records(rcf.RenderControlFigure(tile=False))
-            self.visualize_operable(operable, is_last)
+            ret, _ = self.visualize_operable(operable, is_last)
 
-        return [operable]
+        return [ret]
 
-    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool) -> list[rcfr.RenderControlFigureRecord]:
+    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool) -> tuple[SpotAnalysisOperable, list[rcfr.RenderControlFigureRecord]]:
         """
         Calls _visualize_operable() and registers the visualizations as
         algorithm_images on the given operable.
         """
-        ret = self._visualize_operable(operable, is_last)
+        ret, figure_recs = self._visualize_operable(operable, is_last)
 
-        # prepare the algorithm images for this operable
-        if self not in operable.algorithm_images:
-            operable.algorithm_images[self] = []
-
-        # add to the algorithm_images
-        for figure_rec in ret:
+        # build the list of visualization images
+        vis_images: list[CacheableImage] = []
+        for figure_rec in figure_recs:
             # get the figure as an numpy array
             image = figure_rec.to_array()
 
             # add the image
             cacheable_image = CacheableImage(image)
-            operable.algorithm_images[self].append(cacheable_image)
+            vis_images.append(cacheable_image)
+
+        # add to the algorithm_images
+        algorithm_images = copy.copy(ret.algorithm_images)
+        if self not in ret.algorithm_images:
+            algorithm_images[self] = []
+        algorithm_images[self] += vis_images
+        ret = dataclasses.replace(ret, algorithm_images=algorithm_images)
+
+        return ret, figure_recs

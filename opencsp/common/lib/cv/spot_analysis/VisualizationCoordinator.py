@@ -234,7 +234,7 @@ class VisualizationCoordinator:
         visualization_processor: AbstractVisualizationImageProcessor,
         operable: SpotAnalysisOperable,
         is_last: bool,
-    ):
+    ) -> SpotAnalysisOperable:
         """
         Calls visualize_operable() on each of the registered visualization
         processors.
@@ -258,7 +258,7 @@ class VisualizationCoordinator:
             passed through to here.
         """
         for processor in self.visualization_processors:
-            processor.visualize_operable(operable, is_last)
+            operable, _ = processor.visualize_operable(operable, is_last)
 
         # if interactive, then block until the user presses "enter" or closes one or more visualizations
         interactive = False
@@ -303,3 +303,5 @@ class VisualizationCoordinator:
                         processor.close_figures()
 
                 first_iteration = False
+
+        return operable
