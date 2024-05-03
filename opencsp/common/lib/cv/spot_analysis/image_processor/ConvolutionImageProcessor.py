@@ -115,4 +115,10 @@ class ConvolutionImageProcessor(AbstractSpotAnalysisImagesProcessor):
         # create the returned operable
         cacheable = CacheableImage(filtered_image, source_path=operable.primary_image.source_path)
         new_operable = dataclasses.replace(operable, primary_image=cacheable)
+
+        # add to the algorithm images
+        algorithm_images = new_operable.algorithm_images
+        algorithm_images[self] = [cacheable]
+        new_operable = dataclasses.replace(new_operable, algorithm_images=algorithm_images)
+
         return [new_operable]

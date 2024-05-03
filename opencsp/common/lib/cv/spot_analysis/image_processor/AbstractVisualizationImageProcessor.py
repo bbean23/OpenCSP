@@ -140,7 +140,9 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImagesProcessor, A
         pass
 
     @abstractmethod
-    def _visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool) -> list[rcfr.RenderControlFigureRecord]:
+    def _visualize_operable(
+        self, operable: SpotAnalysisOperable, is_last: bool
+    ) -> list[rcfr.RenderControlFigureRecord]:
         """
         Updates the figures for this instance with the data from the given operable.
         """

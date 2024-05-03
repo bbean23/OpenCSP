@@ -29,8 +29,8 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
         - the primary image for the current operable
         - the results from the operables at each of the previous processors
-        - the supporting images for the current operable [TODO]
-        - the supporting images from the operables at each of the previous processors [TODO]
+        - the supporting images associated with each operable
+        - the algorithm images associated with each operable
 
     The powerpoint deck can formatted with:
 
@@ -42,13 +42,26 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
         - Insert title slides between operable
           (for each current operable add a title slide)
-        - Only process the first M previous processors
+        - Only include a list of processor types
         - Only include the first operable for processors that have many-to-one or
           many-to-many operable result
     """
 
-    def __init__(self, save_dir: str, save_name: str, overwrite=False, all_preceeding_processors=True, include_supporting_images_todo=False,
-                 slide_division_todo=SlideDivision.PER_PROCESSOR, images_per_division=1, include_operable_title_slides=False, max_processor_count_todo=-1, one_operable_per_processor_todo=True):
+    def __init__(
+        self,
+        save_dir: str,
+        save_name: str,
+        overwrite=False,
+        all_preceeding_processors=True,
+        include_primary_image=True,
+        include_supporting_images_todo=False,
+        include_algorithm_images=False,
+        slide_division_todo=SlideDivision.PER_PROCESSOR,
+        images_per_division=1,
+        operable_title_slides=False,
+        include_processor_types: list[type[AbstractSpotAnalysisImagesProcessor]] = None,
+        one_operable_per_processor_todo=True,
+    ):
         super().__init__(self.__class__.__name__)
 
         # register some of the input arguments
@@ -58,33 +71,47 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
         # validate input
         if not ft.directory_exists(self.save_dir):
-            lt.error_and_raise(FileNotFoundError, "Error in PowerpointImageProcessor.__init__(): " +
-                               f"destination directory \"{self.save_dir}\" does not exist!")
+            lt.error_and_raise(
+                FileNotFoundError,
+                "Error in PowerpointImageProcessor.__init__(): "
+                + f"destination directory \"{self.save_dir}\" does not exist!",
+            )
         if ft.file_exists(self.dest_path_name_ext):
             if not overwrite:
-                lt.error_and_raise(FileExistsError, "Error in PowerpointImageProcessor.__init__(): " +
-                                   f"destination file \"{self.dest_path_name_ext}\" already exists!")
+                lt.error_and_raise(
+                    FileExistsError,
+                    "Error in PowerpointImageProcessor.__init__(): "
+                    + f"destination file \"{self.dest_path_name_ext}\" already exists!",
+                )
+        if not include_primary_image and not include_supporting_images_todo and not include_algorithm_images:
+            lt.error_and_raise(
+                ValueError,
+                "Error in PowerpointImageProcessor.__init__(): "
+                + f"Must include at least one type of image from the spot analysis operables.",
+            )
 
         # register the rest of the input arguments
         self.overwrite = overwrite
         self.all_preceeding_processors = all_preceeding_processors
+        self.include_primary_image = include_primary_image
         self.include_supporting_images_todo = include_supporting_images_todo
+        self.include_algorithm_images = include_algorithm_images
         self.slide_division = slide_division_todo
         self.images_per_division = images_per_division
-        self.include_operable_title_slides = include_operable_title_slides
-        self.max_processor_count = max_processor_count_todo
+        self.operable_title_slides = operable_title_slides
+        self.include_processor_types = include_processor_types
         self.one_operable_per_processor = one_operable_per_processor_todo
 
         # check for currently unsupported options
         if self.slide_division == SlideDivision.PER_IMAGE or self.slide_division == SlideDivision.PER_OPERABLE:
-            lt.error_and_raise(NotImplementedError,
-                               f"The value {self.slide_division} for slide_division is not currently supported")
-        if self.max_processor_count >= 0:
-            lt.error_and_raise(NotImplementedError,
-                               f"The value {self.max_processor_count} for max_processor_count is not currently supported")
+            lt.error_and_raise(
+                NotImplementedError, f"The value {self.slide_division} for slide_division is not currently supported"
+            )
         if not self.one_operable_per_processor:
             lt.error_and_raise(
-                NotImplementedError, f"The value {self.one_operable_per_processor} for one_operable_per_processor is not currently supported")
+                NotImplementedError,
+                f"The value {self.one_operable_per_processor} for one_operable_per_processor is not currently supported",
+            )
 
         # internal values
         self.presentation = rcpp.RenderControlPowerpointPresentation()
@@ -92,7 +119,7 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
     def _add_operable_title_slide(self, operable: SpotAnalysisOperable):
         # check if we should have title slides
-        if not self.include_operable_title_slides:
+        if not self.operable_title_slides:
             return
 
         # create a title slide and add it to the presentation
@@ -111,7 +138,11 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
             ret.append(previous_processor)
             return ret
 
-    def _get_per_processor_images(self, operable: SpotAnalysisOperable, processor_images: dict[AbstractSpotAnalysisImagesProcessor, list[CacheableImage]]):
+    def _get_per_processor_images(
+        self,
+        operable: SpotAnalysisOperable,
+        processor_images: dict[AbstractSpotAnalysisImagesProcessor, list[CacheableImage]],
+    ):
         """
         Follows the chain of operables backwards to get a list of all images
         that affected the given operable.
@@ -129,19 +160,32 @@ class PowerpointImageProcessor(AbstractSpotAnalysisImagesProcessor):
             processor_images[previous_processor] = []
 
         # add the primary image for this step
-        processor_images[previous_processor].append(operable.primary_image)
+        if self.include_primary_image:
+            processor_images[previous_processor].append(operable.primary_image)
 
         # add the supporting images for this step
         # TODO
 
         # add the algorithm images for this step
-        if previous_processor in operable.algorithm_images:
-            for image in operable.algorithm_images[previous_processor]:
-                processor_images[previous_processor].append(image)
+        if self.include_algorithm_images:
+            if previous_processor in operable.algorithm_images:
+                for image in operable.algorithm_images[previous_processor]:
+                    processor_images[previous_processor].append(image)
 
         # go back another step
         for previous_operable in previous_operables:
             self._get_per_processor_images(previous_operable, processor_images)
+
+        # remove any processors that don't match the limited types
+        if self.include_processor_types is not None:
+            for processor in list(processor_images.keys()):
+                found = False
+                for processor_type in self.include_processor_types:
+                    if isinstance(processor, processor_type):
+                        found = True
+                        break
+                if not found:
+                    del processor_images[processor]
 
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
         # add a title slide for the operable, as necessary

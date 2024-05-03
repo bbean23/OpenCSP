@@ -60,9 +60,9 @@ class PeakFlux:
             SupportingImagesCollectorImageProcessor(supporting_images_map),
             NullImageSubtractionImageProcessor(),
             ConvolutionImageProcessor(kernel="box", diameter=3),
-            BcsLocatorImageProcessor(),
+            BcsLocatorImageProcessor(record_visualization=True),
             View3dImageProcessor(crop_to_threshold=20, max_resolution=(100, 100), interactive=False),
-            HotspotImageProcessor(desired_shape=21, draw_debug_view=False),
+            HotspotImageProcessor(desired_shape=21, draw_debug_view=False, record_visualization=True),
             ViewCrossSectionImageProcessor(
                 self.get_bcs_origin, 'BCS', single_plot=False, crop_to_threshold=20, interactive=False
             ),
@@ -72,8 +72,23 @@ class PeakFlux:
             PopulationStatisticsImageProcessor(initial_min=0, initial_max=255),
             FalseColorImageProcessor(),
             AnnotationImageProcessor(),
-            PowerpointImageProcessor(save_dir=outdir, save_name="processing_pipeline",
-                                     overwrite=True, include_operable_title_slides=True),
+            PowerpointImageProcessor(
+                save_dir=outdir,
+                save_name="processing_pipeline",
+                overwrite=True,
+                operable_title_slides=True,
+                include_primary_image=False,
+                include_algorithm_images=True,
+                include_processor_types=[
+                    ConvolutionImageProcessor,
+                    BcsLocatorImageProcessor,
+                    View3dImageProcessor,
+                    HotspotImageProcessor,
+                    ViewCrossSectionImageProcessor,
+                    FalseColorImageProcessor,
+                    AnnotationImageProcessor,
+                ],
+            ),
         ]
         self.spot_analysis = sa.SpotAnalysis(
             experiment_name, self.image_processors, save_dir=outdir, save_overwrite=True

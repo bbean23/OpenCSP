@@ -5,6 +5,7 @@ from typing import Callable
 import cv2 as cv
 import numpy as np
 
+from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.annotations.HotspotAnnotation import HotspotAnnotation
 import opencsp.common.lib.cv.image_filters as filters
 import opencsp.common.lib.cv.image_reshapers as reshapers
@@ -47,6 +48,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImagesProcessor):
         desired_shape: int | tuple,
         style: rcps.RenderControlPointSeq = None,
         draw_debug_view: bool | Callable[[SpotAnalysisOperable], bool] = False,
+        record_visualization=False
     ):
         """
         Parameters
@@ -81,6 +83,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImagesProcessor):
         self.desired_shape = desired_shape
         self.draw_debug_view = draw_debug_view
         self.style = style
+        self.record_visualization = record_visualization
 
         # determine a good iteration amount
         desired_shape_min = desired_shape if isinstance(desired_shape, int) else np.min(desired_shape)
@@ -302,8 +305,17 @@ class HotspotImageProcessor(AbstractSpotAnalysisImagesProcessor):
         if draw_debug_view:
             fig_rec.view.show(block=True)
 
-        # return
+        # build the return value
         annotations = copy.copy(operable.annotations)
         annotations.append(hotspot)
         new_operable = dataclasses.replace(operable, annotations=annotations)
+
+        # add the visualization of this step to the algorithm images
+        if self.record_visualization:
+            visualized = hotspot.render_to_image(operable.primary_image.nparray)
+            cacheable_visualized = CacheableImage(visualized)
+            algorithm_images = copy.copy(new_operable.algorithm_images)
+            algorithm_images[self] = [cacheable_visualized]
+            new_operable = dataclasses.replace(new_operable, algorithm_images=algorithm_images)
+
         return [new_operable]

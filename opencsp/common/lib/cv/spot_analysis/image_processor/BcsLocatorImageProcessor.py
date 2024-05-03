@@ -28,7 +28,7 @@ class BcsLocatorImageProcessor(AbstractSpotAnalysisImagesProcessor):
     It is recommended this this processor be used after ConvolutionImageProcessor(kernel='gaussian').
     """
 
-    def __init__(self, min_radius_px=30, max_radius_px=150):
+    def __init__(self, min_radius_px=30, max_radius_px=150, record_visualization=False):
         """
         Parameters
         ----------
@@ -41,6 +41,7 @@ class BcsLocatorImageProcessor(AbstractSpotAnalysisImagesProcessor):
 
         self.min_radius_px = min_radius_px
         self.max_radius_px = max_radius_px
+        self.record_visualization = record_visualization
 
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
         image = operable.primary_image.nparray.squeeze()
@@ -78,6 +79,15 @@ class BcsLocatorImageProcessor(AbstractSpotAnalysisImagesProcessor):
         if circle != None:
             new_found_fiducials.append(circle)
         ret = dataclasses.replace(operable, found_fiducials=new_found_fiducials)
+
+        # add the visualization of this step to the algorithm images
+        if self.record_visualization:
+            visualized = circle.render_to_image(operable.primary_image.nparray)
+            cacheable_visualized = CacheableImage(visualized)
+            algorithm_images = copy.copy(ret.algorithm_images)
+            algorithm_images[self] = [cacheable_visualized]
+            ret = dataclasses.replace(ret, algorithm_images=algorithm_images)
+
         return [ret]
 
 

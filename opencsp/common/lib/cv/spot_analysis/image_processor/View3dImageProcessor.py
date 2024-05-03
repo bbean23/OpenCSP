@@ -5,6 +5,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
+from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
     AbstractVisualizationImageProcessor,
@@ -114,6 +115,11 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
 
         # draw
         self.view.show(block=False)
+
+        # add to the algorithm images
+        algorithm_images = operable.algorithm_images
+        cacheable = CacheableImage(self.fig_record.to_array())
+        algorithm_images[self] = [cacheable]
 
         return [self.fig_record]
 

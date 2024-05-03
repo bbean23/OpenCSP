@@ -27,9 +27,7 @@ from opencsp.common.lib.cv.spot_analysis.image_processor.NullImageSubtractionIma
 from opencsp.common.lib.cv.spot_analysis.image_processor.PopulationStatisticsImageProcessor import (
     PopulationStatisticsImageProcessor,
 )
-from opencsp.common.lib.cv.spot_analysis.image_processor.PowerpointImageProcessor import (
-    PowerpointImageProcessor,
-)
+from opencsp.common.lib.cv.spot_analysis.image_processor.PowerpointImageProcessor import PowerpointImageProcessor
 from opencsp.common.lib.cv.spot_analysis.image_processor.SupportingImagesCollectorImageProcessor import (
     SupportingImagesCollectorImageProcessor,
 )
