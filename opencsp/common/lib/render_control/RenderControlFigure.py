@@ -3,6 +3,8 @@
 
 """
 
+import numpy as np
+
 
 class RenderControlFigure:
     """
@@ -61,3 +63,23 @@ class RenderControlFigure:
         self.y_label = 'y (m)'
         self.z_label = 'z (m)'
         self.grid = grid
+
+    @staticmethod
+    def num_tiles_4x3aspect(num_figures: int):
+        if num_figures <= 1:
+            n_rows = 1
+            n_cols = 1
+        elif num_figures <= 2:
+            n_rows = 1
+            n_cols = 2
+        elif num_figures <= 8:
+            n_rows = 2
+            n_cols = int(np.ceil(num_figures / 2))
+        elif num_figures <= 12:
+            n_rows = 3
+            n_cols = int(np.ceil(num_figures / 3))
+        else:
+            n_rows = int(np.floor(np.sqrt(num_figures)))
+            n_cols = int(np.ceil(num_figures / n_rows))
+
+        return n_rows, n_cols

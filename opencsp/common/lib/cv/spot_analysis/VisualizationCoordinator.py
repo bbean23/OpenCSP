@@ -149,21 +149,7 @@ class VisualizationCoordinator:
         for processor in self.visualization_processors:
             num_figures_dict[processor] = processor.num_figures
         num_figures_total = sum(num_figures_dict.values())
-        if num_figures_total <= 1:
-            tiles_x = 1
-            tiles_y = 1
-        elif num_figures_total <= 2:
-            tiles_x = 2
-            tiles_y = 1
-        elif num_figures_total <= 8:
-            tiles_x = int(np.ceil(num_figures_total / 2))
-            tiles_y = 2
-        elif num_figures_total <= 12:
-            tiles_x = int(np.ceil(num_figures_total / 3))
-            tiles_y = 3
-        else:
-            tiles_y = int(np.floor(np.sqrt(num_figures_total)))
-            tiles_x = int(np.ceil(num_figures_total / tiles_y))
+        tiles_x, tiles_y = rcf.RenderControlFigure.num_tiles_4x3aspect(num_figures_total)
         tiles_x = np.min([tiles_x, self.max_tiles_x])
         tiles_y = np.min([tiles_y, self.max_tiles_y])
 
