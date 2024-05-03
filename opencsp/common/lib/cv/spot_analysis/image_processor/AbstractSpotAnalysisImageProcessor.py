@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import copy
+import dataclasses
 from typing import Callable, Iterator, Union
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
@@ -35,6 +36,16 @@ class AbstractSpotAnalysisImagesProcessor(Iterator[SpotAnalysisOperable], Abstra
         that it's been called. In other words::
         
             len(inmem_inputs) == num_executes - len(cummulative_processed_results) """
+        self.operables_in_flight: list[SpotAnalysisOperable] = []
+        """
+        For most processors _execute() will return one operable for each input
+        operable. For these standard cases, this will contain one value during
+        the process_image() method, and will be empty otherwise.
+        
+        Sometimes _execute() may return zero results. In this case, this value
+        will contain all the operables passed to _execute() since the last time
+        that _execute() returned at least one operable.
+        """
         self.results_on_deck: list[SpotAnalysisOperable] = []
         """ Sometimes _execute() may return multiple results. In this case,
         we hold on to the processed operables and return only one of them per
@@ -93,6 +104,7 @@ class AbstractSpotAnalysisImagesProcessor(Iterator[SpotAnalysisOperable], Abstra
             self.initialize_cummulative_processed_results()
 
         self.inmem_inputs.append(input_operable)
+        self.operables_in_flight.append(input_operable)
         ret: list[SpotAnalysisOperable] = self._execute(input_operable, is_last)
         if not isinstance(ret, list):
             lt.error_and_raise(
@@ -116,6 +128,12 @@ class AbstractSpotAnalysisImagesProcessor(Iterator[SpotAnalysisOperable], Abstra
         for operable in ret:
             for callback in self._on_image_processed:
                 callback(operable)
+
+        # register the new operable's "previous_operable" value based on operables_in_flight
+        for i in range(len(ret)):
+            ret[i] = dataclasses.replace(ret[i], previous_operables=(copy.copy(self.operables_in_flight), self))
+        if len(ret) > 0 or is_last:
+            self.operables_in_flight.clear()
 
         # release memory by cacheing images to disk
         for operable in ret:
@@ -186,6 +204,7 @@ class AbstractSpotAnalysisImagesProcessor(Iterator[SpotAnalysisOperable], Abstra
                 self.assign_inputs(self._original_operables)  # initializes the leger
                 self.input_iter = iter(self._original_operables)
                 self.inmem_inputs = []
+                self.operables_in_flight = []
                 try:
                     self.next_item = next(self.input_iter)
                 except StopIteration:

@@ -4,6 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import os
 import sys
+from typing import Any
 
 import opencsp.common.lib.csp.LightSource as ls
 import opencsp.common.lib.cv.annotations.AbstractAnnotations as aa
@@ -34,6 +35,13 @@ class SpotAnalysisOperable:
     supporting_images: dict[ImageType, CacheableImage] = field(default_factory=dict)
     """ The supporting images, if any, that were provided with the
     associated input primary image. """
+    previous_operables: tuple[list['SpotAnalysisOperable'] | None, Any | None] = (None, None)
+    """
+    The operable that was used to generate this operable, and the
+    AbstractSpotAnalysisImageProcessor that it came from, if any. The second
+    value should be an AbstractSpotAnalysisImageProcessor (missing type hint to
+    avoid cyclic import dependencies).
+    """
     given_fiducials: list[af.AbstractFiducials] = field(default_factory=list)
     """ Any fiducials handed to us in the currently processing image. """
     found_fiducials: list[af.AbstractFiducials] = field(default_factory=list)
@@ -105,6 +113,7 @@ class SpotAnalysisOperable:
                 primary_image,
                 primary_image_source_path,
                 supporting_images,
+                self.previous_operables,
                 self.given_fiducials,
                 self.found_fiducials,
                 self.annotations,
