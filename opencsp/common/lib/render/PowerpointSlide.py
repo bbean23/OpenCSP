@@ -45,7 +45,11 @@ class PowerpointSlide:
 
     @classmethod
     def template_title(cls, title: str, authors: str, slide_control: RenderControlPowerpointSlide) -> "PowerpointSlide":
-        raise NotImplementedError
+        title_slide_control = copy.copy(slide_control)
+        title_slide_control.is_title_slide = True
+        ret = cls(title_slide_control)
+        ret.set_title(title)
+        return ret
 
     @classmethod
     def template_planning(cls, slide_control: RenderControlPowerpointSlide = None) -> "PowerpointSlide":
@@ -151,6 +155,12 @@ class PowerpointSlide:
 
         ncells = max([len(shapes) for shapes in shape_groups])
 
+        # is this slide currently empty?
+        if ncells == 0:
+            return -1
+
+        # find the next available slot that doesn't have an image or text shape
+        # in it
         for idx in range(ncells):
             found = False
 
@@ -267,7 +277,7 @@ class PowerpointSlide:
         title_text = self.get_title_text()
         if isinstance(title, str):
             slide_dims = 0, 0, *self.slide_control.slide_size
-            if title_text != None:
+            if title_text is not None:
                 dims = title_text.dims
                 text = PowerpointText(title, dims=dims, cell_dims=slide_dims, is_title=True, parent_slide=self)
             else:
@@ -283,7 +293,7 @@ class PowerpointSlide:
         if self.title_text_idx != None:
             new_title_text = self.add_text(text, self.title_text_idx, replace_or_shift="replace")
         else:
-            new_title_text = self.add_text(text, 0, replace_or_shift="shift")
+            new_title_text = self.add_text(text, -1, replace_or_shift="shift")
 
         # set all other texts to not be titles
         for other_text in self.texts:

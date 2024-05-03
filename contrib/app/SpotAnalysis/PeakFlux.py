@@ -64,14 +64,16 @@ class PeakFlux:
             View3dImageProcessor(crop_to_threshold=20, max_resolution=(100, 100), interactive=False),
             HotspotImageProcessor(desired_shape=21, draw_debug_view=False),
             ViewCrossSectionImageProcessor(
-                self.get_bcs_origin, 'BCS', single_plot=False, crop_to_threshold=20, interactive=True
+                self.get_bcs_origin, 'BCS', single_plot=False, crop_to_threshold=20, interactive=False
             ),
             ViewCrossSectionImageProcessor(
-                self.get_peak_origin, 'Hotspot', single_plot=False, crop_to_threshold=20, interactive=True
+                self.get_peak_origin, 'Hotspot', single_plot=False, crop_to_threshold=20, interactive=False
             ),
             PopulationStatisticsImageProcessor(initial_min=0, initial_max=255),
             FalseColorImageProcessor(),
             AnnotationImageProcessor(),
+            PowerpointImageProcessor(save_dir=outdir, save_name="processing_pipeline",
+                                     overwrite=True, include_operable_title_slides=True),
         ]
         self.spot_analysis = sa.SpotAnalysis(
             experiment_name, self.image_processors, save_dir=outdir, save_overwrite=True
