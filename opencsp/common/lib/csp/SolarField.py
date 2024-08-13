@@ -5,15 +5,11 @@
 
 import copy
 import csv
-from typing import Callable, Iterable
 
 import numpy as np
-import pandas
-from scipy.spatial.transform import Rotation
 
 import opencsp.common.lib.csp.HeliostatConfiguration as hc
 import opencsp.common.lib.geometry.geometry_2d as g2d
-import opencsp.common.lib.geometry.geometry_3d as g3d
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render_control.RenderControlAxis as rca
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
@@ -32,7 +28,6 @@ from opencsp.common.lib.geometry.TransformXYZ import TransformXYZ
 from opencsp.common.lib.geometry.Vxyz import Vxyz
 from opencsp.common.lib.render.View3d import View3d
 from opencsp.common.lib.render_control.RenderControlSolarField import RenderControlSolarField
-from opencsp.common.lib.tool.typing_tools import strict_types
 
 
 class SolarField(RayTraceable, OpticOrientationAbstract):

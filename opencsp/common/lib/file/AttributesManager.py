@@ -1,8 +1,8 @@
 import json
 
 import opencsp.common.lib.file.AbstractAttributeParser as aap
-import opencsp.common.lib.tool.log_tools as lt
 import opencsp.common.lib.tool.file_tools as ft
+import opencsp.common.lib.tool.log_tools as lt
 
 _registered_parser_classes: set[aap.AbstractAttributeParser] = set()
 
