@@ -81,7 +81,7 @@ class SolarField(RayTraceable, OpticOrientationAbstract):
         long_lat: list[float] | tuple[float, float],
         heliostat_attributes_csv: str,
         facet_attributes_csv: str,
-        name=None,
+        name: str | None = None,
     ):
         """returns the solar field that is requested based on the given information
 
@@ -95,8 +95,8 @@ class SolarField(RayTraceable, OpticOrientationAbstract):
         facet_attricute_csv: str
             filepath ot the csv file that describes how the facets in the desired heliostats
             will be positoned and named.
-        name: str
-            optional argument that can be used to define the name of the field
+        name: str | None, optional
+            Defines the name of the field, or None for no name. Default is None.
 
         Returns
         -------
