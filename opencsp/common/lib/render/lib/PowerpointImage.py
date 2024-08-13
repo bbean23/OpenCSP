@@ -231,11 +231,7 @@ class PowerpointImage(pps.PowerpointShape):
         try:
             ft.rename_file(from_dir_name_ext, to_dir_name_ext)
         except OSError:
-            from_name_ext = ft.body_ext_given_file_dir_body_ext(from_dir_name_ext)
-            to_dir, _, _ = ft.path_components(to_dir_name_ext)
-            ft.copy_file(from_dir_name_ext, to_dir)
-            ft.rename_file(to_dir + "/" + from_name_ext, to_dir_name_ext)
-            ft.delete_file(from_dir_name_ext)
+            ft.copy_and_delete_file(from_dir_name_ext, to_dir_name_ext)
 
     def _save(self, path_name_ext: str):
         """Saves this image value to the given path+name+ext.
@@ -273,7 +269,8 @@ class PowerpointImage(pps.PowerpointShape):
             pil_val.save(path_name_ext)
 
         elif isinstance(self._val, str):
-            ft.copy_file(self._val, path_name_ext)
+            path, name, ext = ft.path_components(path_name_ext)
+            ft.copy_file(self._val, path, name + ext)
 
         else:
             lt.error_and_raise(
