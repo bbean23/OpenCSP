@@ -390,12 +390,11 @@ def setup_solar_field_UNVERIFIED(
     logt.info('Setting up solar field...')
 
     # Load solar field data.
-    solar_field = sf_from_csv_files(
-        solar_field_spec['name'],
-        solar_field_spec['short_name'],
+    solar_field = SolarField.from_csv_files(
         solar_field_spec['field_origin_lon_lat'],
         solar_field_spec['field_heliostat_file'],
         solar_field_spec['field_facet_centroids_file'],
+        solar_field_spec['name'],
     )
 
     # Set heliostat configurations.
