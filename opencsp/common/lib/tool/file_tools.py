@@ -43,7 +43,7 @@ def path_components(input_dir_body_ext: str):
 
 def path_to_cmd_line(path: str):
     """Normalizes and surrounds a path with quotes, as necessary."""
-    ret = os.path.normpath(path)
+    ret = norm_path(path)
     if " " in ret:
         ret = "\"" + ret + "\""
     return ret
@@ -729,7 +729,7 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
 
     See also: copy_file(), copy_and_delete_file()
     """
-    if os.path.normpath(input_dir_body_ext) == os.path.normpath(output_dir_body_ext):
+    if norm_path(input_dir_body_ext) == norm_path(output_dir_body_ext):
         return
 
     # Check input.
@@ -782,7 +782,7 @@ def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str):
     """Like rename_file(), but it works across file systems.
 
     See also: copy_file(), rename_file()"""
-    if os.path.normpath(input_dir_body_ext) == os.path.normpath(output_dir_body_ext):
+    if norm_path(input_dir_body_ext) == norm_path(output_dir_body_ext):
         return
 
     # copy and rename
@@ -932,7 +932,7 @@ def merge_files(in_files: list[str], out_file: str, overwrite=False, remove_in_f
 def convert_shortcuts_to_symlinks(dirname: str):
     if os.name == "nt":
         # update dirname to use windows "\" seperators
-        dirname = os.path.normpath(dirname)
+        dirname = norm_path(dirname)
 
         # get a shell instance, to use for retrieving shortcut targets
         import win32com.client

@@ -1,6 +1,4 @@
 import copy
-import os
-from PIL import Image
 import pptx
 import typing
 

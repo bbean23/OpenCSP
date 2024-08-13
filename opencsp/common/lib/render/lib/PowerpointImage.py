@@ -1,6 +1,5 @@
 from PIL import Image
 import numpy as np
-import os
 import time
 
 import opencsp.common.lib.opencsp_path.opencsp_root_path as orp
@@ -11,7 +10,7 @@ import opencsp.common.lib.tool.file_tools as ft
 
 
 class PowerpointImage(pps.PowerpointShape):
-    _tmp_save_path = os.path.join(orp.opencsp_temporary_dir(), "PowerpointImage/images/tmp")
+    _tmp_save_path = ft.join(orp.opencsp_temporary_dir(), "PowerpointImage/images/tmp")
 
     def __init__(
         self,
@@ -35,7 +34,8 @@ class PowerpointImage(pps.PowerpointShape):
             stretch (bool): True to stretch the image to fit the entire cell, False to fit within cell. Most useful with template slides. Default false.
         """
         super().__init__(cell_dims)
-        self._val = None
+        self._val: str | np.ndarray | Image.Image | rcfr.RenderControlFigureRecord | None = None
+        """ The image data for this instance, or the "path/name.ext" to the image file, or None if not yet set. """
         self._saved_name_ext = None
         """ Name+ext of this image in the temporary path, or None if not yet saved. """
         self.width: int = -1
@@ -73,7 +73,7 @@ class PowerpointImage(pps.PowerpointShape):
         if isinstance(self._val, str):
             self._val = self._val.strip()
             path, _, _ = ft.path_components(self._val)
-            if os.path.normpath(path) == os.path.normpath(self._tmp_save_path):
+            if ft.norm_path(path) == ft.norm_path(self._tmp_save_path):
                 self._saved_name_ext = self._val
 
             if not ft.file_exists(self._val, error_if_exists_as_dir=False):
@@ -85,7 +85,8 @@ class PowerpointImage(pps.PowerpointShape):
         """Verification check that I (BGB) haven't goofed up how images are saved to temporary files."""
         if ft.path_to_cmd_line(self.get_saved_path()) == ft.path_to_cmd_line(str(self._val)):
             if "tmp" in str(self._val):
-                pass  # lt.info(f"Image val and save path are the same:\nval: {self._val}\nsave path: {self.get_saved_path()}")
+                # lt.info(f"Image val and save path are the same:\nval: {self._val}\nsave path: {self.get_saved_path()}")
+                pass
             else:
                 lt.warn(
                     f"Image val and save path are the same:\n\tval: {self._val}\n\tsave path: {self.get_saved_path()}"
@@ -213,7 +214,7 @@ class PowerpointImage(pps.PowerpointShape):
         """Get the path+name+ext to the saved file version of the image content. Calls save() as necessary."""
         if not self.is_saved_to_file():
             self.save()
-        return os.path.join(self._tmp_save_path, self._saved_name_ext)
+        return ft.join(self._tmp_save_path, self._saved_name_ext)
 
     def get_text_file_path(self) -> str:
         """Get the path to the PowerpointImage metadata for the image at get_saved_path().
@@ -336,7 +337,7 @@ class PowerpointImage(pps.PowerpointShape):
         caption_is_none = slines[8] == 'True'
         stretch = slines[9] == 'True'
 
-        image_path_name_ext = None if not has_val else os.path.join(path, slines[3])
+        image_path_name_ext = None if not has_val else ft.join(path, slines[3])
         caption = None if caption_is_none else caption
 
         return cls(image_path_name_ext, dims, cell_dims, caption_is_above, caption, stretch)
@@ -349,14 +350,14 @@ class PowerpointImage(pps.PowerpointShape):
             ret = f"{slide_idx}_%d.png"
         if for_glob:
             ret = ret.replace("%d", "*")
-        return os.path.join(cls._tmp_save_path, ret)
+        return ft.join(cls._tmp_save_path, ret)
 
     def set_save_path(self, save_path: str):
         if self.is_saved_to_file():
             to_rename = [self.get_saved_path(), self.get_text_file_path()]
             for path_name_ext in to_rename:
                 _, name, ext = ft.path_components(path_name_ext)
-                ft.copy_file(path_name_ext, os.path.join(save_path, name + ext))
+                ft.copy_file(path_name_ext, save_path, name + ext)
 
         self._tmp_save_path = save_path
 
@@ -446,7 +447,7 @@ class PowerpointImage(pps.PowerpointShape):
         ft.delete_file(path_name_ext_serialized, error_on_not_exists=False)
 
     def append_tmp_path(self, append_dir: str):
-        self._tmp_save_path = os.path.join(self._tmp_save_path, append_dir)
+        self._tmp_save_path = ft.join(self._tmp_save_path, append_dir)
 
     @classmethod
     def clear_tmp_save_all(cls):
@@ -457,4 +458,4 @@ class PowerpointImage(pps.PowerpointShape):
 
     @classmethod
     def append_tmp_path_all(cls, append_dir: str):
-        cls._tmp_save_path = os.path.join(cls._tmp_save_path, append_dir)
+        cls._tmp_save_path = ft.join(cls._tmp_save_path, append_dir)
