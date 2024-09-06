@@ -1,5 +1,6 @@
 import argparse
 import copy
+import multiprocessing.pool
 import os
 import sys
 import time
@@ -7,6 +8,7 @@ import time
 import cv2
 import numpy as np
 from PIL import Image
+import psutil
 
 from opencsp import opencsp_settings
 import opencsp.common.lib.file.SimpleCsv as sc
@@ -45,7 +47,7 @@ class SensitiveStringsSearcher:
         self.verify_all_on_behalf_of_user = False
         self.remove_unfound_binaries = False
         self.date_time_str = tdt.current_date_time_string_forfile()
-        self.tmp_dir_base = ft.norm_path(os.path.join(orp.opencsp_temporary_dir(), "SensitiveStringSearcher"))
+        self.tmp_dir_base = ft.join(orp.opencsp_temporary_dir(), "SensitiveStringSearcher")
         self.git_files_only = True
         self.is_hdf5_searcher = False
         self.has_backed_up_allowed_binaries_csv = False
@@ -88,8 +90,8 @@ class SensitiveStringsSearcher:
 
         return matchers
 
-    def norm_path(self, file_path, file_name_ext: str):
-        return ft.norm_path(os.path.join(self.root_search_dir, file_path, file_name_ext))
+    def join(self, file_path, file_name_ext: str):
+        return ft.join(self.root_search_dir, file_path, file_name_ext)
 
     def _is_file_in_cleared_cache(self, file_path: str, file_name_ext: str):
         cache_entry = fc.FileCache.for_file(self.root_search_dir, file_path, file_name_ext)
@@ -98,8 +100,38 @@ class SensitiveStringsSearcher:
         return False
 
     def _register_file_in_cleared_cache(self, file_path: str, file_name_ext: str):
-        cache_entry = fc.FileCache.for_file(self.root_search_dir, file_path, file_name_ext)
-        self.new_cached_cleared_files.append(cache_entry)
+        try:
+            cache_entry = fc.FileCache.for_file(self.root_search_dir, file_path, file_name_ext)
+            self.new_cached_cleared_files.append(cache_entry)
+        except FileNotFoundError:
+            # it's possible the file was removed between the time that it was
+            # located and the time that it was cleared
+            lt.error(f"Failed to locate file {self.join(file_path, file_name_ext)} after it had already be cleared.")
+
+    def _save_cleared_cache(self):
+        # Make sure we didn't accidentally add any binary files to the cache
+        for file_ff in self.allowed_binary_files + self.unfound_allowed_binary_files:
+            for file_cf in self.new_cached_cleared_files:
+                if file_ff.eq_aff(file_cf):
+                    lt.error_and_raise(
+                        RuntimeError,
+                        "Programmer error in sensitive_strings.search_files(): "
+                        + "No binary files should be in the cache, but at least 1 such file was found: "
+                        + f"\"{file_cf.relative_path}/{file_cf.name_ext}\"",
+                    )
+
+        # Save the cleared files cache
+        for file_ff in self.unknown_binary_files:
+            for file_cf in self.new_cached_cleared_files:
+                if file_ff.eq_aff(file_cf):
+                    self.new_cached_cleared_files.remove(file_cf)
+                    break
+        if self.cache_file_csv != None and len(self.new_cached_cleared_files) > 0:
+            path, name, ext = ft.path_components(self.cache_file_csv)
+            ft.create_directories_if_necessary(path)
+            self.new_cached_cleared_files[0].to_csv(
+                "Cleared Files Cache", path, name, rows=self.new_cached_cleared_files, overwrite=True
+            )
 
     def _is_binary_file(self, file_path: str, file_name_ext: str):
         is_binary_file = False
@@ -118,7 +150,7 @@ class SensitiveStringsSearcher:
                 is_binary_file = False
             else:
                 is_binary_file = True
-        elif ft.file_size(ft.join(file_path, file_name_ext)) > 1e6:
+        elif ft.file_size(self.join(file_path, file_name_ext)) > 1e6:
             # assume any file > 1MB is a binary file, in order to prevent
             # sensitive_strings from taking hours to check these files
             # needlessly
@@ -126,7 +158,7 @@ class SensitiveStringsSearcher:
         if not is_binary_file:
             # attempt to parse the file as a text file
             try:
-                file_path_norm: str = self.norm_path(file_path, file_name_ext)
+                file_path_norm: str = self.join(file_path, file_name_ext)
                 ft.read_text_file(file_path_norm)
             except UnicodeDecodeError:
                 is_binary_file = True
@@ -139,19 +171,26 @@ class SensitiveStringsSearcher:
 
         However, if the given file isn't recognized or it's fingerprint is different, then add it to the unknown list,
         to be dealt with later."""
-        file_ff = ff.FileFingerprint.for_file(self.root_search_dir, file_path, file_name_ext)
+        try:
+            file_ff = ff.FileFingerprint.for_file(self.root_search_dir, file_path, file_name_ext)
 
-        if file_ff in self.allowed_binary_files:
-            # we already know and trust this binary file
-            with et.ignored(ValueError):
-                self.unfound_allowed_binary_files.remove(file_ff)
-            self.accepted_binary_files.append(file_ff)
-        else:
-            # we'll deal with unknown files as a group later
-            self.unknown_binary_files.append(file_ff)
+            if file_ff in self.allowed_binary_files:
+                # we already know and trust this binary file
+                with et.ignored(ValueError):
+                    self.unfound_allowed_binary_files.remove(file_ff)
+                self.accepted_binary_files.append(file_ff)
+            else:
+                # we'll deal with unknown files as a group later
+                self.unknown_binary_files.append(file_ff)
+        except FileNotFoundError:
+            # it's possible the file was removed between the time that it was
+            # located and the time that it was searched
+            lt.error(
+                f"Failed to locate binary file {self.join(file_path, file_name_ext)} to be enqueued for processing with the other binary files."
+            )
 
     def parse_file(self, file_path: str, file_name_ext: str) -> list[str]:
-        file_path_norm: str = self.norm_path(file_path, file_name_ext)
+        file_path_norm: str = self.join(file_path, file_name_ext)
         lt.debug(file_path_norm)
 
         if self._is_binary_file(file_path, file_name_ext):
@@ -179,14 +218,14 @@ class SensitiveStringsSearcher:
     def get_tmp_dir(self):
         i = 0
         while True:
-            ret = ft.norm_path(os.path.join(self.tmp_dir_base, f"tmp_{i}"))
+            ret = ft.join(self.tmp_dir_base, f"tmp_{i}")
             if ft.directory_exists(ret):
                 i += 1
             else:
                 return ret
 
     def search_hdf5_file(self, hdf5_file: ff.FileFingerprint):
-        norm_path = self.norm_path(hdf5_file.relative_path, hdf5_file.name_ext)
+        norm_path = self.join(hdf5_file.relative_path, hdf5_file.name_ext)
         relative_path_name_ext = f"{hdf5_file.relative_path}/{hdf5_file.name_ext}"
         matches: list[ssm.Match] = []
 
@@ -301,7 +340,7 @@ class SensitiveStringsSearcher:
         return val.lower() == 'y'
 
     def search_binary_file(self, binary_file: ff.FileFingerprint) -> list[ssm.Match]:
-        norm_path = self.norm_path(binary_file.relative_path, binary_file.name_ext)
+        norm_path = self.join(binary_file.relative_path, binary_file.name_ext)
         _, _, ext = ft.path_components(norm_path)
         relative_path_name_ext = f"{binary_file.relative_path}/{binary_file.name_ext}"
         matches: list[ssm.Match] = []
@@ -331,7 +370,7 @@ class SensitiveStringsSearcher:
         self, np_image: np.ndarray = None, description: str = None, file_ff: ff.FileFingerprint = None
     ) -> bool:
         if (np_image is None) and (file_ff is not None):
-            file_norm_path = self.norm_path(file_ff.relative_path, file_ff.name_ext)
+            file_norm_path = self.join(file_ff.relative_path, file_ff.name_ext)
             _, name, ext = ft.path_components(file_norm_path)
             if self._is_img_ext(ext):
                 try:
@@ -415,6 +454,48 @@ class SensitiveStringsSearcher:
             "Allowed Binary Files", path, name, rows=self.allowed_binary_files, overwrite=True
         )
 
+    @staticmethod
+    def search_file_parallelized(
+        file_path_name_ext: str, searcher: "SensitiveStringsSearcher"
+    ) -> tuple[str, str, list[ssm.Match]]:
+        try:
+            if searcher.verbose:
+                lt.info(f"Searching file {file_path_name_ext}")
+            file_path, file_name, file_ext = ft.path_components(file_path_name_ext)
+            file_name_ext = file_name + file_ext
+            if searcher._is_file_in_cleared_cache(file_path, file_name_ext):
+                # file cleared in a previous run, don't need to check again
+                lt.error_and_raise(
+                    RuntimeError,
+                    "Programmer error in sensitive_strings.search_files_in_parallel(): "
+                    + "already cleared files should not have been sent to this method to be searched!",
+                )
+            else:
+                # need to check this file
+                if searcher._is_binary_file(file_path, file_name_ext):
+                    # deal with non-parseable binary files as a group, below
+                    return (file_path_name_ext, "_enqueue_unknown_binary_files_for_later_processing", None)
+                else:
+                    # check text files for sensitive strings
+                    file_matches = searcher.search_file(file_path, file_name_ext)
+                    if len(file_matches) > 0:
+                        return (file_path_name_ext, "matches", file_matches)
+                    else:
+                        return (file_path_name_ext, "_register_file_in_cleared_cache", None)
+        except FileNotFoundError:
+            # it's possible the file was removed between the time that it was
+            # located and the time that it was searched
+            lt.error(f"Failed to locate file to be searched {file_path_name_ext}.")
+            return (file_path_name_ext, "ignore", None)
+
+    @staticmethod
+    def search_binary_file_parallelized(unknown_ff: ff.FileFingerprint, searcher: "SensitiveStringsSearcher"):
+        parsable_matches: list[ssm.Match] = searcher.search_binary_file(unknown_ff)
+        if len(parsable_matches) == 0:
+            return unknown_ff
+        else:
+            return None
+
     def search_files(self):
         self._init_files_lists()
         if self.git_files_only:
@@ -442,28 +523,55 @@ class SensitiveStringsSearcher:
             lt.info(f"Searching for sensitive strings in {len(files)} files")
         files = sorted(list(set(files)))
 
+        # Don't need to search files that have already been cleared
+        for file_path_name_ext in copy.copy(files):
+            file_path, file_name, file_ext = ft.path_components(file_path_name_ext)
+            if self._is_file_in_cleared_cache(file_path, file_name + file_ext):
+                # file cleared in a previous run, don't need to check again
+                self._register_file_in_cleared_cache(file_path, file_name + file_ext)
+                files.remove(file_path_name_ext)
+
         # Search for sensitive strings in files
         matches: dict[str, list[ssm.Match]] = {}
-        for file_path_name_ext in files:
-            if self.verbose:
-                lt.info(f"Searching file {file_path_name_ext}")
-            file_path, file_name, file_ext = ft.path_components(file_path_name_ext)
-            file_name_ext = file_name + file_ext
-            if self._is_file_in_cleared_cache(file_path, file_name_ext):
-                # file cleared in a previous run, don't need to check again
-                self._register_file_in_cleared_cache(file_path, file_name_ext)
-            else:
-                # need to check this file
-                if self._is_binary_file(file_path, file_name_ext):
-                    # deal with non-parseable binary files as a group, below
-                    self._enqueue_unknown_binary_files_for_later_processing(file_path, file_name_ext)
-                else:
-                    # check text files for sensitive strings
-                    file_matches = self.search_file(file_path, file_name_ext)
-                    if len(file_matches) > 0:
+        ncores = max(1, psutil.cpu_count(logical=False) - 1)
+        with multiprocessing.pool.Pool(ncores) as pool:
+            for i in range(0, len(files), 100):
+                if self.verbose:
+                    lt.info(f"{i}/{len(files)}")
+                files_chunk = files[i : min(i + 100, len(files))]
+                search_files_results: list[tuple[str, str, list[ssm.Match]]] = pool.starmap(
+                    SensitiveStringsSearcher.search_file_parallelized, [[f, self] for f in files_chunk]
+                )
+
+                for file_path_name_ext, action, file_matches in search_files_results:
+                    file_path, file_name, file_ext = ft.path_components(file_path_name_ext)
+                    if action == "_register_file_in_cleared_cache":
+                        self._register_file_in_cleared_cache(file_path, file_name + file_ext)
+                    elif action == "_enqueue_unknown_binary_files_for_later_processing":
+                        self._enqueue_unknown_binary_files_for_later_processing(file_path, file_name + file_ext)
+                    elif action == "matches":
                         matches[file_path_name_ext] = file_matches
+                    elif action == "ignore":
+                        lt.info(f"Ignoring file {file_path_name_ext}")
                     else:
-                        self._register_file_in_cleared_cache(file_path, file_name_ext)
+                        lt.error_and_raise(
+                            RuntimeError, f"Unknown action {action} to be taken with file {file_path_name_ext}"
+                        )
+
+                search_binary_results = pool.starmap(
+                    SensitiveStringsSearcher.search_binary_file_parallelized,
+                    [[f, self] for f in self.unknown_binary_files],
+                )
+                save_binaries_csv = False
+                for unknown_ff in search_binary_results:
+                    if unknown_ff is not None:
+                        searcher.unknown_binary_files.remove(unknown_ff)
+                        searcher.allowed_binary_files.append(unknown_ff)
+                        save_binaries_csv = True
+                if save_binaries_csv:
+                    searcher.update_allowed_binaries_csv()
+
+                self._save_cleared_cache()
 
         # Potentially remove unfound binary files
         if len(self.unfound_allowed_binary_files) > 0 and self.remove_unfound_binaries:
@@ -490,72 +598,48 @@ class SensitiveStringsSearcher:
         # Deal with unknown binary files
         if len(self.unknown_binary_files) > 0:
             unknowns_copy = copy.copy(self.unknown_binary_files)
-            for file_ff in unknowns_copy:
+            for unknown_ff in unknowns_copy:
                 if self.verbose:
-                    lt.info(f"Searching binary file {file_ff.relpath_name_ext}")
+                    lt.info(f"Searching binary file {unknown_ff.relpath_name_ext}")
                 lt.info("")
-                lt.info(os.path.join(file_ff.relative_path, file_ff.name_ext))
-                num_signed_binary_files = 0
+                lt.info(os.path.join(unknown_ff.relative_path, unknown_ff.name_ext))
 
                 # Search for sensitive string matches, and interactively ask the user
                 # about unparseable binary files.
-                parsable_matches: list[ssm.Match] = self.search_binary_file(file_ff)
+                parsable_matches: list[ssm.Match] = self.search_binary_file(unknown_ff)
 
                 if len(parsable_matches) == 0:
                     # No matches: this file is ok.
                     # Add the validated and/or signed off file to the allowed binary files csv
-                    self.unknown_binary_files.remove(file_ff)
-                    self.allowed_binary_files.append(file_ff)
+                    self.unknown_binary_files.remove(unknown_ff)
+                    self.allowed_binary_files.append(unknown_ff)
 
                     # Overwrite the allowed list csv file with the updated allowed_binary_files
                     # and make a backup as necessary.
                     self.update_allowed_binaries_csv()
 
-                    num_signed_binary_files += 1
-
-                else:  # if len(parsable_matches) == 0:
-                    # This file is not ok. Tell the user why.
-                    lt.error(
-                        f"    Found {len(parsable_matches)} possible sensitive issues in file {self.norm_path(file_ff.relative_path, file_ff.name_ext)}."
-                    )
-                    for _match in parsable_matches:
-                        match: ssm.Match = _match
-                        lt.error("    " + match.msg + f" (line {match.lineno}, col {match.colno})")
-
-                # Date+time stamp the new allowed list csv files
-                if num_signed_binary_files > 0:
+                    # Date+time stamp the updated allowed list csv files
                     path, name, ext = ft.path_components(self.allowed_binary_files_csv)
                     abfc_stamped_name_ext = f"{name}_{self.date_time_str}{ext}"
                     abfc_stamped_path_name_ext = os.path.join(path, abfc_stamped_name_ext)
                     if ft.file_exists(abfc_stamped_path_name_ext):
                         ft.delete_file(abfc_stamped_path_name_ext)
                     ft.copy_file(self.allowed_binary_files_csv, path, abfc_stamped_name_ext)
-            # for file_ff in unknowns_copy
+
+                else:  # if len(parsable_matches) > 0:
+                    # This file is not ok. Tell the user why.
+                    lt.error(
+                        f"    Found {len(parsable_matches)} possible sensitive issues in file {self.join(unknown_ff.relative_path, unknown_ff.name_ext)}."
+                    )
+                    for _match in parsable_matches:
+                        match: ssm.Match = _match
+                        lt.error("    " + match.msg + f" (line {match.lineno}, col {match.colno})")
+
+            # for unknown_ff in unknown_binary_files
         # if len(self.unknown_binary_files) > 0:
 
-        # Make sure we didn't accidentally add any binary files to the cache
-        for file_ff in self.allowed_binary_files + self.unfound_allowed_binary_files:
-            for file_cf in self.new_cached_cleared_files:
-                if file_ff.eq_aff(file_cf):
-                    lt.error_and_raise(
-                        RuntimeError,
-                        "Programmer error in sensitive_strings.search_files(): "
-                        + "No binary files should be in the cache, but at least 1 such file was found: "
-                        + f"\"{file_cf.relative_path}/{file_cf.name_ext}\"",
-                    )
-
         # Save the cleared files cache
-        for file_ff in self.unknown_binary_files:
-            for file_cf in self.new_cached_cleared_files:
-                if file_ff.eq_aff(file_cf):
-                    self.new_cached_cleared_files.remove(file_cf)
-                    break
-        if self.cache_file_csv != None and len(self.new_cached_cleared_files) > 0:
-            path, name, ext = ft.path_components(self.cache_file_csv)
-            ft.create_directories_if_necessary(path)
-            self.new_cached_cleared_files[0].to_csv(
-                "Cleared Files Cache", path, name, rows=self.new_cached_cleared_files, overwrite=True
-            )
+        self._save_cleared_cache()
 
         # Executive summary
         info_or_warn = lt.info
@@ -587,7 +671,13 @@ class SensitiveStringsSearcher:
 
 
 if __name__ == "__main__":
+    default_root_search_dir = os.path.join(orp.opencsp_code_dir(), "..")
     parser = argparse.ArgumentParser(prog=__file__.rstrip(".py"), description='Sensitive strings searcher')
+    parser.add_argument(
+        '--searchdir',
+        default=default_root_search_dir,
+        help=f"The root directory to search for sensitive strings within. Default is {default_root_search_dir}.",
+    )
     parser.add_argument(
         '--no-interactive',
         action='store_true',
@@ -608,12 +698,20 @@ if __name__ == "__main__":
         help="Don't fail because of unfound expected binary files. Instead remove the expected files from the list of allowed binaries. "
         + "This can be useful when you're confident that the only changes have been that the binary files have moved but not changed.",
     )
+    parser.add_argument(
+        '--all-existing-files',
+        action='store_true',
+        dest="allexistingfiles",
+        default=False,
+        help="Searches through all files. Default is to only search through files committed to git.",
+    )
     parser.add_argument('--verbose', action='store_true', dest="verbose", help="Print more information while running")
     args = parser.parse_args()
     not_interactive: bool = args.ninteractive
     accept_all: bool = args.acceptall
     remove_unfound_binaries: bool = args.acceptunfound
     verbose: bool = args.verbose
+    allexistingfiles: bool = args.allexistingfiles
 
     ss_log_dir = ft.norm_path(opencsp_settings['sensitive_strings']['sensitive_strings_dir'])
     log_path = ft.norm_path(os.path.join(ss_log_dir, "sensitive_strings_log.txt"))
@@ -627,13 +725,14 @@ if __name__ == "__main__":
     log_path = os.path.join(path, f"{name}_{date_time_str}{ext}")
     lt.logger(log_path)
 
-    root_search_dir = os.path.join(orp.opencsp_code_dir(), "..")
+    root_search_dir = args.searchdir
     searcher = SensitiveStringsSearcher(root_search_dir, sensitive_strings_csv, allowed_binary_files_csv, ss_cache_file)
     searcher.interactive = not not_interactive
     searcher.verify_all_on_behalf_of_user = accept_all
     searcher.remove_unfound_binaries = remove_unfound_binaries
     searcher.verbose = verbose
     searcher.date_time_str = date_time_str
+    searcher.git_files_only = not allexistingfiles
     num_errors = searcher.search_files()
 
     if num_errors > 0:
