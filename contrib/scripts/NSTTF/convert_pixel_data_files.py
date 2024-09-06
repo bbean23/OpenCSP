@@ -340,11 +340,13 @@ if __name__ == "__main__":
             raw_img_files = it.image_files_in_directory(raw_dir)
             if parser.nimages != len(raw_img_files):
                 raise RuntimeError(
-                    f"Number of raw images and number of images in pixel data file don't match! {len(raw_img_files)=}, {parser.nimages=}, {pixel_data_file=}")
+                    f"Number of raw images and number of images in pixel data file don't match! {len(raw_img_files)=}, {parser.nimages=}, {pixel_data_file=}"
+                )
             extracted_img_files = it.image_files_in_directory(extracted_dir)
             if parser.nimages != len(extracted_img_files):
                 raise RuntimeError(
-                    f"Number of extracted images and number of images in pixel data file don't match! {len(extracted_img_files)=}, {parser.nimages=}, {pixel_data_file=}")
+                    f"Number of extracted images and number of images in pixel data file don't match! {len(extracted_img_files)=}, {parser.nimages=}, {pixel_data_file=}"
+                )
 
             # check that extracted pixel data files match the extracted images
             first_extracted_image_file = ft.join(extracted_dir, extracted_img_files[0])
@@ -352,7 +354,8 @@ if __name__ == "__main__":
             first_pixel_data_image = parser.peak_first_image()
             if not np.array_equal(first_extracted_image, first_pixel_data_image):
                 raise RuntimeError(
-                    f"The pixels for the first extracted and parsedf images don't match! {pixel_data_file=}, {first_extracted_image_file=}")
+                    f"The pixels for the first extracted and parsedf images don't match! {pixel_data_file=}, {first_extracted_image_file=}"
+                )
 
             # If we made it this far, then we can be pretty confident that the
             # extracted images match the values in the original pixel data csv
