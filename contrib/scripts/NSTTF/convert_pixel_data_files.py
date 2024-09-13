@@ -261,10 +261,8 @@ class PixelData:
             _, image_name, image_ext = ft.path_components(image_name_ext)
             img = Image.fromarray(image)
             png_path_name_ext = ft.join(out_dir, image_name + ".png")
-            if ft.file_exists(png_path_name_ext):
-                raise RuntimeError()
-                ft.delete_file(png_path_name_ext)
-            img.save(png_path_name_ext)
+            if not ft.file_exists(png_path_name_ext):
+                img.save(png_path_name_ext)
 
             lt.info(".", end="")
 
@@ -278,8 +276,8 @@ class PixelData:
         lt.info(f" compression ratio={int(np.round(after_size / before_size * 100)):02d}%", end="")
 
         # delete the original file to save space on disk
-        raise RuntimeError()
-        ft.delete_file(self.csv_path_name_ext)
+        if delete_after_conversion:
+            ft.delete_file(self.csv_path_name_ext)
 
 
 def find_pixel_data_files(search_dir: str):
@@ -297,13 +295,13 @@ def find_pixel_data_files(search_dir: str):
     return ret
 
 
-def process_pixel_data_file(csv_path_name_ext):
+def process_pixel_data_file(csv_path_name_ext, delete_after_conversion=False):
     pd = PixelData(csv_path_name_ext)
-    pd.convert_file(delete_after_conversion=True)
+    pd.convert_file(delete_after_conversion=delete_after_conversion)
 
 
 if __name__ == "__main__":
-    experiments_dir = ft.join(opencsp_settings['opencsp_root_path']['collaborative_dir'], "Experiments")
+    experiments_dir = ft.join(opencsp_settings['opencsp_root_path']['collaborative_dir'], "NSTTF_Optics", "Experiments")
     experiments = [
         "2024-05-22_SolarNoonTowerTest_4",  # already extracted
         "2024-06-13_SolarNoonTowerTest_5",  # already extracted
@@ -329,11 +327,22 @@ if __name__ == "__main__":
             if ft.directory_exists(extracted_dir):
                 extracted_pixel_data_files.append((pixel_data_file, extracted_dir, raw_dir))
             else:
-                new_pixel_data_files.append(pixel_data_file)
+                new_pixel_data_files.append((pixel_data_file, extracted_dir, raw_dir))
         if len(pixel_data_files) != len(extracted_pixel_data_files) + len(new_pixel_data_files):
             raise RuntimeError()
+        lt.info(f"Already extracted: {len(extracted_pixel_data_files)}")
+        lt.info(f"To-be extracted: {len(new_pixel_data_files)}")
 
-        lt.info(f"{len(extracted_pixel_data_files)}", end="")
+        # extract new files
+        if len(new_pixel_data_files) > 0:
+            lt.info("extracting", end="")
+        with multiprocessing.pool.Pool(5) as pool:
+            pool.starmap(process_pixel_data_file, [(pixel_data_file, False)
+                         for pixel_data_file, _, _ in new_pixel_data_files])
+        for pixel_data_file, extracted_dir, raw_dir in new_pixel_data_files:
+            extracted_pixel_data_files.append((pixel_data_file, extracted_dir, raw_dir))
+
+        # delete csv files so long as we are sure the images extracted correctly
         for pixel_data_file, extracted_dir, raw_dir in extracted_pixel_data_files:
             # check that we have the expected number of extracted images
             parser = PixelData(pixel_data_file)
