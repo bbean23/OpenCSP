@@ -4,15 +4,18 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
+from opencsp.common.lib.cv.CacheableImage import CacheableImage
+import opencsp.common.lib.cv.image_reshapers as ir
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
     AbstractVisualizationImageProcessor,
 )
+import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render.View3d as v3d
 import opencsp.common.lib.render_control.RenderControlAxis as rca
-import opencsp.common.lib.render_control.RenderControlFigure as rcf
+import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.exception_tools as et
@@ -58,7 +61,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             inspect hot spots on images with very concentrated values. By
             default None.
         """
-        super().__init__(self.__class__.__name__, interactive)
+        label_for_name = "" if label.strip() == "" else "_" + label
+        super().__init__(interactive, self.__class__.__name__ + label_for_name)
 
         self.cross_section_location = cross_section_location
         self.label = label
@@ -66,8 +70,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.crop_to_threshold = crop_to_threshold
 
         # initialize certain visualization values
-        self.horizontal_style = rcps.RenderControlPointSeq(color='red', marker='None')
-        self.vertical_style = rcps.RenderControlPointSeq(color='blue', marker='None')
+        self.horizontal_style = rcps.RenderControlPointSeq(color=color.magenta(), linewidth=2, marker='None')
+        self.vertical_style = rcps.RenderControlPointSeq(color=color.plot_colors["brown"], linewidth=2, marker='None')
 
         # declare future values
         self.view_specs: list[dict]
@@ -80,12 +84,12 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     @property
     def num_figures(self) -> int:
         if self.single_plot:
-            return 1
-        else:
             return 2
+        else:
+            return 3
 
     def _init_figure_records(
-        self, render_control_figure: rcf.RenderControlFigure
+        self, render_control_figure: rcfg.RenderControlFigure
     ) -> list[rcfr.RenderControlFigureRecord]:
         self.view_specs = []
         self.rc_axises = []
@@ -94,79 +98,94 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.axes = []
         self.plot_titles = []
 
+        setup_figure = lambda view_spec, name: fm.setup_figure(
+            render_control_figure,
+            rc_axis,
+            view_spec,
+            equal=False,
+            number_in_name=False,
+            name=name,
+            title="",
+            code_tag=f"{__file__}._init_figure_records()",
+        )
+
         if self.single_plot:
-            plot_titles = [""]
+            plot_titles = ["Image"]
         else:
-            plot_titles = ["Horizontal CS: ", "Vertical CS: "]
+            plot_titles = ["Image", "Horizontal CS: ", "Vertical CS: "]
 
         for plot_title in plot_titles:
-            if self.single_plot:
-                rc_axis = rca.RenderControlAxis(x_label='index', y_label='value')
-                name_suffix = ""
-            else:
-                if "Horizontal" in plot_title:
-                    rc_axis = rca.RenderControlAxis(x_label='x', y_label='value')
-                    name_suffix = " (Horizontal)"
-                else:
-                    rc_axis = rca.RenderControlAxis(x_label='y', y_label='value')
-                    name_suffix = " (Vertical)"
+            if plot_title == "Image":
+                rc_axis = rca.RenderControlAxis()
+                view_spec = vs.view_spec_pq()
+                fig_record = setup_figure(view_spec, "Cross Sections")
 
-            view_spec = vs.view_spec_xy()
-            fig_record = fm.setup_figure(
-                render_control_figure,
-                rc_axis,
-                view_spec,
-                equal=False,
-                number_in_name=False,
-                name=self.label + name_suffix,
-                title="",
-                code_tag=f"{__file__}._init_figure_records()",
-            )
-            view = fig_record.view
-            axes = fig_record.figure.gca()
+            else:
+                if self.single_plot:
+                    rc_axis = rca.RenderControlAxis(x_label='index', y_label='value')
+                    name_suffix = ""
+                else:
+                    if "Horizontal" in plot_title:
+                        rc_axis = rca.RenderControlAxis(x_label='x', y_label='value')
+                        name_suffix = " (Horizontal)"
+                    else:
+                        rc_axis = rca.RenderControlAxis(x_label='y', y_label='value')
+                        name_suffix = " (Vertical)"
+
+                view_spec = vs.view_spec_xy()
+                fig_record = setup_figure(view_spec, self.label + name_suffix)
 
             self.view_specs.append(view_spec)
             self.rc_axises.append(rc_axis)
             self.fig_records.append(fig_record)
-            self.views.append(view)
-            self.axes.append(axes)
+            self.views.append(fig_record.view)
+            self.axes.append(fig_record.figure.gca())
             self.plot_titles.append(plot_title)
 
         return self.fig_records
 
-    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool):
+    def _visualize_operable(
+        self, operable: SpotAnalysisOperable, is_last: bool
+    ) -> tuple[list[CacheableImage], list[rcfr.RenderControlFigureRecord]]:
         image = operable.primary_image.nparray
+        width, height = image.shape[1], image.shape[0]
 
         # get the cross section pixel location
         if isinstance(self.cross_section_location, tuple):
-            cs_loc_x, cs_loc_y = self.cross_section_location
+            cs_loc = self.cross_section_location
         else:
-            cs_loc_x, cs_loc_y = self.cross_section_location(operable)
+            cs_loc = self.cross_section_location(operable)
+        if cs_loc is None:
+            return None, None
+        cross_sec_x, cross_sec_y = cs_loc
 
         # subselect a piece of the image based on the crop threshold
-        y_start, y_end, x_start, x_end = 0, image.shape[0], 0, image.shape[1]
+        y_start, y_end, x_start, x_end = 0, height, 0, width
+        cs_cropped_x, cs_cropped_y = cross_sec_x, cross_sec_y
+        cropped_width, cropped_height = width, height
         if self.crop_to_threshold is not None:
             y_start, y_end, x_start, x_end = it.range_for_threshold(image, self.crop_to_threshold)
 
             # check that this cropped range contains the cross section target
-            if cs_loc_x >= x_start and cs_loc_x < x_end:
-                if cs_loc_y >= y_start and cs_loc_y < y_end:
+            if cross_sec_x >= x_start and cross_sec_x < x_end:
+                if cross_sec_y >= y_start and cross_sec_y < y_end:
                     image = image[y_start:y_end, x_start:x_end]
-                    cs_loc_x, cs_loc_y = cs_loc_x - x_start, cs_loc_y - y_start
+                    cs_cropped_x, cs_cropped_y = cross_sec_x - x_start, cross_sec_y - y_start
+                    cropped_width, cropped_height = x_end - x_start, y_end - y_start
 
         # Get the cross sections
-        v_cross_section = image[:, cs_loc_x : cs_loc_x + 1].squeeze().tolist()
+        v_cross_section = image[:, cs_cropped_x : cs_cropped_x + 1].squeeze().tolist()
         v_p_list = list(range(len(v_cross_section)))
-        h_cross_section = image[cs_loc_y : cs_loc_y + 1, :].squeeze().tolist()
+        h_cross_section = image[cs_cropped_y : cs_cropped_y + 1, :].squeeze().tolist()
         h_p_list = list(range(len(h_cross_section)))
 
         if self.single_plot:
             # Align the cross sections so that the intersect point overlaps
-            if cs_loc_x < cs_loc_y:
-                diff = cs_loc_x - cs_loc_y
+            if cs_cropped_x < cs_cropped_y:
+                diff = cs_cropped_x - cs_cropped_y
                 v_p_list = [i + diff for i in v_p_list]
-            if cs_loc_y < cs_loc_x:
-                diff = cs_loc_y - cs_loc_x
+            if cs_cropped_y < cs_cropped_x:
+                diff = cs_cropped_y - cs_cropped_x
                 h_p_list = [i + diff for i in h_p_list]
         else:
             # Translate the cross sections plots to their actual locations
@@ -181,11 +200,21 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         for plot_title_prefix, fig_record in zip(self.plot_titles, self.fig_records):
             fig_record.title = plot_title_prefix + operable.best_primary_nameext
 
-        # Draw the new plot using the same axes
-        v_view = self.views[0]
-        h_view = self.views[0]
+        # matplotlib puts the origin in the bottom left instead of the top left
+        cs_cropped_y = cropped_height - cs_cropped_y
+
+        # Draw the image plot
+        i_view = self.views[0]
+        image = ir.false_color_reshaper(image, 255)
+        i_view.draw_image(image, (0, 0), (cropped_width, cropped_height))
+        i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=self.vertical_style)
+        i_view.draw_pq_list([(0, cs_cropped_y), (cropped_width, cs_cropped_y)], style=self.horizontal_style)
+
+        # Draw the new cross sections plot using the same axes
+        v_view = self.views[1]
+        h_view = self.views[1]
         if not self.single_plot:
-            v_view = self.views[1]
+            v_view = self.views[2]
         v_view.draw_pq_list(zip(v_p_list, v_cross_section), style=self.vertical_style, label="Vertical Cross Section")
         h_view.draw_pq_list(
             zip(h_p_list, h_cross_section), style=self.horizontal_style, label="Horizontal Cross Section"
@@ -194,6 +223,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         # draw
         for view in self.views:
             view.show(block=False, legend=self.single_plot)
+
+        return [], self.fig_records
 
     def close_figures(self):
         for view in self.views:
@@ -223,4 +254,4 @@ if __name__ == "__main__":
     cacheable_rows = CacheableImage(rows, source_path=__file__)
 
     processor = ViewCrossSectionImageProcessor((50, 50), single_plot=False, interactive=True, crop_to_threshold=20)
-    processor.process_image(SpotAnalysisOperable(cacheable_rows))
+    processor.process_operable(SpotAnalysisOperable(cacheable_rows))

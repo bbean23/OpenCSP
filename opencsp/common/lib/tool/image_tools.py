@@ -23,6 +23,7 @@ pil_image_formats_readable = pil_image_formats_rw + ["cur", "dcx", "fits", "fli"
 """ A list of all image image formats that can be read by the Python Imaging Library (PIL). Note that not all of these formats can be written by PIL. """
 pil_image_formats_writable = pil_image_formats_rw + ["palm", "pdf", "xv"]
 """ A list of all image image formats that can be written by the Python Imaging Library (PIL). Note that not all of these formats can be read by PIL. """
+pil_image_formats_supporting_exif = ["jpg", "jpeg", "png", "tiff", "webp"]
 # fmt: on
 
 
@@ -220,7 +221,7 @@ def range_for_threshold(image: np.ndarray, threshold: int) -> tuple[int, int, in
     return tuple(ret)
 
 
-def image_files_in_directory(dir: str, allowable_extensions: list[str] = None) -> list[str]:
+def image_files_in_directory(dir: str, allowable_extensions: list[str] = None, recursive=False) -> list[str]:
     """
     Get a list of all image files in the given directory, as determined by the file extension.
 
@@ -230,6 +231,10 @@ def image_files_in_directory(dir: str, allowable_extensions: list[str] = None) -
         The directory to get files from.
     allowable_extensions : list[str], optional
         The allowed extensions, such as ["png"]. By default pil_image_formats_rw.
+    recursive: bool
+        If true, then walk through all files in the given directory and all
+        subdirectories. Does not follow symbolic links to directories. Default
+        False.
 
     Returns
     -------
@@ -246,7 +251,7 @@ def image_files_in_directory(dir: str, allowable_extensions: list[str] = None) -
             allowable_extensions[i] = "." + ext
 
     # get all matching files
-    files_per_ext = ft.files_in_directory_by_extension(dir, allowable_extensions)
+    files_per_ext = ft.files_in_directory_by_extension(dir, allowable_extensions, recursive=recursive)
 
     # condense into a single list
     files: list[str] = []

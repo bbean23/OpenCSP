@@ -1,3 +1,5 @@
+import copy
+import dataclasses
 import weakref
 
 import matplotlib
@@ -151,21 +153,7 @@ class VisualizationCoordinator:
         for processor in self.visualization_processors:
             num_figures_dict[processor] = processor.num_figures
         num_figures_total = sum(num_figures_dict.values())
-        if num_figures_total <= 1:
-            tiles_x = 1
-            tiles_y = 1
-        elif num_figures_total <= 2:
-            tiles_x = 2
-            tiles_y = 1
-        elif num_figures_total <= 8:
-            tiles_x = int(np.ceil(num_figures_total / 2))
-            tiles_y = 2
-        elif num_figures_total <= 12:
-            tiles_x = int(np.ceil(num_figures_total / 3))
-            tiles_y = 3
-        else:
-            tiles_y = int(np.floor(np.sqrt(num_figures_total)))
-            tiles_x = int(np.ceil(num_figures_total / tiles_y))
+        tiles_y, tiles_x = rcf.RenderControlFigure.num_tiles_4x3aspect(num_figures_total)
         tiles_x = np.min([tiles_x, self.max_tiles_x])
         tiles_y = np.min([tiles_y, self.max_tiles_y])
 
@@ -209,7 +197,7 @@ class VisualizationCoordinator:
 
         return alive
 
-    def is_visualize(
+    def is_time_to_visualize(
         self,
         visualization_processor: AbstractVisualizationImageProcessor,
         operable: SpotAnalysisOperable,
@@ -248,13 +236,14 @@ class VisualizationCoordinator:
         visualization_processor: AbstractVisualizationImageProcessor,
         operable: SpotAnalysisOperable,
         is_last: bool,
-    ):
+    ) -> SpotAnalysisOperable:
         """
         Calls visualize_operable() on each of the registered visualization
         processors.
 
         This method is typically called from the _execute() method of a
-        AbstractVisualizationImageProcessor after a call to is_visualize().
+        AbstractVisualizationImageProcessor after a call to
+        is_time_to_visualize().
 
         After all visualizations have been updated, if interactive, then we
         block until the user has either pressed "enter" or closed the
@@ -266,13 +255,47 @@ class VisualizationCoordinator:
             The processor that is calling this method.
         operable : SpotAnalysisOperable
             The "operable" value in the calling processor's _execute() method,
-            passed through to here. This is the operable to be visualized.
+            passed through to here. This is the operable to be visualized (or
+            the decendent of the operable to be visualized).
         is_last : bool
             The "is_last" value in the calling processor's _execute() method,
             passed through to here.
+
+        Returns
+        -------
+        operable: SpotAnalysisOperable
+            (A) The given operable, or (B) a copy of the given operable with all
+            visualization images appended to the operable, in the case that
+            it creates multiple visualization images.
         """
+        # render all visualization image processors
         for processor in self.visualization_processors:
-            processor.visualize_operable(operable, is_last)
+            processor_visualizations = processor.visualize_operable(operable, is_last)
+
+            # compile all visualizations together into a single operable to be returned
+            if len(processor_visualizations) > 0:
+                # make a copy of the latest operable's visualizations
+                all_vis_images: dict[AbstractSpotAnalysisImageProcessor, list] = {}
+                for processor2 in operable.visualization_images:
+                    all_vis_images[processor2] = copy.copy(operable.visualization_images[processor2])
+
+                # append the new visualizations
+                if processor not in all_vis_images:
+                    all_vis_images[processor] = []
+                all_vis_images[processor] += processor_visualizations
+
+                # add this processor as a ancestor of the operable we're about to create
+                if operable.previous_operables[0] is not None:
+                    previous_operables_list = copy.copy(operable.previous_operables[0])
+                else:
+                    previous_operables_list = []
+                previous_operables_list.append(operable)
+                previous_operables = (previous_operables_list, processor)
+
+                # update the operable
+                operable = dataclasses.replace(
+                    operable, visualization_images=all_vis_images, previous_operables=previous_operables
+                )
 
         # if interactive, then block until the user presses "enter" or closes one or more visualizations
         interactive = False
@@ -317,3 +340,5 @@ class VisualizationCoordinator:
                         processor.close_figures()
 
                 first_iteration = False
+
+        return operable

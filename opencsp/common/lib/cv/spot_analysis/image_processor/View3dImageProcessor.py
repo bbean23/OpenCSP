@@ -1,3 +1,5 @@
+import copy
+import dataclasses
 from typing import Callable
 
 import cv2 as cv
@@ -5,6 +7,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
+from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
     AbstractVisualizationImageProcessor,
@@ -45,7 +48,7 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
             Crops the image on the x and y axis to the first/last value >= the given threshold. None to not crop the
             image. Useful when trying to inspect hot spots on images with very concentrated values. By default None.
         """
-        super().__init__(self.__class__.__name__, interactive)
+        super().__init__(interactive)
 
         self.max_resolution = max_resolution
         self.crop_to_threshold = crop_to_threshold
@@ -80,7 +83,9 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
 
         return [self.fig_record]
 
-    def visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool):
+    def _visualize_operable(
+        self, operable: SpotAnalysisOperable, is_last: bool
+    ) -> tuple[list[CacheableImage], list[rcfr.RenderControlFigureRecord]]:
         image = operable.primary_image.nparray
 
         # reduce data based on threshold
@@ -114,6 +119,8 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
 
         # draw
         self.view.show(block=False)
+
+        return [], [self.fig_record]
 
     def close_figures(self):
         with et.ignored(Exception):

@@ -32,8 +32,7 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
         self,
         images_group_assigner: Callable[[SpotAnalysisOperable], int],
         group_execution_trigger: Callable[[list[tuple[SpotAnalysisOperable, int]]], int | None] = None,
-        *vargs,
-        **kwargs,
+        name: str = None,
     ):
         """
         Parameters
@@ -43,7 +42,11 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
         group_execution_trigger : Callable[[], bool], optional
             The function that determines when a group of operators is executed on, by default group_trigger_on_change.
         """
-        super().__init__(self.__class__.__name__)
+        super().__init__(name)
+
+        # normalize arguments
+        if group_execution_trigger is None:
+            group_execution_trigger = self.group_trigger_on_change()
 
         # register arguments
         self.images_group_assigner = images_group_assigner
@@ -75,6 +78,8 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
                 if max_pixel_value >= intensity_threshold:
                     assigned_group = intensity_to_group[intensity_threshold]
 
+            # lt.info(f"{operable.best_primary_nameext}: {max_pixel_value}/{assigned_group}")
+
             return assigned_group
 
         return lambda operable: group_by_brightness_inner(operable, intensity_to_group)
@@ -105,7 +110,7 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
             names_to_check = [
                 operable.primary_image_source_path,
                 operable.primary_image.source_path,
-                operable.primary_image.cache_path,
+                operable.primary_image.cache_path_name_ext,
             ]
             names_to_check = list(filter(lambda name: name is not None, names_to_check))
             if len(names_to_check) == 0:
@@ -117,8 +122,8 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
                 m = name_pattern.search(name)
                 if m is None:
                     continue
-                groups = list(filter(lambda s: s is not None, m.groups()))
-                if len(groups) == 0:
+                match_groups = list(filter(lambda s: s is not None, m.groups()))
+                if len(match_groups) == 0:
                     lt.debug(
                         "In AbstractAggregateImageProcessor.group_by_name(): "
                         + f"no groups found for pattern {name_pattern} when trying to match against name {name}"
@@ -126,7 +131,7 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
                     continue
 
                 # get the name match
-                group_str = "".join(groups)
+                group_str = "".join(match_groups)
 
                 # return the index of the existing group, or add a new group
                 if group_str in groups:

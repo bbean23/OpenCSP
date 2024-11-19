@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Callable
 
 import matplotlib.axes
+import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.spatial
@@ -10,6 +11,7 @@ import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.geometry.RegionXY as reg
 import opencsp.common.lib.geometry.Vxyz as v3
 import opencsp.common.lib.render.figure_management as fm
+import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.log_tools as lt
 
@@ -111,7 +113,7 @@ class AbstractFiducials(ABC):
             linewidth=self.style.linewidth,
             marker=self.style.marker,
             s=self.style.markersize,
-            c=self.style.markerfacecolor,
+            color=self.style.markerfacecolor,
             edgecolor=self.style.markeredgecolor,
         )
 
@@ -137,10 +139,9 @@ class AbstractFiducials(ABC):
         The default implementation creates a new matplotlib plot, and then renders to it with self.render_to_plot().
         """
         # Create the figure to plot to
-        dpi = 300
         width = image.shape[1]
         height = image.shape[0]
-        fig = fm.mpl_pyplot_figure(figsize=(width / dpi, height / dpi), dpi=dpi)
+        fig = fm.mpl_pyplot_figure(figsize=(4.8 / height * width, 4.8), dpi=300)
 
         try:
             # A portion of this code is from:
@@ -161,18 +162,15 @@ class AbstractFiducials(ABC):
             axes.imshow(image)
             self.render(axes)
 
-            # Render
-            canvas.draw()
-
             # Convert back to a numpy array
-            new_image = np.asarray(canvas.buffer_rgba())
+            new_image = rcfr.RenderControlFigureRecord.figure_to_array(fig)
             new_image = new_image.astype(image.dtype)
 
             # Return the updated image
             return new_image
 
         except Exception as ex:
-            lt.error("Error in AnnotationImageProcessor.render_points(): " + repr(ex))
+            lt.error("Error in AbstractFiducials.render_to_image(): " + repr(ex))
             raise
 
         finally:

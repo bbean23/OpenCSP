@@ -240,7 +240,7 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         if not isinstance(input_operables, _SpotAnalysisOperablesStream):
             input_operables = _SpotAnalysisOperablesStream(input_operables)
         self.input_stream = input_operables
-        self._prev_result = None
+        self._results_iter = None
         self.image_processors[0].assign_inputs(self.input_stream)
 
     def set_primary_images(self, images: list[str] | list[np.ndarray] | vh.VideoHandler | ImagesStream):
@@ -306,7 +306,6 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         except StopIteration:
             return None
 
-        self._prev_result = result
         return result
 
     def _save_image(self, save_path_name_ext: str, image: CacheableImage, description: str):
@@ -327,7 +326,7 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         if save_ext in ["np", "npy"]:
             np.save(save_path_name_ext, image.nparray, allow_pickle=False)
         else:
-            it.numpy_to_image(image.nparray).save(save_path_name_ext)
+            image.to_image().save(save_path_name_ext)
 
         return True
 
@@ -371,16 +370,17 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         # Save the resulting processed image
         if save_dir != None:
             # Get the original file name
-            orig_image_path_name = ""
-            if operable.primary_image.source_path != None:
-                _, orig_image_path_name, _ = ft.path_components(operable.primary_image.source_path)
-                orig_image_path_name += "_"
+            orig_image_name = ""
+            orig_image_path, orig_image_name_ext = operable.get_primary_path_nameext()
+            if orig_image_name_ext != None:
+                _, orig_image_name, orig_image_ext = ft.path_components(orig_image_name_ext)
+                orig_image_name += "_"
 
             # Get the output name of the file to save to
             sa_name_appendix = ft.convert_string_to_file_body(self.name)
-            image_name = f"{orig_image_path_name}{sa_name_appendix}"
+            image_name = f"{orig_image_name}{sa_name_appendix}"
             if image_name in self.saved_names:
-                image_name = f"{orig_image_path_name}{sa_name_appendix}_{self.save_idx}"
+                image_name = f"{orig_image_name}{sa_name_appendix}_{self.save_idx}"
                 self.save_idx += 1
             self.saved_names.add(image_name)
             image_path_name_ext = os.path.join(save_dir, f"{image_name}.{save_ext}")
@@ -417,7 +417,6 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
 
     def __iter__(self):
         self.save_idx = 0
-        self._prev_result = None
         return self
 
     def __next__(self):

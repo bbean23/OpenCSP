@@ -43,7 +43,7 @@ def path_components(input_dir_body_ext: str):
 
 def path_to_cmd_line(path: str):
     """Normalizes and surrounds a path with quotes, as necessary."""
-    ret = os.path.normpath(path)
+    ret = norm_path(path)
     if " " in ret:
         ret = "\"" + ret + "\""
     return ret
@@ -720,16 +720,22 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
     for existence of the output file after the rename, and raise a
     FileNotFoundError if it can't be found.
 
-    This operation could fail if the source and destination directories aren't
-    on the same file system. We check for existence of the output file after
-    the rename, and raise a FileNotFoundError if it can't be found.
+    We check for existence of the output file after the rename, and raise a
+    FileNotFoundError if it can't be found.
 
-    Args:
-        - is_file_check_only (bool): If True, then only check that input_dir_body_ext is a file. Otherwise, check everything.
+    Parameters
+    ----------
+    input_dir_body_ext: str
+        The "dir/body.ext" of the source file to be renamed.
+    output_dir_body_ext: str, optional
+        The destinaion "dir/body.ext" of the file.
+    is_file_check_only (bool):
+        If True, then only check that input_dir_body_ext is a file. Otherwise,
+        check everything. Default is False.
 
     See also: copy_file(), copy_and_delete_file()
     """
-    if os.path.normpath(input_dir_body_ext) == os.path.normpath(output_dir_body_ext):
+    if norm_path(input_dir_body_ext) == norm_path(output_dir_body_ext):
         return
 
     # Check input.
@@ -768,7 +774,7 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
                 + str(os.path.dirname(output_dir_body_ext)),
             )
     # Rename the file.
-    os.rename(input_dir_body_ext, output_dir_body_ext)
+    shutil.move(input_dir_body_ext, output_dir_body_ext)
     # Verify the rename
     if not is_file_check_only:
         if not os.path.exists(output_dir_body_ext):
@@ -778,31 +784,45 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
             )
 
 
-def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str):
-    """Like rename_file(), but it works across file systems.
+def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str, copystat=True):
+    """
+    Like rename_file(), but it works across file systems.
 
-    See also: copy_file(), rename_file()"""
-    if os.path.normpath(input_dir_body_ext) == os.path.normpath(output_dir_body_ext):
+    See also: copy_file(), rename_file()
+
+    Parameters
+    ----------
+    input_dir_body_ext : str
+        The file to be copied.
+    output_dir_body_ext : str
+        Where to place the copy of the files.
+    copystat : bool, optional
+        If true then the ctime, mtime, and permission bits, and more are copied
+        to the new file. Default is True.
+    """
+    if norm_path(input_dir_body_ext) == norm_path(output_dir_body_ext):
         return
 
     # copy and rename
     output_dir, output_body, output_ext = path_components(output_dir_body_ext)
     output_body_ext = output_body + output_ext
     copy_file(input_dir_body_ext, output_dir, output_body_ext)
+    if copystat:
+        shutil.copystat(input_dir_body_ext, output_dir_body_ext)
 
     # delete the original
     delete_file(input_dir_body_ext, error_on_not_exists=False)
 
 
-def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = None):
+def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = None, copystat=True):
     """Copies a file from input to output.
 
     Verifies that input is a file, and that the output doesn't exist.
 
     We check for existance of the output file after the copy, and raise a FileNotFoundError if it can't be found.
 
-    Returns
-    -------
+    Parameters
+    ----------
     input_dir_body_ext: str
         The "dir/body.ext" of the file to be copied.
     output_dir: str
@@ -810,6 +830,9 @@ def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = N
     output_body_ext: str, optional
         What to name the file in the destination directory. If None, then use
         the "body.ext" from input_dir_body_ext. Default None.
+    copystat: bool, optional
+        If true then the ctime, mtime, and permission bits, and more are copied
+        to the new file. Default is True.
 
     See also: copy_and_delete_file(), rename_file()
     """
@@ -849,6 +872,8 @@ def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = N
     if input_dir_body_ext == output_dir_body_ext:
         return output_body_ext
     shutil.copyfile(input_dir_body_ext, output_dir_body_ext)
+    if copystat:
+        shutil.copystat(input_dir_body_ext, output_dir_body_ext)
 
     # Verify the copy
     if not os.path.exists(output_dir_body_ext):
@@ -932,7 +957,7 @@ def merge_files(in_files: list[str], out_file: str, overwrite=False, remove_in_f
 def convert_shortcuts_to_symlinks(dirname: str):
     if os.name == "nt":
         # update dirname to use windows "\" seperators
-        dirname = os.path.normpath(dirname)
+        dirname = norm_path(dirname)
 
         # get a shell instance, to use for retrieving shortcut targets
         import win32com.client

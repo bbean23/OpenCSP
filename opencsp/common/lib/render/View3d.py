@@ -4,19 +4,9 @@ import numbers
 import time
 from typing import Callable, Iterable
 
+from matplotlib.axes import Axes
 import matplotlib.backend_bases as backb
 import matplotlib.colors
-import matplotlib.image as mpimg
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d.axes3d import Axes3D
-import numpy as np
-from PIL import Image
-import scipy.ndimage
-
-from matplotlib.axes import Axes
-import matplotlib.backend_bases as backb
 from matplotlib.figure import Figure
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -1040,8 +1030,8 @@ class View3d(aph.AbstractPlotHandler):
         if self.view_spec['type'] == '3d':
             self.axis.plot_trisurf(x, y, z, color=surface_style.color, alpha=surface_style.alpha, **kwargs)
 
-    # TODO TJL: currently unused
-    # TODO TJL: might want to remove, this is a very slow function
+    # TODO tjlarki: currently unused
+    # TODO tjlarki: might want to remove, this is a very slow function
     def quiver(
         self,
         X: np.ndarray,
@@ -1150,6 +1140,7 @@ class View3d(aph.AbstractPlotHandler):
                 label=label,
                 linestyle=None,
                 color=style.color,
+                alpha=style.markeralpha,
                 marker=style.marker,
                 markersize=style.markersize,
                 markeredgecolor=style.markeredgecolor,

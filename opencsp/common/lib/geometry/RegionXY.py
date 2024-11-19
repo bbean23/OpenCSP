@@ -8,6 +8,7 @@ from opencsp.common.lib.geometry.LoopXY import LoopXY
 from opencsp.common.lib.geometry.TransformXYZ import TransformXYZ
 from opencsp.common.lib.geometry.Vxy import Vxy
 from opencsp.common.lib.geometry.Pxy import Pxy
+import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 
 
 class RegionXY:
@@ -135,7 +136,7 @@ class RegionXY:
         filtered_points = self.filter_points(points)
         return filtered_points
 
-    def draw(self, ax: plt.Axes = None):
+    def draw(self, ax: plt.Axes = None, style: rcps.RenderControlPointSeq = None):
         """
         Draws all loops on given axes.
 
@@ -143,10 +144,12 @@ class RegionXY:
         ----------
         ax : plt.Axes
             Axes to draw on. If no Axes given, draws on current axes.
+        style : RenderControlPointSequence, optional
+            The style used to draw this region.
 
         """
         for loop in self.loops:
-            loop.draw(ax)
+            loop.draw(ax, style)
 
     def axis_aligned_bounding_box(self) -> tuple[float, float, float, float]:
         """

@@ -4,6 +4,9 @@ import numpy as np
 from opencsp.common.lib.geometry.EdgeXY import EdgeXY
 from opencsp.common.lib.geometry.LineXY import LineXY
 from opencsp.common.lib.geometry.Vxy import Vxy
+import opencsp.common.lib.render.View3d as v3d
+import opencsp.common.lib.render.view_spec as vs
+import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 
 
 class LoopXY:
@@ -300,7 +303,7 @@ class LoopXY:
 
         return mask
 
-    def draw(self, ax: plt.Axes = None, linecolor: str = 'black') -> None:
+    def draw(self, ax: plt.Axes = None, style: rcps.RenderControlPointSeq = None) -> None:
         """
         Draws lines as arrows and marks starting point.
 
@@ -308,40 +311,20 @@ class LoopXY:
         ----------
         ax : Axes, optional
             The axes to draw on. If not given, uses current axes.
-        linecolor : str, optional
-            Color to draw arrows. The default is 'black'.
+        style : str, optional
+            The style used to draw this region. Default rcps.default().
 
         """
         if ax is None:
             ax = plt.gca()
+        if style is None:
+            style = rcps.default(marker='arrow')
 
-        # Determine arrow size
-        dx = self.vertices.x.max() - self.vertices.x.min()
-        dy = self.vertices.y.max() - self.vertices.y.min()
-        length = max([dx, dy]) / 30
         # Draw arrows
-        for idx1 in range(len(self.vertices)):
-            # Get starting point
-            x1 = self.vertices.x[idx1]
-            y1 = self.vertices.y[idx1]
-            # Get dx, dy
-            idx2 = np.mod(idx1 + 1, len(self.vertices))
-            x2 = self.vertices.x[idx2]
-            y2 = self.vertices.y[idx2]
-            dx = x2 - x1
-            dy = y2 - y1
-            # Plot arrow
-            ax.arrow(
-                x1,
-                y1,
-                dx,
-                dy,
-                facecolor=linecolor,
-                edgecolor=linecolor,
-                length_includes_head=True,
-                head_length=length,
-                head_width=length / 2,
-            )
+        first_vert_np = np.array([self.vertices.x[:1], self.vertices.y[:1]])
+        closed_loop_verts = Vxy(np.concatenate((self.vertices.data, first_vert_np), axis=1))
+        view = v3d.View3d(ax.figure, ax, vs.view_spec_xy())
+        view.draw_pq((closed_loop_verts.x, closed_loop_verts.y), style)
 
         # Plot starting point as green dot
         ax.scatter(*self.vertices.data[:, 0:1], color='green')

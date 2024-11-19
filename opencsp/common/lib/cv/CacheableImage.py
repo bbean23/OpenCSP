@@ -355,7 +355,7 @@ class CacheableImage:
         elif isinstance(array_or_path, str):
             path: str = array_or_path
             if path.lower().endswith(".npy"):
-                return cls(cache_path=path)
+                return cls(cache_path_name_ext=path)
             return cls(source_path=path)
         elif isinstance(array_or_path, np.ndarray):
             array: np.ndarray = array_or_path

@@ -31,7 +31,8 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImageProcessor):
             Which color pallete to use with the OpenCV color mapper. Default is
             cv2.COLORMAP_JET.
         """
-        super().__init__(self.__class__.__name__)
+        super().__init__()
+
         self.map_type = map_type
         self.opencv_map = opencv_map
 

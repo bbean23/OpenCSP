@@ -15,20 +15,20 @@ class TestHotspotImageProcessor(unittest.TestCase):
 
     def test_internal_shapes_int(self):
         processor = HotspotImageProcessor(desired_shape=21)
-        # assume that factor = 2.5
-        # start = odd(21 * 2.5) = odd(52.5) = 53
-        # assume that reduction = 6
-        expected = [53, 47, 41, 35, 29, 23, 21]
+        # assume that factor = 2
+        # start = odd(21 * 2) = odd(42) = 43
+        # assume that reduction = min(10, 21 / 3) = 6
+        expected = [43, 37, 31, 25, 21]
         self.assertEqual(expected, processor.internal_shapes)
 
     def test_internal_shapes_tuple(self):
         processor = HotspotImageProcessor(desired_shape=(3, 21))
-        # assume that factor = 2.5
-        # start_x = odd(21 * 2.5) = odd(52.5) = 53
-        # start_y = odd(3 * 2.5) = odd(7.5) = 9
-        # assume that reduction = 6
-        expected_x = [53, 47, 41, 35, 29, 23, 21]
-        expected_y = [9, 3, 3, 3, 3, 3, 3]
+        # assume that factor = 2
+        # start_x = odd(21 * 2) = odd(42) = 43
+        # start_y = odd(3 * 2) = odd(6) = 7
+        # assume that reduction = min(10, 7 / 3) = 1
+        expected_x = [43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21]
+        expected_y = [7, 6, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3]
         expected = [tuple(v) for v in zip(expected_y, expected_x)]
         self.assertEqual(expected, processor.internal_shapes)
 

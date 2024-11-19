@@ -233,6 +233,14 @@ class AbstractSpotAnalysisImageProcessor(Iterator[SpotAnalysisOperable]):
         idx_list[0] = idx + 1
         return image_path_name_ext
 
+        # initialize some of the state
+        self.assign_inputs([])
+
+    def register_processed_result(self, is_last: bool):
+        self._num_images_processed += 1
+        if is_last:
+            self._finished_processing = True
+
     def run(
         self,
         operables: (
