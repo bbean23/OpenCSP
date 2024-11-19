@@ -6,7 +6,8 @@ import unittest
 import zipfile
 
 from opencsp.common.lib.cv.SpotAnalysis import SpotAnalysis
-from opencsp.common.lib.cv.spot_analysis.image_processor import FalseColorImageProcessor, PowerpointImageProcessor
+from opencsp.common.lib.cv.spot_analysis.image_processor import FalseColorImageProcessor
+from contrib.common.lib.cv.spot_analysis.image_processor import PowerpointImageProcessor
 
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
@@ -18,12 +19,11 @@ class TestPowerpointImageProcessor(unittest.TestCase):
         path, _, _ = ft.path_components(__file__)
         cls.data_dir = os.path.join(path, "data", "input", "PowerpointImageProcessor")
         cls.out_dir = os.path.join(path, "data", "output", "PowerpointImageProcessor")
+        ft.create_directories_if_necessary(cls.data_dir)
+        ft.create_directories_if_necessary(cls.out_dir)
         ft.delete_files_in_directory(cls.out_dir, "*.pptx")
 
     def setUp(self) -> None:
-        ft.create_directories_if_necessary(self.data_dir)
-        ft.create_directories_if_necessary(self.out_dir)
-
         # delete the previous results
         # ft.delete_file(self._get_default_ppt_file_path_name_ext()) # done in setUpClass
         self._delete_unzip_dir()

@@ -11,9 +11,8 @@ from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisIma
     AbstractSpotAnalysisImageProcessor,
 )
 from opencsp.common.lib.geometry.RegionXY import RegionXY
-from opencsp.common.lib.geometry.RectXY import RectXY
+from contrib.common.lib.geometry.RectXY import RectXY
 import opencsp.common.lib.tool.log_tools as lt
-import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.file_tools as ft
 
 

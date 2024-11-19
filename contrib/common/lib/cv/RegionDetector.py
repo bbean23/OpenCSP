@@ -6,7 +6,7 @@ import opencsp.common.lib.cv.image_reshapers as ir
 from opencsp.common.lib.cv.spot_analysis.image_processor import *
 import opencsp.common.lib.geometry.LineXY as l2
 import opencsp.common.lib.geometry.Pxy as p2
-import opencsp.common.lib.geometry.RectXY as r2
+import contrib.common.lib.geometry.RectXY as r2
 import opencsp.common.lib.geometry.RegionXY as reg2
 import opencsp.common.lib.opencsp_path.opencsp_root_path as orp
 import opencsp.common.lib.render.Color as color

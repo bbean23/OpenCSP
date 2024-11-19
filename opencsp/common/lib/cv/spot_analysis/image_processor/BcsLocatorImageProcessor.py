@@ -11,7 +11,7 @@ from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysi
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImageProcessor,
 )
-from opencsp.common.lib.cv.spot_analysis.image_processor.ViewAnnotationsImageProcessor import (
+from contrib.common.lib.cv.spot_analysis.image_processor.ViewAnnotationsImageProcessor import (
     ViewAnnotationsImageProcessor,
 )
 from opencsp.common.lib.cv.spot_analysis.image_processor.ConvolutionImageProcessor import ConvolutionImageProcessor

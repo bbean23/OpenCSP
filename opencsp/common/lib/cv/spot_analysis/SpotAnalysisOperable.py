@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 import os
 import sys
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import opencsp.common.lib.csp.LightSource as ls
 import opencsp.common.lib.cv.annotations.AbstractAnnotations as aa

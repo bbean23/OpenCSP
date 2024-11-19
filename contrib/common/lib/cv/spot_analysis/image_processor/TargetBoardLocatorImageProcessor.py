@@ -5,8 +5,8 @@ import numpy as np
 import os
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
-import opencsp.common.lib.cv.PerspectiveTransform as pt
-import opencsp.common.lib.cv.RegionDetector as rd
+import contrib.common.lib.cv.PerspectiveTransform as pt
+import contrib.common.lib.cv.RegionDetector as rd
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImageProcessor,
