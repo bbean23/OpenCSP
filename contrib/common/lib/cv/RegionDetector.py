@@ -22,6 +22,38 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 class RegionDetector:
+    """
+    A class used to detect regions in images using various image processing
+    techniques including Canny edge detection, blob analysis, ray intersection,
+    edge identification, and edge intersection.
+
+    Attributes
+    ----------
+    edge_coarse_width : int
+        The maximum encapsulating width of the edges for :py:meth:`step5_find_edge_groups`.
+    canny_edges_gradient : int
+        The threshold gradient value for edges in Canny edge detection.
+    canny_non_edges_gradient : int
+        The threshold gradient value for non-edges in Canny edge detection.
+    canny_test_gradients : list[tuple[int, int]]
+        A list of tuples containing (edge, non-edge) gradient pairs to test for
+        Canny edge detection. Useful for setting up edge detection with new
+        experiments.
+    edge_colors : dict
+        What colors to use to indicate the "top", "right", "bottom", and "left" edges.
+    corner_colors : dict
+        What colors to use to indicate the "tl", "tr", "br", and "bl" corners.
+    images_to_show : list[tuple[str, np.ndarray]]
+        A list of images to be displayed for use with canny_test_gradients.
+    summary_visualizations : list[tuple[str, np.ndarray]]
+        A list of summary visualizations that explain the steps used in locating
+        the region.
+    ppt_deck : RenderControlPowerpointPresentation
+        The PowerPoint presentation control.
+    slide_control : RenderControlPowerpointSlide
+        The PowerPoint slide control.
+    """
+
     def __init__(
         self,
         edge_coarse_width: int,
@@ -29,6 +61,24 @@ class RegionDetector:
         canny_non_edges_gradient=5,
         canny_test_gradients: list[tuple[int, int]] = None,
     ):
+        """
+        Parameters
+        ----------
+        edge_coarse_width : int
+            The maximum encapsulating width of the edges for
+            :py:meth:`step5_find_edge_groups`. This should at least as large as
+            width of the largest vertical edge, or the height of the largest
+            horizontal edge.
+        canny_edges_gradient : int, optional
+            The threshold gradient value for edges in Canny edge detection.
+        canny_non_edges_gradient : int, optional
+            The threshold gradient value for non-edges in Canny edge detection.
+        canny_test_gradients : list[tuple[int, int]], optional
+            A list of tuples containing (edge, non-edge) gradient pairs to test
+            for Canny edge detection. Useful for setting up edge detection with
+            new experiments.  For example: [(10,5), (10,10), (10,15), (20,5),
+            (20,10), (20,15)].  Default None.
+        """
         self.edge_coarse_width = edge_coarse_width
         self.canny_edges_gradient = canny_edges_gradient
         self.canny_non_edges_gradient = canny_non_edges_gradient
@@ -50,6 +100,20 @@ class RegionDetector:
         self.slide_control = rcps.RenderControlPowerpointSlide()
 
     def draw_image(self, title: str, image: np.ndarray, show=False, block=False):
+        """
+        Draws an image and optionally displays it.
+
+        Parameters
+        ----------
+        title : str
+            The title of the image.
+        image : np.ndarray
+            The image to be drawn.
+        show : bool, optional
+            Whether to show the image immediately, by default False.
+        block : bool, optional
+            Whether to block the execution until the image window is closed, by default False.
+        """
         self.images_to_show.append((title, image.copy()))
 
         if show:
@@ -77,11 +141,36 @@ class RegionDetector:
             self.images_to_show.clear()
 
     def draw_images(self, images: list[tuple[str, np.ndarray]]):
+        """
+        Draws multiple images and displays them.
+
+        Parameters
+        ----------
+        images : list[tuple[str, np.ndarray]]
+            A list of tuples containing the title and image to be drawn.
+        """
         for i, title_image in enumerate(images):
             show = i == len(images) - 1
             self.draw_image(title_image[0], title_image[1], show, show)
 
-    def step1_canny_edge_detection(self, debug_canny_settings, image, image_is_logscaled=False):
+    def step1_canny_edge_detection(self, debug_canny_settings: bool, image: np.ndarray) -> np.ndarray:
+        """
+        Performs Canny edge detection on the given image.
+
+        Parameters
+        ----------
+        debug_canny_settings : bool
+            If True, or if canny_test_gradients is set, then debug images will be shown.
+        image : np.ndarray
+            The input image on which to perform edge detection.
+
+        Returns
+        -------
+        np.ndarray
+            A boolean array with the same width/height as the input image, where
+            1s represent pixels that are classified as edges and 0s represent
+            non-edges.
+        """
         slide = pps.PowerpointSlide.template_content_grid(nrows=2, ncols=3, slide_control=self.slide_control)
         slide.set_title("step1_canny_edge_detection")
 
@@ -117,44 +206,47 @@ class RegionDetector:
         self, canny_edges: np.ndarray, debug_blob_analysis=False
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
-        Experiment with different kinds of blobs. Apply horizontal + vertical + square blob analysis.
+        Applies horizontal and vertical blob growth/filtering to the canny edges.
 
         Parameters
         ----------
         canny_edges : np.ndarray[uint8]
-            The edge pixels as found with canny edge detection.
+            The edge pixels as found with :py:meth:`step1_canny_edge_detection`.
         debug_blob_analysis : bool, optional
-            True to show debug images and block, by default False
+            True to show debug images, by default False.
 
         Returns
         -------
-        horizontal_mask: np.ndarray[bool]
-            The mask where the horizontal edges are
-        vertical_mask: np.ndarray[bool]
-            The mask where the vertical edges are
-        negative_mask: np.ndarray[bool]
-            The mask where there aren't any edges
+        horizontal_mask : np.ndarray[bool]
+            Numpy array with the same width and height as the given canny_edges
+            image. Non-zero where the horizontal edge pixels are detected.
+        vertical_mask : np.ndarray[bool]
+            Numpy array with the same width and height as the given canny_edges
+            image. Non-zero where the vertical edge pixels are detected.
+        negative_mask : np.ndarray[bool]
+            Numpy array with the same width and height as the given canny_edges
+            image. Non-zero where there aren't any edges.
         """
         slide = pps.PowerpointSlide.template_content_grid(nrows=2, ncols=3, slide_control=self.slide_control)
         slide.set_title("step2_blob_analysis")
-        slice_l, slice_s = 13, 3
-        slice_area = slice_l * slice_s  # 39
-        slice_thresh = 10 / slice_area
+        slice_l, slice_s = 13, 3  # long, short
+        slice_area = slice_l * slice_s  # 13*3 = 39
+        slice_thresh = 10 / slice_area  # 10/39 = 0.26
+        horizontal_kernel = np.ones((slice_s, slice_l), np.float32) / slice_area
+        vertical_kernel = np.ones((slice_l, slice_s), np.float32) / slice_area
 
+        # convolve with the horizontal kernel
         binary_edges = np.clip(canny_edges, 0, 1).astype(np.uint8)
         negative_horizontal = binary_edges.copy().astype(np.float64)
-        negative_horizontal: np.ndarray = cv.filter2D(
-            negative_horizontal, -1, np.ones((slice_s, slice_l), np.float32) / slice_area
-        )
+        negative_horizontal: np.ndarray = cv.filter2D(src=negative_horizontal, ddepth=-1, kernel=horizontal_kernel)
         negative_horizontal[np.where(negative_horizontal < slice_thresh)] = 0
         negative_horizontal[np.where(negative_horizontal > 0)] = 255
         horizontal_mask = np.full(negative_horizontal.shape, False)
         horizontal_mask[np.where(negative_horizontal != 0)] = True
 
+        # convolve with the vertical kernel
         negative_vertical = binary_edges.copy().astype(np.float64)
-        negative_vertical: np.ndarray = cv.filter2D(
-            negative_vertical, -1, np.ones((slice_l, slice_s), np.float32) / slice_area
-        )
+        negative_vertical: np.ndarray = cv.filter2D(src=negative_vertical, ddepth=-1, kernel=vertical_kernel)
         negative_vertical[np.where(negative_vertical < slice_thresh)] = 0
         negative_vertical[np.where(negative_vertical > 0)] = 255
         vertical_mask = np.full(negative_vertical.shape, False)
@@ -353,7 +445,7 @@ class RegionDetector:
         return area_center, boundary_samples
 
     def step4_boundary_locations_to_edges(
-        self, boundary_locations: p2.Pxy, canny_edges: np.ndarray, debug_ray_projection=False
+        self, boundary_locations: p2.Pxy, canny_edges: np.ndarray, diameter=7, debug_ray_projection=False
     ) -> np.ndarray:
         """
         Get all edge pixels within a small distance of the boundary locations.
@@ -364,12 +456,15 @@ class RegionDetector:
             The list of boundary locations to match against.
         canny_edges : np.ndarray[uint8]
             All edge pixels, as from the canny edge detector.
+        diameter : int, optional
+            The distance that an edge pixel can be from the boundary locations.
+            Applies a box filter of this width and height.
 
         Returns
         -------
         boundary_edges: np.ndarray[uint8]
-            The edge pixels close to the boundary locations. Edge pixels will be
-            255, all others will be 0.
+            The edge pixels close to the boundary locations. Matched edge pixels
+            will be 255, all others will be 0.
         """
         slide = pps.PowerpointSlide.template_content_grid(nrows=1, ncols=3, slide_control=self.slide_control)
         slide.set_title("step4_boundary_locations_to_edges")
@@ -406,9 +501,10 @@ class RegionDetector:
         edges image. We do this by looking for large groups of pixels in the x
         and y axes.
 
-        Two iterations are done. In the second iteration, the search region is
-        constrained to only include the region where we expect the edges to be,
-        and to exclude the corners.
+        Two iterations are done. In the first iteration the rough location of
+        the edges is determined by scanning all edge pixels. In the second
+        iteration, the search region is constrained to only include the region
+        where we expect the edges to be, and to exclude the corners.
 
         Parameters
         ----------
@@ -576,12 +672,16 @@ class RegionDetector:
         self, edge_groups: list[r2.RectXY], canny: np.ndarray, debug_edge_assignment=False
     ) -> tuple[dict[str, l2.LineXY], dict[str, p2.Pxy], reg2.RegionXY]:
         """
-        Finds the edges in the canny image for each edge group, and assign the edges to be the "left", "top", "right" or "bottom" of a rectangle. Uses the RANSAC algorithm to find the edges.
+        Finds the edges in the canny image for each edge group, and assign the
+        edges to be the "left", "top", "right" or "bottom" of a rectangle. Uses
+        the RANSAC algorithm to find the edges.
 
         Parameters
         ----------
         edge_groups : list[XY]
-            List of regions to search for edges within using RANSAC. Should be length 4.
+            List of regions to search for edges within using RANSAC. Should be
+            length 4, with one group for each of the top, right, bottom, and
+            left sides. Order doesn't matter.
         canny : np.ndarray
             The edges image from the canny algorithm.
         debug_edge_assignment : bool, optional
@@ -620,6 +720,9 @@ class RegionDetector:
 
         # Assign edges to be top, bottom, left, or right
         for line in lines:
+            # Lines with slope == 1 are at 45 degrees. Use this halfway point
+            # between vertical/horizontal to determine the whether a line should
+            # be classified as top/bottom or left/right.
             if np.abs(line.slope) > 1:
                 # vertical(ish) line
                 if edges["left"] is None:
@@ -672,6 +775,25 @@ class RegionDetector:
     def visualize_edges_corners(
         self, base_image: np.ndarray, edges: dict[str, l2.LineXY], corners: dict[str, p2.Pxy], thickness=2
     ):
+        """
+        Visualize edges and corners on a base image.
+
+        Parameters
+        ----------
+        base_image: np.ndarray
+            The base image on which to visualize edges and corners.
+        edges: dict[str, l2.LineXY]
+            A dictionary of edge labels ("top"/"bottom"/"left"/"right") to edge line objects.
+        corners: dict[str, p2.Pxy]
+            A dictionary of corner labels ("tl"/"tr"/"bl"/"br") to corner point objects.
+        thickness: int, optional
+            The thickness of the lines and circles to draw. Default is 2.
+
+        Returns
+        -------
+        vis_image: np.ndarray
+            The image with visualized edges and corners.
+        """
         vis_image = ir.false_color_reshaper(base_image)
         width, height = vis_image.shape[1], vis_image.shape[0]
 
@@ -699,6 +821,22 @@ class RegionDetector:
         return vis_image
 
     def visualize_region(self, base_image: np.ndarray, region: reg2.RegionXY) -> np.ndarray:
+        """
+        Visualize a region on a base image. Sets all pixels to 255 within the
+        given region.
+
+        Parameters
+        ----------
+        base_image: np.ndarray
+            The base image on which to visualize the region.
+        region: reg2.RegionXY
+            The region to visualize.
+
+        Returns
+        -------
+        vis_image: np.ndarray
+            The image with the visualized region.
+        """
         vis_image = base_image.copy()
         width, height = base_image.shape[1], base_image.shape[0]
 
@@ -723,6 +861,30 @@ class RegionDetector:
         debug_blob_analysis=False,
         debug_ray_projection=False,
     ) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Find the pixels that are good candidates for the boundaries of a the
+        region within the given image.
+
+        Parameters
+        ----------
+        image: np.ndarray
+            The input image.
+        approx_center_pixel: p2.Pxy
+            The approximate center pixel.
+        debug_canny_settings: bool, optional
+            Flag to enable debugging for Canny edge detection. Default is False.
+        debug_blob_analysis: bool, optional
+            Flag to enable debugging for blob analysis. Default is False.
+        debug_ray_projection: bool, optional
+            Flag to enable debugging for ray projection. Default is False.
+
+        Returns
+        -------
+        canny_edges_boundary_pixels: tuple[np.ndarray, np.ndarray]
+            A tuple containing numpy arrays, with the Canny edge pixels from the
+            Canny edge detector and the resulting boundary edge pixels from
+            steps 1-4.
+        """
         # Reset the debug images
         self.ppt_deck = rcpp.RenderControlPowerpointPresentation()
         self.images_to_show.clear()
@@ -750,13 +912,39 @@ class RegionDetector:
         # boundary_samples = p2.Pxy(np.load(orp.opencsp_temporary_dir() + "/tmp/boundary_samples.npy"))
 
         # Get the edge pixels from the boundary locations
-        boundary_edges = self.step4_boundary_locations_to_edges(boundary_samples, canny_edges, debug_ray_projection)
+        boundary_edges = self.step4_boundary_locations_to_edges(
+            boundary_samples, canny_edges, debug_ray_projection=debug_ray_projection
+        )
 
         return canny_edges, boundary_edges
 
     def find_rectangular_region(
         self, boundary_edges: p2.Pxy, canny_edges: np.ndarray, debug_edge_groups=False, debug_edge_assignment=False
     ) -> tuple[dict[str, l2.LineXY], dict[str, p2.Pxy], reg2.RegionXY]:
+        """
+        Find a rectangular region from the given boundary and canny edge images.
+
+        Parameters
+        ----------
+        boundary_edges: p2.Pxy
+            The boundary edges, as a numpy array with zeros for non-matching
+            pixels and non-zeros for potential boundary pixels.
+        canny_edges: np.ndarray
+            The Canny edges, as a numpy array.
+        debug_edge_groups: bool, optional
+            Flag to enable debugging for edge groups. Default is False.
+        debug_edge_assignment: bool, optional
+            Flag to enable debugging for edge groups assignment. Default is False.
+
+        Returns
+        -------
+        edges: dict[str, l2.LineXY]
+            The edges of the rectangular region ("top", "bottom", "left", and "right").
+        corners: dict[str, p2.Pxy]
+            The corners of the rectangular region ("tl", "tr", "bl", and "br").
+        region: reg2.RegionXY
+            The located rectangular region.
+        """
         # Scan for the left, right, top, and bottom edge groups
         edge_groups = self.step5_find_edge_groups(boundary_edges, debug_edge_groups)
 
@@ -766,6 +954,24 @@ class RegionDetector:
         return edges, corners, region
 
     def save_debug_images(self, powerpoint_save_file: str, overwrite=False):
+        """
+        Saves the debug images to a powerpoint file. This is useful for
+        debugging the region detection steps.
+
+        Parameters
+        ----------
+        powerpoint_save_file: str
+            The path/name.ext to save to.
+        overwrite: bool, optional
+            Flag to allow overwriting the file if it exists. Default is False.
+
+        Raises
+        ------
+        FileNotFoundError:
+            If the path to save to does not exist.
+        FileExistsError:
+            If the PowerPoint file already exists and overwrite is not allowed.
+        """
         # Validate input
         ppt_path, ppt_name, ppt_ext = ft.path_components(powerpoint_save_file)
         if not ft.directory_exists(ppt_path):
