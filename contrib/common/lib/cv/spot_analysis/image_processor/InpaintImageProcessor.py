@@ -1,12 +1,8 @@
 import copy
 import dataclasses
-import multiprocessing
 import multiprocessing.pool
-import os
-import pickle
 
 import cv2 as cv
-import matplotlib.patches
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
@@ -19,14 +15,11 @@ from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysi
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImageProcessor,
 )
-import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render_control.RenderControlAxis as rca
 import opencsp.common.lib.render_control.RenderControlFigure as rcfg
-import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
-import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.log_tools as lt
 
@@ -37,12 +30,29 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
     determine the valid/invalid pixels, and fills in the invalid pixels from the
     neighboring valid pixels.
 
+    The method used for inpainting is to generate inpainting weights toward each
+    of four corners (top-left, top-right, bottom-right, bottom-left) and
+    evaluate the OpenCV inpaint() method with these weights. The results from
+    all four corners are then summed together to produce the final output.
+
     In order to not propogate noise from the edges of the mask, it is suggested
     that this image processor be evaluated after a blurring tool such as
     ConvolutionImageProcessor.
     """
 
     def __init__(self, mask_image_path_name_ext: str, cache_dir: str = None):
+        """
+        Parameters
+        ----------
+        mask_image_path_name_ext : str
+            The path/name.ext of a binary mask where 1 indicates pixels that
+            need to be filled in and 0 indicates pixels that are valid in the
+            source image.
+        cache_dir : str, optional
+            Directory to store intermediate results in, or None to not store
+            intermediate results. This can be used to speed up multiple runs
+            that use the same mask image. by default None
+        """
         super().__init__()
 
         # validate inputs
@@ -88,6 +98,18 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         self.setup_debug_images()
 
     def setup_debug_images(self, tile_array=(3, 2)):
+        """
+        Set up debug images for visualization.
+
+        This method initializes the necessary objects for rendering debug images
+        and must be called before draw_debug_image.
+
+        Parameters
+        ----------
+        tile_array : tuple, optional
+            The tile array configuration for rendering debug images.
+            Defaults to (3, 2).
+        """
         # debugging
         self.axis_control = rca.image(grid=False)
         self.figure_control = rcfg.RenderControlFigure(tile=True, tile_array=(3, 2))
@@ -95,6 +117,20 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         self.debug_fig_records = []
 
     def draw_debug_image(self, image: np.ndarray, title: str, block: bool):
+        """
+        Draw a debug image for visualization.
+
+        This method sets up a figure and renders the given image with the specified title.
+
+        Parameters
+        ----------
+        image : np.ndarray
+            The image to be rendered.
+        title : str
+            The title of the debug image.
+        block : bool
+            Whether to block the execution until the image is closed.
+        """
         image = image.copy()
         fig_record = fm.setup_figure(
             self.figure_control, self.axis_control, self.view_spec_2d, title=title, code_tag=f"{__file__}"
@@ -111,9 +147,17 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
 
     def get_mask(self) -> npt.NDArray[np.uint8]:
         """
-        Get the mask of areas that need to be filled in. 1 for pixels that
-        need to be filled in. 0 for pixels that are valid in the source
-        image.
+        Get the mask of areas that need to be filled in.
+
+        This method checks for an in-memory version of the mask, and only
+        generates a new mask if the cached version isn't found.
+
+        Returns
+        -------
+        npt.NDArray[np.uint8]
+            A binary mask where 1 indicates pixels that need to be filled in and
+            0 indicates pixels that are valid in the source image. The returned
+            result is resized to the specified shape.
         """
         if self.mask is not None:
             return self.mask
@@ -133,8 +177,22 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
     def get_sized_mask(self, shape: tuple[int, int]) -> npt.NDArray[np.uint8]:
         """
         Get the mask of areas that need to be filled in, resized to match the
-        given shape. 1 for pixels that need to be filled in. 0 for pixels
-        that are valid in the source image.
+        given shape. Calls :py:meth:`get_mask`.
+
+        This method checks for a cached version of the resized mask, and if not
+        found, resizes the original mask to the specified shape.
+
+        Parameters
+        ----------
+        shape : tuple[int, int]
+            The desired shape of the resized mask.
+
+        Returns
+        -------
+        npt.NDArray[np.uint8]
+            A binary mask where 1 indicates pixels that need to be filled in and
+            0 indicates pixels that are valid in the source image. The returned
+            result is resized to the specified shape.
         """
         # check for a cached version
         width, height = shape[1], shape[0]
@@ -212,6 +270,26 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return self.get_explainer_images(sized_mask)
 
     def get_contour(self, mask: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+        """
+        Get the contour pixels of the given mask. This essentially finds the
+        edges of the mask areas.
+
+        If the contour pixels have already been computed then the previously
+        computed values are returned. Otherwise, they are computed with
+        cv.findContours().
+
+        Parameters
+        ----------
+        mask : npt.NDArray[np.uint8]
+            The mask image for which to get the contour pixels, such as from get_mask().
+
+        Returns
+        -------
+        npt.NDArray[np.uint8]
+            An image the same size as the input mask with the contour pixels
+            highlighted. 0 for non-contour pixels, non-zero for contour pixels.
+        """
+
         if self.contour_pixels is not None:
             return self.contour_pixels
 
@@ -237,6 +315,23 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return self.contour_pixels
 
     def get_num_marching_edges_iterations(self, sized_mask: npt.NDArray[np.uint8]) -> int:
+        """
+        Get the number of iterations required to fill the entire masked area using marching edges.
+
+        If the number of marching edges iterations have already been computed
+        then the previously computed values are returned.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to get the number of marching edges iterations.
+
+        Returns
+        -------
+        int
+            The number of marching edges iterations required to fill the entire masked area.
+        """
+
         # check for in-memory cached values
         if self.num_marching_edges_iterations is not None:
             return self.num_marching_edges_iterations
@@ -270,6 +365,24 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return self.num_marching_edges_iterations
 
     def _load_extended_corner_masks_from_cache(self, sized_mask: npt.NDArray[np.uint8]) -> bool:
+        """
+        Load the extended corner masks from cache.
+
+        The extended corner masks are loaded from the cache_dir if it exists and
+        the cached sized_mask matches the given sized-mask.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to load the extended corner masks.
+
+        Returns
+        -------
+        bool
+            True if the extended corner masks were successfully loaded from
+            cache, False otherwise.
+        """
+
         if self.cache_dir is None:
             return False
 
@@ -304,6 +417,16 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return True
 
     def _save_extended_corner_masks_to_cache(self, sized_mask: npt.NDArray[np.uint8]):
+        """
+        Save the extended corner masks to cache, if the cache_dir is set and exists.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to save the extended corner masks. This mask is
+            saved as well.
+        """
+
         if self.cache_dir is None:
             return
         ft.create_directories_if_necessary(self.cache_dir)
@@ -321,6 +444,26 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
             np.save(fout_path_name_ext, self.extended_corner_masks[corner])
 
     def get_extended_corner_masks(self, sized_mask: npt.NDArray[np.uint8]) -> dict[str, npt.NDArray[np.uint8]]:
+        """
+        Get the mask, extended by :py:meth:`get_num_marching_edges_iterations`
+        pixels towards each of the four directions NW, NE, SE, SW (aka the four
+        corners 'tl', 'tr', 'br', 'bl').
+
+        The extended corner masks are computed by extending the sized mask in
+        each corner. If the extended corner masks have already been computed,
+        they are returned from cache. Otherwise, they are computed and cached.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to get the extended corner masks.
+
+        Returns
+        -------
+        dict[str, npt.NDArray[np.uint8]]
+            A dictionary of extended corner masks, where the keys are 'tl', 'tr', 'br', 'bl'.
+        """
+
         width, height = sized_mask.shape[1], sized_mask.shape[0]
 
         # check for cached values
@@ -373,6 +516,21 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return self.extended_corner_masks
 
     def _load_corner_mask_scales_from_cache(self, sized_mask: npt.NDArray[np.uint8]) -> bool:
+        """
+        Load the corner mask scales from cache, if cache_dir is set and the
+        cached sized mask matches the given mask.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to load the corner mask scales.
+
+        Returns
+        -------
+        bool
+            True if the corner mask scales were successfully loaded from cache,
+            False otherwise.
+        """
         if self.cache_dir is None:
             return False
 
@@ -405,6 +563,15 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return True
 
     def _save_corner_mask_scales_to_cache(self, sized_mask: npt.NDArray[np.uint8]):
+        """
+        Save the corner mask scales to cache if cache_dir is set.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to save the corner mask scales.
+        """
+
         if self.cache_dir is None:
             return
         ft.create_directories_if_necessary(self.cache_dir)
@@ -422,6 +589,25 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
             np.save(fout_path_name_ext, self.corner_mask_scales[corner])
 
     def get_corner_mask_scales(self, sized_mask: npt.NDArray[np.uint8]) -> dict[str, npt.NDArray[np.float32]]:
+        """
+        Get the weights for each pixel in each of the corner masks.
+
+        If the corner mask scales have already been computed, they are returned
+        from cache. Otherwise, they are computed and cached.
+
+        Parameters
+        ----------
+        sized_mask : npt.NDArray[np.uint8]
+            The mask for which to get the corner mask scales.
+
+        Returns
+        -------
+        dict[str, npt.NDArray[np.float32]]
+            A dictionary of corner mask scales, where the keys are 'tl', 'tr',
+            'br', 'bl'. The sum of all four mask scale images should produce a
+            2D array filled with all 1s (to within floating point precision).
+        """
+
         width, height = sized_mask.shape[1], sized_mask.shape[0]
 
         # check for cached values
@@ -518,6 +704,26 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return self.corner_mask_scales
 
     def _fill_image(self, image: npt.NDArray[np.uint8], sized_mask: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+        """Fills an image based on a given mask.
+
+        This uses the OpenCV inpaint() function, with weighted averaging applied
+        to each of the four corner masks (top-left, top-right, bottom-right,
+        bottom-left) to produce the final result.
+
+        Parameters
+        ----------
+        image: np.ndarray
+            The image to be filled.
+        sized_mask: np.ndarray
+            The mask that defines the area to be filled.
+
+        Returns:
+        filled_image: np.ndarray
+            The inpainted image. Only pixels matching those in the sized_mask
+            should be changed.
+        """
+
+        # Get the extended corner masks and corner mask scales
         extended_corner_masks = self.get_extended_corner_masks(sized_mask)
         corner_mask_scales = self.get_corner_mask_scales(sized_mask)
 
@@ -555,7 +761,7 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
                         new_corner_mask_scale[:, :, i] = corner_mask_scale[:, :, 0]
                     corner_mask_scale = new_corner_mask_scale
 
-            # inpaint
+            # Inpaint
             inpainted_corner = cv.inpaint(inpaint_src, extended_corner_mask, inpaintRadius, flags)
             filled_area += inpainted_corner * corner_mask_scale
 
@@ -583,26 +789,43 @@ class InpaintImageProcessor(AbstractSpotAnalysisImageProcessor):
         return ret
 
     def fill_image(self, image: npt.NDArray[np.uint8]) -> npt.NDArray[np.uint8]:
+        """Fills an image based on a generated mask.
+
+        Parameters
+        ----------
+        image: np.ndarray
+            The image to be filled.
+
+        Returns
+        -------
+        np.ndarray:
+            The filled image.
+        """
+
+        # Generate the mask and explainer images
         sized_mask = self.get_sized_mask(image.shape)
         self.get_explainer_images(sized_mask)
+
+        # Fill the image
         return self._fill_image(image, sized_mask)
 
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
+        # Copy the primary image
         image = operable.primary_image.nparray.copy()
 
-        # explainer images
+        # Get the explainer images
         explainer_images: list[CacheableImage] = self.get_explainer_images(self.get_sized_mask(image.shape))
 
-        # fix the image
+        # Fill the image
         filled_image: np.ndarray = self.fill_image(image)
 
-        # vis images
+        # Create visualization images
         before1 = CacheableImage.from_single_source(operable.primary_image.nparray)
         after1 = CacheableImage.from_single_source(filled_image)
         before2 = CacheableImage.from_single_source(ir.false_color_reshaper(operable.primary_image.nparray))
         after2 = CacheableImage.from_single_source(ir.false_color_reshaper(filled_image))
 
-        # update the result
+        # Update the result
         primary_image = CacheableImage(filled_image, source_path=operable.primary_image.source_path)
         visualization_images = copy.copy(operable.visualization_images)
         visualization_images[self] = [before1, after1, before2, after2]
