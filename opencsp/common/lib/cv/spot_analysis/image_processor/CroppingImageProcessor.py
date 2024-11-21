@@ -55,7 +55,7 @@ class CroppingImageProcessor(AbstractSpotAnalysisImageProcessor):
 
         # check the size of the image
         h, w = image.shape[0], image.shape[1]
-        if w < self.x2 or h < self.y2:
+        if w < self.x2 - 1 or h < self.y2 - 1:
             lt.error_and_raise(
                 ValueError,
                 "Error in CroppingImageProcessor._execute(): "

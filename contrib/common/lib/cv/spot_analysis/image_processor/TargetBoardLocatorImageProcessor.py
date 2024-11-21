@@ -4,6 +4,8 @@ import cv2 as cv
 import numpy as np
 import os
 
+from numpy._typing._array_like import NDArray
+
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import contrib.common.lib.cv.PerspectiveTransform as pt
 import contrib.common.lib.cv.RegionDetector as rd
@@ -47,6 +49,7 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
         canny_non_edges_gradient: int,
         edge_coarse_width=30,
         canny_test_gradients: list[tuple[int, int]] = None,
+        debug_target_locating: bool = False,
     ):
         """
         Parameters
@@ -75,11 +78,15 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
             of edges and non-edges gradients. Useful for finding good edge
             threshold values quickly when starting an analysis with new data.
             Default is None.
+        debug_target_locating : bool, optional
+            If True, then the target locating steps from the
+            :py:class:`.RegionDetector` class will be displayed upon first image
+            evaluation.
         """
         super().__init__()
 
         # register inputs
-        self.reference_image_dir_or_file = None
+        self._reference_image_dir_or_file = None
         self.cropped_x1x2y1y2 = cropped_x1x2y1y2
         self.target_width_meters = target_width_meters
         self.target_height_meters = target_height_meters
@@ -87,6 +94,7 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
         self.canny_non_edges_gradient = canny_non_edges_gradient
         self.edge_coarse_width = edge_coarse_width
         self.canny_test_gradients = canny_test_gradients
+        self.debug_target_locating = debug_target_locating
 
         # geometry values in the image
         self.detector: rd.RegionDetector = rd.RegionDetector(
@@ -101,16 +109,16 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
         self.region_detector_cacheables: list[CacheableImage] = []
 
         # assignments
-        if reference_image_dir_or_file is not None:
-            self.set_reference_images(reference_image_dir_or_file)
+        self.reference_image_dir_or_file = reference_image_dir_or_file
 
     @classmethod
     def from_corners(
         cls, corners: dict[str, p2.Pxy], target_width_meters: float, target_height_meters: float
     ) -> "TargetBoardLocatorImageProcessor":
         """
-        Creates an instance of this class the given corner pixels as the
-        corners of the target board in the source images.
+        Creates an instance of this class using the given corner pixels as the
+        corners of the target board in the source images. Does not require a
+        reference image.
 
         This method is useful for re-creating the
         TargetBoardLocatorImageProcessor class for further analysis after the
@@ -137,6 +145,12 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
                     + f"'corners' parameter should have keys {corner_names}, but instead has {list(corners.keys())}",
                 )
 
+        # make sure the dict is in the correct order
+        corners_in_order = {}
+        for corner_name in corner_names:
+            corners_in_order[corner_name] = corners[corner_name]
+        corners = corners_in_order
+
         # build the target board locator
         ret = cls(
             reference_image_dir_or_file=None,
@@ -147,6 +161,13 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
             canny_non_edges_gradient=0,
         )
         ret.corners = corners
+        ret.edges = {
+            'top': l2.LineXY.from_two_points(corners['tl'], corners['tr']),
+            'bottom': l2.LineXY.from_two_points(corners['bl'], corners['br']),
+            'left': l2.LineXY.from_two_points(corners['tl'], corners['bl']),
+            'right': l2.LineXY.from_two_points(corners['tr'], corners['br']),
+        }
+        ret.region = reg2.RegionXY.from_vertices(p2.Pxy.from_list(corners.values()))
 
         return ret
 
@@ -168,7 +189,18 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
         pixels_tltrbrbl = [self.corners['tl'], self.corners['tr'], self.corners['br'], self.corners['bl']]
         self.transform = pt.PerspectiveTransform(pixels_tltrbrbl, meters_tltrbrbl)
 
-    def set_reference_images(self, reference_image_dir_or_file: str):
+    @property
+    def reference_image_dir_or_file(self) -> str:
+        return self._reference_image_dir_or_file
+
+    @reference_image_dir_or_file.setter
+    def reference_image_dir_or_file(self, reference_image_dir_or_file: str):
+        # ignore if the value hasn't changed
+        if (self._reference_image_dir_or_file is None and reference_image_dir_or_file is None) or (
+            self._reference_image_dir_or_file == reference_image_dir_or_file
+        ):
+            return
+
         # validate input
         if not ft.file_exists(reference_image_dir_or_file, error_if_exists_as_dir=False) and not ft.directory_exists(
             reference_image_dir_or_file, error_if_exists_as_file=False
@@ -185,7 +217,7 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
         # keep a consistent state
         if self.transform is not None:
             lt.warn(
-                "Warning in TargetBoardLocatorImageProcessor.set_reference_images(): "
+                "Warning in setter for TargetBoardLocatorImageProcessor.reference_image_dir_or_file: "
                 + "discarding previously computed target board locations."
             )
             self.transform = None
@@ -195,7 +227,7 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
             self.detector = None
 
         # assign the value
-        self.reference_image_dir_or_file = reference_image_dir_or_file
+        self._reference_image_dir_or_file = reference_image_dir_or_file
 
     def _find_rectangle_in_reference_image(self):
         if self.transform is not None:
@@ -263,12 +295,15 @@ class TargetBoardLocatorImageProcessor(AbstractSpotAnalysisImageProcessor):
             preprocessed_image,
             approx_center_pixel=image_center,
             debug_canny_settings=debug_canny_settings,
-            debug_blob_analysis=False,
-            debug_ray_projection=False,
+            debug_blob_analysis=self.debug_target_locating,
+            debug_ray_projection=self.debug_target_locating,
         )
 
         self.edges, self.corners, self.region = self.detector.find_rectangular_region(
-            boundary_pixels, canny, debug_edge_groups=False, debug_edge_assignment=False
+            boundary_pixels,
+            canny,
+            debug_edge_groups=self.debug_target_locating,
+            debug_edge_assignment=self.debug_target_locating,
         )
 
         # Get the explainer images
