@@ -11,6 +11,7 @@ import numpy as np
 import PIL.Image as PilImage
 
 from opencsp.common.lib.render.View3d import View3d
+import opencsp.common.lib.tool.exception_tools as et
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.log_tools as lt
 
@@ -67,7 +68,8 @@ class RenderControlFigureRecord:
     @title.setter
     def title(self, new_title: str):
         self._title = new_title
-        self.axis.set_title(new_title)
+        # self.axis.set_title(new_title)
+        self.figure.suptitle(new_title)
 
     def close(self):
         """Closes any matplotlib window opened with this instance's view"""
@@ -87,15 +89,12 @@ class RenderControlFigureRecord:
         if hasattr(self.axis, 'get_zlabel'):
             zlabel = self.axis.get_zlabel()
 
+        # Clear the previous title
+        with et.ignored(Exception):
+            self.figure.suptitle(None)
+
         # Clear the previous graph
         self.axis.clear()
-
-        # Clear the previous title
-        if self.axis.title is not None:
-            try:
-                self.axis.title.remove()
-            except Exception:
-                pass
 
         # Re-assign necessary data
         self.axis.set_xlabel(xlabel)

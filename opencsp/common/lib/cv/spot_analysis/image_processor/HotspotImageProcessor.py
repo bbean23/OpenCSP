@@ -37,7 +37,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
     starts large and gradually shrinks until it fits the desired window size.
 
     Note: this is NOT the same as the brightest pixel, which can be trivially
-    found with np.max(image).
+    found with np.max(image). Likewise, it is NOT the centroid.
     """
 
     starting_max_factor: float = 2
@@ -384,7 +384,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
             visualization_images = copy.copy(new_operable.visualization_images)
             if self not in visualization_images:
                 visualization_images[self] = []
-            visualization_images += [CacheableImage(visualized)]
+            visualization_images[self] += [CacheableImage(visualized)]
             new_operable = dataclasses.replace(new_operable, visualization_images=visualization_images)
 
         return [new_operable]

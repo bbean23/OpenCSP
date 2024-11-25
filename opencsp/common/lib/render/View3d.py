@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 from PIL import Image
 import scipy.ndimage
+from typing import TYPE_CHECKING
 
 import opencsp.common.lib.render.axis_3d as ax3d
 import opencsp.common.lib.render.view_spec as vs
@@ -23,6 +24,15 @@ import opencsp.common.lib.render_control.RenderControlText as rctxt
 import opencsp.common.lib.tool.log_tools as lt
 import opencsp.common.lib.render.lib.AbstractPlotHandler as aph
 from opencsp.common.lib.render_control.RenderControlSurface import RenderControlSurface
+
+from typing import Any as local_RenderControlFigureRecord
+
+if TYPE_CHECKING:
+    # Use the TYPE_CHECKING magic value to avoid cyclic imports at runtime.
+    # This import is only here for type annotations.
+    from opencsp.common.lib.render_control.RenderControlFigureRecord import (
+        RenderControlFigureRecord as local_RenderControlFigureRecord,
+    )
 
 
 class View3d(aph.AbstractPlotHandler):
@@ -43,20 +53,10 @@ class View3d(aph.AbstractPlotHandler):
         figure: Figure,
         axis: Axes,
         view_spec: dict,  # 3d, xy, xz, yz
-        equal=None,  # Whether to ensure axes have equal size tick spacing.
-        parent=None,
+        equal: bool = None,  # Whether to ensure axes have equal size tick spacing.
+        parent: local_RenderControlFigureRecord = None,
     ):
-        # in-situ imports to avoid import cycles
-        import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
-
-        parent: rcfr.RenderControlFigureRecord = parent
-
         super(View3d, self).__init__()
-
-        # defaults if not set
-        if parent != None:
-            equal = equal if equal != None else parent.equal
-        equal = equal if equal != None else True
 
         # interactive graphing values
         self._callbacks: dict[str, int] = {}
@@ -104,19 +104,26 @@ class View3d(aph.AbstractPlotHandler):
         """
         Shows a plot, ensuring that equal axis is set if applicable.
         """
-        # in-situ imports to avoid import cycles
-        import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
-
         # defaults if not set
         # equal is simple
         # grid can be inherited from the parent's axis_control, or defaults to true
-        equal = equal if equal != None else self.equal
-        if self.parent != None:
-            parent_grid = True
-            if self.parent.axis_control != None:
-                parent_grid = self.parent.axis_control.grid
-            grid = grid if grid != None else parent_grid
-        grid = grid if grid != None else True
+        if equal is None:
+            equal = self.equal
+            if self.parent is not None and self.parent.equal is not None:
+                equal = self.parent.equal
+            elif self.equal is not None:
+                equal = self.equal
+            else:
+                equal = True
+        if grid is None:
+            if (
+                (self.parent is not None)
+                and (self.parent.axis_control is not None)
+                and (self.parent.axis_control.grid is not None)
+            ):
+                grid = self.parent.axis_control.grid
+            else:
+                grid = True
 
         # If axis limits are not provided, clear any previous limits.
         if (x_limits == None) or (y_limits == None) or (z_limits == None):
@@ -200,8 +207,7 @@ class View3d(aph.AbstractPlotHandler):
                 self.axis.set_ylim(z_limits)
                 self.z_limits = z_limits
         # Grid.
-        if grid:
-            plt.grid()
+        self.axis.grid(visible=grid)
         # Legend.
         if legend:
             self.axis.legend()

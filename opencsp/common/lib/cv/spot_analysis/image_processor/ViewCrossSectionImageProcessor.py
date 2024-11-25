@@ -1,3 +1,4 @@
+import copy
 from typing import Callable
 
 import matplotlib.axes
@@ -19,6 +20,7 @@ import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.exception_tools as et
+import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
 
 
@@ -39,6 +41,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         single_plot: bool = True,
         interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
         crop_to_threshold: int | None = None,
+        y_range: tuple[int, int] = None,
+        extra_source_images: list[CacheableImage] | Callable[[SpotAnalysisOperable], list[CacheableImage]] = None,
     ):
         """
         Parameters
@@ -56,10 +60,20 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             If True then the spot analysis pipeline is paused until the user
             presses the "enter" key, by default False
         crop_to_threshold : int | None, optional
-            Crops the image on the x and y axis to the first/last value >= the
-            given threshold. None to not crop the image. Useful when trying to
-            inspect hot spots on images with very concentrated values. By
-            default None.
+            Crops the input image horizontally and vertically to the first/last
+            values >= the given threshold. This crop is based on the
+            cross_section_location and is done before the cross section is
+            measured. This is useful when trying to inspect hot spots where the
+            interesting values are limited to a small portion of the image. None
+            to not crop the image. By default None.
+        y_range : tuple[int, int] | None, optional
+            Set the y-range of the cross-section plots. None to not constrain
+            the y-axis range with this parameter. Default is None.
+        extra_source_images: list[CacheableImage] | Callable[[SpotAnalysisOperable], list[CacheableImage]] | None
+            Additional images to draw the cross section for in the
+            visualizations, or None to not draw the cross section for any
+            additional images. The cross section of these additional images will
+            be drawn under the plot of the operable's primary image. Default is None.
         """
         label_for_name = "" if label.strip() == "" else "_" + label
         super().__init__(interactive, self.__class__.__name__ + label_for_name)
@@ -68,6 +82,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.label = label
         self.single_plot = single_plot
         self.crop_to_threshold = crop_to_threshold
+        self.y_range = y_range
+        self.extra_source_images = extra_source_images
 
         # initialize certain visualization values
         self.horizontal_style = rcps.RenderControlPointSeq(color=color.magenta(), linewidth=2, marker='None')
@@ -98,7 +114,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.axes = []
         self.plot_titles = []
 
-        setup_figure = lambda view_spec, name: fm.setup_figure(
+        setup_figure = lambda rc_axis, view_spec, name: fm.setup_figure(
             render_control_figure,
             rc_axis,
             view_spec,
@@ -118,7 +134,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             if plot_title == "Image":
                 rc_axis = rca.RenderControlAxis()
                 view_spec = vs.view_spec_pq()
-                fig_record = setup_figure(view_spec, "Cross Sections")
+                fig_record = setup_figure(rc_axis, view_spec, "Cross Sections")
 
             else:
                 if self.single_plot:
@@ -133,7 +149,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
                         name_suffix = " (Vertical)"
 
                 view_spec = vs.view_spec_xy()
-                fig_record = setup_figure(view_spec, self.label + name_suffix)
+                fig_record = setup_figure(rc_axis, view_spec, self.label + name_suffix)
 
             self.view_specs.append(view_spec)
             self.rc_axises.append(rc_axis)
@@ -173,24 +189,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
                     cs_cropped_x, cs_cropped_y = cross_sec_x - x_start, cross_sec_y - y_start
                     cropped_width, cropped_height = x_end - x_start, y_end - y_start
 
-        # Get the cross sections
-        v_cross_section = image[:, cs_cropped_x : cs_cropped_x + 1].squeeze().tolist()
-        v_p_list = list(range(len(v_cross_section)))
-        h_cross_section = image[cs_cropped_y : cs_cropped_y + 1, :].squeeze().tolist()
-        h_p_list = list(range(len(h_cross_section)))
-
-        if self.single_plot:
-            # Align the cross sections so that the intersect point overlaps
-            if cs_cropped_x < cs_cropped_y:
-                diff = cs_cropped_x - cs_cropped_y
-                v_p_list = [i + diff for i in v_p_list]
-            if cs_cropped_y < cs_cropped_x:
-                diff = cs_cropped_y - cs_cropped_x
-                h_p_list = [i + diff for i in h_p_list]
-        else:
-            # Translate the cross sections plots to their actual locations
-            v_p_list = [i + y_start for i in v_p_list]
-            h_p_list = [i + x_start for i in h_p_list]
+        # matplotlib puts the origin in the bottom left instead of the top left
+        cs_cropped_y_mlab = cropped_height - cs_cropped_y
 
         # Clear the previous plot
         for fig_record in self.fig_records:
@@ -200,29 +200,79 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         for plot_title_prefix, fig_record in zip(self.plot_titles, self.fig_records):
             fig_record.title = plot_title_prefix + operable.best_primary_nameext
 
-        # matplotlib puts the origin in the bottom left instead of the top left
-        cs_cropped_y = cropped_height - cs_cropped_y
+        # Get the additional images to get the cross section for
+        additional_images: list[CacheableImage] = []
+        if self.extra_source_images is not None:
+            if isinstance(self.extra_source_images, list):
+                additional_images = self.extra_source_images
+            else:
+                additional_images = self.extra_source_images(operable)
 
-        # Draw the image plot
-        i_view = self.views[0]
-        image = ir.false_color_reshaper(image, 255)
-        i_view.draw_image(image, (0, 0), (cropped_width, cropped_height))
-        i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=self.vertical_style)
-        i_view.draw_pq_list([(0, cs_cropped_y), (cropped_width, cs_cropped_y)], style=self.horizontal_style)
+        for source_image in ["primary"] + additional_images:
+            # get the 'np_image' and the plot label
+            is_primary = source_image == "primary"
+            if is_primary:
+                plot_label = "Primary " if len(additional_images) > 0 else ""
+                np_image = image
+                hstyle = self.horizontal_style
+                vstyle = self.vertical_style
+            else:
+                _, plot_label, _ = ft.path_components(source_image.source_path)
+                plot_label += " "
+                np_image = source_image.nparray
+                hstyle = copy.deepcopy(self.horizontal_style)
+                hstyle.color = color.green()
+                vstyle = copy.deepcopy(self.horizontal_style)
+                vstyle.color = color.blue()
 
-        # Draw the new cross sections plot using the same axes
-        v_view = self.views[1]
-        h_view = self.views[1]
-        if not self.single_plot:
-            v_view = self.views[2]
-        v_view.draw_pq_list(zip(v_p_list, v_cross_section), style=self.vertical_style, label="Vertical Cross Section")
-        h_view.draw_pq_list(
-            zip(h_p_list, h_cross_section), style=self.horizontal_style, label="Horizontal Cross Section"
-        )
+            # Get the cross sections
+            v_cross_section = np_image[:, cs_cropped_x : cs_cropped_x + 1].squeeze().tolist()
+            v_p_list = list(range(len(v_cross_section)))
+            h_cross_section = np_image[cs_cropped_y : cs_cropped_y + 1, :].squeeze().tolist()
+            h_p_list = list(range(len(h_cross_section)))
+
+            if self.single_plot:
+                # Align the cross sections so that the intersect point overlaps
+                if cs_cropped_x < cs_cropped_y:
+                    diff = cs_cropped_x - cs_cropped_y
+                    v_p_list = [i + diff for i in v_p_list]
+                if cs_cropped_y < cs_cropped_x:
+                    diff = cs_cropped_y - cs_cropped_x
+                    h_p_list = [i + diff for i in h_p_list]
+            else:
+                # Translate the cross sections plots to their actual locations
+                v_p_list = [i + y_start for i in v_p_list]
+                h_p_list = [i + x_start for i in h_p_list]
+
+            # Draw the image plot
+            if is_primary:
+                i_view = self.views[0]
+                np_image = ir.false_color_reshaper(np_image, 255)
+                i_view.draw_image(np_image, (0, 0), (cropped_width, cropped_height))
+                i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
+                i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
+
+            # Draw the new cross sections plot using the same axes
+            v_view = self.views[1]
+            h_view = self.views[1]
+            if not self.single_plot:
+                v_view = self.views[2]
+            v_view.draw_pq_list(
+                zip(v_p_list, v_cross_section), style=vstyle, label=plot_label + "Vertical Cross Section"
+            )
+            h_view.draw_pq_list(
+                zip(h_p_list, h_cross_section), style=hstyle, label=plot_label + "Horizontal Cross Section"
+            )
+
+            # explicitly set the y-axis range
+            if self.y_range is not None:
+                h_view.y_limits = self.y_range
+                v_view.y_limits = self.y_range
 
         # draw
         for view in self.views:
-            view.show(block=False, legend=self.single_plot)
+            legend = (self.single_plot) or (len(additional_images) > 0)
+            view.show(block=False, legend=legend)
 
         return [], self.fig_records
 

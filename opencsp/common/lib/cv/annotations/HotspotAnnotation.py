@@ -9,3 +9,6 @@ class HotspotAnnotation(PointAnnotations):
         if style is None:
             style = rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=12)
         super().__init__(style, point)
+
+    def __str__(self):
+        return f"HotspotAnnotation<{self.points.x[0]},{self.points.y[0]}>"

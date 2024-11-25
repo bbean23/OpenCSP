@@ -251,7 +251,7 @@ class CacheableImage:
                             ValueError,
                             "Error in CacheableImage.source_path(): "
                             + f"the contents of self.nparray and {new_val} do not match!"
-                            + f" ({self.cache_path=}, {self.source_path=})",
+                            + f" ({self.cache_path=}, {self._source_path=})",
                         )
 
         self._source_path = new_val
