@@ -170,12 +170,20 @@ def tesseract_read_gain_values(
     # prepare the image
     processed_image_roi, processed_image_red = prepare_for_tesseract(data_dir, processed)
 
-    # Try to read the gain value
-    gain_str = pytesseract.image_to_string(processed_image_red, lang='eng')
+    # Try from the standard RGB image
+    gain_str = pytesseract.image_to_string(processed_image_roi, lang='eng')
     try:
         gain = int(gain_str)
     except Exception:
         gain_str = ""
+
+    # Try to read the gain value from just the red channel
+    if gain is None:
+        gain_str = pytesseract.image_to_string(processed_image_red, lang='eng')
+        try:
+            gain = int(gain_str)
+        except Exception:
+            gain_str = ""
 
     # Increase contrast and try again
     if gain is None:
@@ -261,7 +269,7 @@ if __name__ == "__main__":
 
     # Read the already assigned gain values, in case some images already have this value
     print("Loading gain values...", end="")
-    matching_bcs_images = matching_bcs_images[50:200]
+    matching_bcs_images = matching_bcs_images[300:400]
     bcs_images_gains = load_gain_values(data_dir, matching_bcs_images)
     print("[done]")
 
