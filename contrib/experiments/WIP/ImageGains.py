@@ -102,16 +102,9 @@ def get_matching_bcs_images(image_path_name_exts: list[str]) -> list[tuple[str, 
     return matched_images
 
 
-def rename_images(data_dir: str, image_path_name_exts: list[str]):
-    for image_path_name_ext in image_path_name_exts:
-        path, name, ext = ft.path_components(image_path_name_ext)
-
-        if "05E09_05E09" in name:
-            new_name = name.replace("05E09_05E09", "05E09")
-            ft.rename_file(ft.join(data_dir, image_path_name_ext), ft.join(data_dir, path, new_name + ext))
-
-
-def prepare_for_tesseract(data_dir: str, processed_image_path_name_ext: str):
+def prepare_for_tesseract(data_dir: str, processed_image_path_name_ext: str) -> tuple[np.ndarray, np.ndarray]:
+    """Get the region of image for the given processed image, and just the red
+    channel for the same region of interest."""
     roi = {'left': 514, 'top': 98, 'right': 514 + 84, 'bottom': 98 + 41}
 
     processed_image = np.array(Image.open(ft.join(data_dir, processed_image_path_name_ext)))
@@ -124,6 +117,8 @@ def prepare_for_tesseract(data_dir: str, processed_image_path_name_ext: str):
 def load_gain_values(
     data_dir: str, processed_raw_pixeldata: list[tuple[str, str, str]]
 ) -> list[tuple[str, str, str, int | None]]:
+    """Returns the ISO Exif information on the given images, if they have such
+    information. If not, then None is returned for that set of images."""
     processed_images = [ft.join(data_dir, processed) for processed, raw, pixeldata in processed_raw_pixeldata]
     raw_images = [ft.join(data_dir, raw) for processed, raw, pixeldata in processed_raw_pixeldata]
     pixeldata_images = [ft.join(data_dir, pixeldata) for processed, raw, pixeldata in processed_raw_pixeldata]
@@ -137,35 +132,51 @@ def load_gain_values(
     has_raw_gain = ['EXIF:ISO' in tags for tags in raw_tags]
     has_pixeldata_gain = ['EXIF:ISO' in tags for tags in pixeldata_tags]
 
-    has_gain_exif: list[int | None] = []
+    gain_exif_values: list[int | None] = []
     for i in range(len(has_processed_gain)):
         if has_processed_gain[i] and has_raw_gain[i] and has_pixeldata_gain[i]:
             g1 = int(processed_tags[i]['EXIF:ISO'])
             g2 = int(raw_tags[i]['EXIF:ISO'])
             g3 = int(pixeldata_tags[i]['EXIF:ISO'])
             if g1 == g2 and g1 == g3:
-                has_gain_exif.append(g1)
+                gain_exif_values.append(g1)
             else:
-                has_gain_exif.append(None)
+                gain_exif_values.append(None)
         else:
-            has_gain_exif.append(None)
+            gain_exif_values.append(None)
 
     ret: list[tuple[str, str, str, int | None]] = []
     for i in range(len(has_processed_gain)):
         processed, raw, pixeldata = processed_raw_pixeldata[i]
-        ret.append((processed, raw, pixeldata, has_gain_exif[i]))
+        ret.append((processed, raw, pixeldata, gain_exif_values[i]))
 
     return ret
 
 
 def tesseract_read_gain_values(
-    data_dir: str, processed: str, raw: str, pixeldata: str, gain: int | None
+    data_dir: str, processed: str, raw: str, pixeldata: str
 ) -> tuple[str, str, str, int | None]:
-    gain = None
+    """
+    Use OCR to read the gain value from the processed version of the given image
 
-    # check if we've already computed the gain for these images
-    if gain is not None:
-        return processed, raw, pixeldata, gain
+    Parameters
+    ----------
+    data_dir : str
+        The top level directory containing images. The image paths will be
+        relative to this directory.
+    processed : str
+        The relative path/name.ext of the processed image to read the gain value from.
+    raw : str
+        The relative path/name.ext of the raw image that matches the processed image.
+    pixeldata : str
+        The relative path/name.ext of the pixeldata image that matches the processed image.
+
+    Returns
+    -------
+    tuple[str, str, str, int | None]
+        The [processed, raw, pixeldata, gain] tuple for the image.
+    """
+    gain: int = None
 
     # prepare the image
     processed_image_roi, processed_image_red = prepare_for_tesseract(data_dir, processed)
@@ -197,11 +208,15 @@ def tesseract_read_gain_values(
     return processed, raw, pixeldata, gain
 
 
-def ask_user_for_gain(data_dir: str, processed: str, raw: str, pixeldata: str, gain: int | None):
-    # check if we already have a gain for this image
+def tesseract_read_gain_values_as_necessary(
+    data_dir: str, processed: str, raw: str, pixeldata: str, gain: int | None
+) -> tuple[str, str, str, int | None]:
     if gain is not None:
-        return gain
+        return processed, raw, pixeldata, gain
+    return tesseract_read_gain_values(data_dir, processed, raw, pixeldata)
 
+
+def ask_user_for_gain(data_dir: str, processed: str, raw: str, pixeldata: str) -> int:
     # prepare the image
     processed_image_roi, processed_image_red = prepare_for_tesseract(data_dir, processed)
 
@@ -228,6 +243,12 @@ def ask_user_for_gain(data_dir: str, processed: str, raw: str, pixeldata: str, g
     fig_record2.close()
 
     return gain
+
+
+def ask_user_for_gain_as_necessary(data_dir: str, processed: str, raw: str, pixeldata: str, gain: int | None) -> int:
+    if gain is not None:
+        return gain
+    return ask_user_for_gain(data_dir, processed, raw, pixeldata)
 
 
 def write_gain_value(image_path_name_exts: list[str], gain: int):
@@ -269,7 +290,6 @@ if __name__ == "__main__":
 
     # Read the already assigned gain values, in case some images already have this value
     print("Loading gain values...", end="")
-    matching_bcs_images = matching_bcs_images[300:400]
     bcs_images_gains = load_gain_values(data_dir, matching_bcs_images)
     print("[done]")
 
@@ -291,7 +311,7 @@ if __name__ == "__main__":
             chunk = missing_bcs_images_gains[chunk_start:chunk_stop]
             print(f"processing {chunk_start}:{chunk_stop}/{len(missing_bcs_images_gains)}")
             tesseract_bcs_images_gains += pool.starmap(
-                tesseract_read_gain_values, [(data_dir, *matches) for matches in chunk]
+                tesseract_read_gain_values_as_necessary, [(data_dir, *matches) for matches in chunk]
             )
 
     # How many more gains did we identify?
@@ -314,11 +334,13 @@ if __name__ == "__main__":
     print(" [done]")
 
     # Populate unknown gain values from the user
+    nvalues_from_user = len(filter(lambda prpg: prpg[3] is None, tesseract_bcs_images_gains))
+    print(f"Gathering {nvalues_from_user} gain values from the user")
     manual_bcs_images_gains: list[tuple[str, str, str, int | None]] = []
     for i in range(len(tesseract_bcs_images_gains)):
         processed, raw, pixeldata, gain = tesseract_bcs_images_gains[i]
         if gain is None:
-            gain = ask_user_for_gain(data_dir, processed, raw, pixeldata, gain)
+            gain = ask_user_for_gain_as_necessary(data_dir, processed, raw, pixeldata, gain)
             if gain is not None:
                 manual_bcs_images_gains += [(processed, raw, pixeldata, gain)]
 
