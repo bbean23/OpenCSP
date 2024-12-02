@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 import pytesseract
 
+from opencsp import opencsp_settings
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render_control.RenderControlAxis as rca
@@ -273,6 +274,7 @@ def write_gain_value(image_path_name_exts: list[str], gain: int):
 
 
 if __name__ == "__main__":
+    data_dir = ft.join(opencsp_settings["opencsp_root_path"]["experiment_dir"], "2_Data\\BCS_Data")
     image_path_name_exts = it.image_files_in_directory(data_dir, recursive=True)
     matching_bcs_images = get_matching_bcs_images(image_path_name_exts)
 
