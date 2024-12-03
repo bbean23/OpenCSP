@@ -6,6 +6,9 @@ Utilities for image processing.
 """
 
 import sys
+from typing import Callable, TypeVar
+
+import exiftool
 import numpy as np
 from PIL import Image
 
@@ -25,6 +28,9 @@ pil_image_formats_writable = pil_image_formats_rw + ["palm", "pdf", "xv"]
 """ A list of all image image formats that can be written by the Python Imaging Library (PIL). Note that not all of these formats can be read by PIL. """
 pil_image_formats_supporting_exif = ["jpg", "jpeg", "png", "tiff", "webp"]
 # fmt: on
+
+
+T = TypeVar('T')
 
 
 def numpy_to_image(arr: np.ndarray, rescale_or_clip='rescale', rescale_max=-1):
@@ -294,3 +300,49 @@ def getsizeof_approx(img: Image) -> int:
         image_data_size = width * height * mode_size
 
     return object_size + image_data_size
+
+
+def get_exif_value(
+    data_dir: str, image_path_name_exts: str | list[str], exif_val: str = "EXIF:ISO", parser: Callable[[str], T] = int
+) -> T | list[T]:
+    """Returns the exif_val Exif information on the given images, if they have such
+    information. If not, then None is returned for those images."""
+    # build the list of files
+    if isinstance(image_path_name_exts, str):
+        files = [ft.join(data_dir, image_path_name_exts)]
+    else:
+        files = [ft.join(data_dir, image_path_name_ext) for image_path_name_ext in image_path_name_exts]
+
+    # verify the files exist
+    for file in files:
+        if not ft.file_exists(file):
+            lt.error_and_raise(
+                FileNotFoundError, "Error in image_tools.get_exif_value: " + f"image file {file} does not exist!"
+            )
+
+    # get the exif tags
+    with exiftool.ExifToolHelper() as et:
+        tags = et.get_tags(files, tags=[exif_val])
+
+    # parse the value
+    has_val = [exif_val in image_tags for image_tags in tags]
+    parsed_exif_values: list[T | None] = []
+    for i in range(len(has_val)):
+        if has_val[i]:
+            exif_str = tags[i][exif_val]
+            try:
+                parsed = parser(exif_str)
+            except Exception as ex:
+                lt.error(
+                    "Error in image_tools.get_exif_value: "
+                    + f"{type(ex)} encountered while parsing exif value {exif_str} for image {files[i]}"
+                )
+                raise
+            parsed_exif_values.append(parsed)
+        else:
+            parsed_exif_values.append(None)
+
+    # return a singular value if we were given a singular value
+    if isinstance(image_path_name_exts, str):
+        return parsed_exif_values[0]
+    return parsed_exif_values
