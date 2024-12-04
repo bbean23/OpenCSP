@@ -470,9 +470,9 @@ class PowerpointSlide:
 
         # save images and texts to the save directory
         for image in self.images:
-            image.set_save_path(path)
+            image.update_save_path(path)
         for text in self.texts:
-            text.set_save_path(path)
+            text.update_save_path(path)
         self.save()
 
         # save references to the images and texts to the save directory

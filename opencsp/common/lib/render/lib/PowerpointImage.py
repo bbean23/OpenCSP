@@ -160,14 +160,20 @@ class PowerpointImage(pps.PowerpointShape):
         self._val = self.get_saved_path()
         self._test_saved_path()
 
-    def get_size(self, force_reload=False):
-        """Get the width and height of this image in pixels. Calls save() as necessary."""
+    @property
+    def shape(self) -> tuple[int, int] | tuple[None, None]:
+        """
+        Returns the (width, height) of the assigned image in pixels, or (None, None) if no
+        image is assigned.
+
+        Calls save() in the case that the assigned image is a string or
+        RenderControlFigureRecord.
+        """
         if not self.has_val():
             return None, None
         if self.width >= 0 and self.height >= 0:
             # return cached values
-            if not force_reload:
-                return self.width, self.height
+            return self.width, self.height
 
         # get the image size, calling save() as necessary
         if isinstance(self._val, Image.Image):
@@ -222,12 +228,12 @@ class PowerpointImage(pps.PowerpointShape):
         return x, y, w, h
 
     def fit_to_cell_dimensions(self, cell_dims: tuple[float, float, float, float]):
-        width, height = self.get_size()
+        width, height = self.shape
         self.cell_dims = cell_dims
         self.dims = self._image_dims_relative_to_cell(self.cell_dims, width, height, self.stretch)
 
     def stretch_to_cell_dimensions(self, cell_dims: tuple[float, float, float, float]):
-        width, height = self.get_size()
+        width, height = self.shape
         self.cell_dims = cell_dims
         self.dims = self._image_dims_relative_to_cell(self.cell_dims, width, height, stretch=True)
 
@@ -243,7 +249,7 @@ class PowerpointImage(pps.PowerpointShape):
             self.save()
 
         # get the width and height
-        image_width, image_height = self.get_size()
+        image_width, image_height = self.shape
 
         # check if the size is reasonable (within reduced_image_size_scale% of the target size)
         reasonable = reduced_image_size_scale
@@ -433,9 +439,12 @@ class PowerpointImage(pps.PowerpointShape):
             to_rename = [self.get_saved_path(), self.get_text_file_path()]
             for path_name_ext in to_rename:
                 _, name, ext = ft.path_components(path_name_ext)
-                ft.copy_file(path_name_ext, save_path, name + ext)
+                ft.copy_and_delete_file(path_name_ext, save_path, name + ext)
 
         self._tmp_save_path = save_path
+
+        if self.is_saved_to_file():
+            self._test_saved_path()
 
     def save(self) -> None | str:
         """
@@ -524,7 +533,7 @@ class PowerpointImage(pps.PowerpointShape):
         path_name_ext_serialized = self.get_text_file_path()
 
         # replace this instance's value with the saved-to-disk version
-        self.set_val(Image.open(path_name_ext))
+        self.set_val(np.array(Image.open(path_name_ext)))
         self._saved_name_ext = None
 
         # delete the saved files

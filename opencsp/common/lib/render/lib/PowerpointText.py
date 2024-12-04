@@ -119,7 +119,7 @@ class PowerpointText(pps.PowerpointShape):
 
         return cls(val, dims, cell_dims, is_title)
 
-    def set_save_path(self, save_path: str):
+    def update_save_path(self, save_path: str):
         if self.is_saved_to_file():
             to_rename = [self.get_text_file_path()]
             for path_name_ext in to_rename:
