@@ -346,3 +346,37 @@ def get_exif_value(
     if isinstance(image_path_name_exts, str):
         return parsed_exif_values[0]
     return parsed_exif_values
+
+
+def set_exif_value(data_dir: str, image_path_name_ext: str, exif_val: str, exif_name: str = "EXIF:ISO"):
+    with exiftool.ExifToolHelper() as et:
+        et.set_tags(
+            ft.join(data_dir, image_path_name_ext),
+            tags={exif_name: str(exif_val)},
+            params=["-P", "-overwrite_original"],
+        )
+
+    with exiftool.ExifToolHelper() as et:
+        try:
+            et.set_tags(
+                ft.join(data_dir, image_path_name_ext),
+                tags={exif_name: str(exif_val)},
+                params=["-P", "-overwrite_original"],
+            )
+        except exiftool.exceptions.ExifToolExecuteError:
+
+            # # The image may have been poorly formatted the first time around
+            # TODO
+            # for image_pne in image_path_name_exts:
+
+            #     # Save the image to a new file with a trusted program (Pillow)
+            #     p, n, e = ft.path_components(image_pne)
+            #     rewrite = ft.join(p, n + " - rewrite" + e)
+            #     Image.open(image_pne).save(rewrite)
+            #     shutil.copystat(image_pne, rewrite)
+            #     ft.delete_file(image_pne)
+            #     ft.rename_file(rewrite, image_pne)
+
+            #     # Try to set the gain EXIF information again
+            #     et.set_tags(image_pne, tags={"EXIF:ISO": str(gain)}, params=["-P", "-overwrite_original"])
+            raise
