@@ -781,6 +781,64 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
             )
 
 
+def rename_directory(input_dir: str, output_dir: str):
+    """Move a directory from input to output.
+
+    Verifies that input is a directory, and that the output doesn't exist. We
+    check for existence of the output directory after the rename, and raise a
+    FileNotFoundError if it can't be found.
+
+    Parameters
+    ----------
+    input_dir: str
+        The directory to be renamed.
+    output_dir: str, optional
+        The new destination name for the input_dir.
+    """
+    if norm_path(input_dir) == norm_path(output_dir):
+        return
+
+    # Check input.
+    if os.path.isfile(input_dir):
+        lt.error_and_raise(
+            RuntimeError, 'ERROR: In rename_directory(), requested input file exists and is a file: ' + str(input_dir)
+        )
+    if not os.path.isdir(input_dir):
+        lt.error_and_raise(
+            RuntimeError,
+            'ERROR: In rename_directory(), requested input path exists but is not a directory: ' + str(input_dir),
+        )
+    if os.path.isfile(output_dir):
+        lt.error_and_raise(
+            RuntimeError, 'ERROR: In rename_directory(), requested output file exists and is a file: ' + str(output_dir)
+        )
+    if os.path.isdir(output_dir):
+        lt.error_and_raise(
+            RuntimeError,
+            'ERROR: In rename_directory(), requested output file already exists as a directory: ' + str(output_dir),
+        )
+    if os.path.exists(output_dir):
+        lt.error_and_raise(
+            RuntimeError,
+            'ERROR: In rename_directory(), requested output file exists as something besides a file or directory: '
+            + str(output_dir),
+        )
+    if not os.path.isdir(os.path.dirname(output_dir)):
+        lt.error_and_raise(
+            RuntimeError,
+            'ERROR: In rename_directory(), requested output path does not exist or is not a directory: '
+            + str(os.path.dirname(output_dir)),
+        )
+    # Rename the file.
+    shutil.move(input_dir, output_dir)
+    # Verify the rename
+    if not os.path.exists(output_dir):
+        lt.error_and_raise(
+            FileNotFoundError,
+            f"Error: In rename_directory(), failed to find output directory after rename: '{input_dir}' --> '{output_dir}'",
+        )
+
+
 def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str, copystat=True):
     """
     Like rename_file(), but it works across file systems.
@@ -797,7 +855,9 @@ def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str, copy
         If true then the ctime, mtime, and permission bits, and more are copied
         to the new file. Default is True.
     """
-    if norm_path(input_dir_body_ext) == norm_path(output_dir_body_ext):
+    input_dir_body_ext = norm_path(input_dir_body_ext)
+    output_dir_body_ext = norm_path(output_dir_body_ext)
+    if input_dir_body_ext == output_dir_body_ext:
         return
 
     # copy and rename
@@ -835,6 +895,7 @@ def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = N
     """
     # Check input.
     input_dir_body_ext = norm_path(input_dir_body_ext)
+    output_dir = norm_path(output_dir)
     if os.path.isdir(input_dir_body_ext):
         lt.error_and_raise(
             RuntimeError,
@@ -857,8 +918,7 @@ def copy_file(input_dir_body_ext: str, output_dir: str, output_body_ext: str = N
     if output_body_ext == None:
         input_body_ext = body_ext_given_file_dir_body_ext(input_dir_body_ext)
         output_body_ext = input_body_ext
-    output_dir_body_ext = os.path.join(output_dir, output_body_ext)
-    output_dir_body_ext = norm_path(output_dir_body_ext)
+    output_dir_body_ext = join(output_dir, output_body_ext)
     # Check output.
     if file_exists(output_dir_body_ext):
         lt.error_and_raise(
