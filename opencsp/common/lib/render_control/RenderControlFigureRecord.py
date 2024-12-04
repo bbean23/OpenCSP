@@ -93,6 +93,15 @@ class RenderControlFigureRecord:
         with et.ignored(Exception):
             self.figure.suptitle(None)
 
+        # Clear the previous legend
+        axes = [self.axis]
+        if self.figure is not None:
+            axes = list(set(list(self.figure.axes) + axes))
+        for axis in axes:
+            legend = axis.get_legend()
+            if legend is not None:
+                legend.remove()
+
         # Clear the previous graph
         self.axis.clear()
 
