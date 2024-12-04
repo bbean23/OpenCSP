@@ -455,8 +455,13 @@ class PowerpointSlide:
         return slide
 
     def to_txt_file(self, file_path_name_ext: str):
-        """Saves the images and texts for this slide in the given path
-        and saves the references to them in the given file."""
+        """
+        Serializes this instance to files. This instance can then be
+        reconstructed with the :py:meth:`from_txt_file` method.
+
+        Saves the images and texts for this slide in the given path
+        and saves the references to them in the given file.
+        """
         path, _, _ = ft.path_components(file_path_name_ext)
 
         # clean out existing files in the save directory
@@ -487,6 +492,10 @@ class PowerpointSlide:
 
     @classmethod
     def from_txt_file(cls, file_path_name_ext: str, slide_control: RenderControlPowerpointSlide = None):
+        """
+        Deserializes a PowerpointSlide instance from a file previously used with
+        `to_txt_file`. The newly generated instance is then returned.
+        """
         if slide_control is None:
             slide_control = RenderControlPowerpointSlide()
 
