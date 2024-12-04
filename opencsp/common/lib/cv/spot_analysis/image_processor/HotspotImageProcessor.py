@@ -333,7 +333,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
                     flooded_image = skimage.morphology.flood_fill(continuity_image, tuple(match_idxs[0]), 1)
                     if np.max(flooded_image) > 1:
                         lt.warning(
-                            "Warning in PercentileFilterImageProcessor._execute(): "
+                            "Warning in HotspotImageProcessor._execute(): "
                             + f"There are at least 2 regions in '{operable.best_primary_nameext}', "
                             + f"area [{total_start_y}:{total_start_y+end_y}, {total_start_x}:{total_start_x+end_x}] "
                             + "that share the hottest pixel value."
@@ -343,7 +343,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
                     self.has_scikit_image = False
 
                     lt.debug(
-                        "In PercentileFilterImageProcessor._execute(): "
+                        "In HotspotImageProcessor._execute(): "
                         + f"can't import scikit-image ({repr(ex)}), and so can't determine if the matching region is continuous"
                     )
 

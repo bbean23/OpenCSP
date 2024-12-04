@@ -720,9 +720,6 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
     for existence of the output file after the rename, and raise a
     FileNotFoundError if it can't be found.
 
-    We check for existence of the output file after the rename, and raise a
-    FileNotFoundError if it can't be found.
-
     Parameters
     ----------
     input_dir_body_ext: str
