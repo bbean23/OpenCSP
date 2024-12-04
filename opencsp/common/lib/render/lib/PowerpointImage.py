@@ -540,16 +540,9 @@ class PowerpointImage(pps.PowerpointShape):
         ft.delete_file(path_name_ext, error_on_not_exists=False)
         ft.delete_file(path_name_ext_serialized, error_on_not_exists=False)
 
-    def append_tmp_path(self, append_dir: str):
-        self._tmp_save_path = ft.join(self._tmp_save_path, append_dir)
-
     @classmethod
     def clear_tmp_save_all(cls):
         """Remove all temporary save files for all saved PowerpointImages"""
         if ft.directory_exists(cls._tmp_save_path, error_if_exists_as_file=False):
             ft.delete_files_in_directory(cls._tmp_save_path, "*.png", error_on_dir_not_exists=False)
             ft.delete_files_in_directory(cls._tmp_save_path, "*.png.txt", error_on_dir_not_exists=False)
-
-    @classmethod
-    def append_tmp_path_all(cls, append_dir: str):
-        cls._tmp_save_path = ft.join(cls._tmp_save_path, append_dir)

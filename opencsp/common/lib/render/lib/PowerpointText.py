@@ -171,14 +171,7 @@ class PowerpointText(pps.PowerpointShape):
             ft.delete_file(self._saved_name_ext, error_on_not_exists=False)
             self._saved_name_ext = None
 
-    def append_tmp_path(self, append_dir: str):
-        self._tmp_save_path = os.path.join(self._tmp_save_path, append_dir)
-
     @classmethod
     def clear_tmp_save_all(cls):
         if ft.directory_exists(cls._tmp_save_path, error_if_exists_as_file=False):
             ft.delete_files_in_directory(cls._tmp_save_path, "*.txt")
-
-    @classmethod
-    def append_tmp_path_all(cls, append_dir: str):
-        cls._tmp_save_path = os.path.join(cls._tmp_save_path, append_dir)
