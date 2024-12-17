@@ -1123,22 +1123,9 @@ class View3d(aph.AbstractPlotHandler):
         """
 
         if (len(pq) != 2) and (len(pq) != 3):
-            lt.error('ERROR: In draw_pq_text(), len(pq)=', len(pq), ' is not equal to 2 or 3.')
-            assert False
-        if self.view_spec['type'] == '3d':
-            lt.error(
-                "ERROR: In View3d.draw_pq_list(), incompatible view_spec['type'] = '"
-                + str(self.view_spec['type'])
-                + "' encountered."
-            )
-            assert False
-        elif (
-            (self.view_spec['type'] == 'xy')
-            or (self.view_spec['type'] == 'xz')
-            or (self.view_spec['type'] == 'yz')
-            or (self.view_spec['type'] == 'vplane')
-            or (self.view_spec['type'] == 'camera')
-        ):
+            lt.error_and_raise(ValueError, "Error in View3d.draw_pq(): " + f"{len(pq)=} is not equal to 2 or 3.")
+        allowed_types = ['xy', 'xz', 'yz', 'image', 'vplane', 'camera']
+        if self.view_spec['type'] in allowed_types:
             self._plot(
                 [pq[0]],
                 [pq[1]],
@@ -1154,12 +1141,12 @@ class View3d(aph.AbstractPlotHandler):
                 markerfacecolor=style.markerfacecolor,
             )
         else:
-            lt.error(
-                "ERROR: In View3d.draw_pq(), unrecognized view_spec['type'] = '"
-                + str(self.view_spec['type'])
-                + "' encountered."
+            lt.error_and_raise(
+                RuntimeError,
+                "Error in View3d.draw_pq(): "
+                + f"incompatible view_spec['type'] '{self.view_spec['type']}' encountered. "
+                + "Should be one of {allowed_types}.",
             )
-            assert False
 
     def draw_p_list(self, input_p_list, style=rcps.default(), label=None):
         pq_list = [(i, input_p_list[i]) for i in range(len(input_p_list))]
@@ -1219,7 +1206,7 @@ class View3d(aph.AbstractPlotHandler):
             pq_list.append(input_pq_list[0])
         else:
             pq_list = input_pq_list
-        allowed_vs_types = ['xy', 'xz', 'yz', 'vplane', 'camera']
+        allowed_vs_types = ['xy', 'xz', 'yz', 'image', 'vplane', 'camera']
         if self.view_spec['type'] not in allowed_vs_types:
             lt.error_and_raise(
                 RuntimeError,

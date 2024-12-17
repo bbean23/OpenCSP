@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 
+import opencsp.common.lib.geometry.angle as geo_angle
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -215,6 +216,23 @@ class Vxy:
 
         """
         return np.sqrt(np.sum(self._data**2, 0))
+
+    def angle(self) -> npt.NDArray[np.float_]:
+        """
+        Returns the orientation relative to the origin for each vector, in
+        radians in the standard coordinate system (0 on the x-axis to the right,
+        positive counter-clockwise).
+
+        Returns
+        -------
+        np.ndarray
+            Length n ndarray of vector angles in the range 0-2pi.
+        """
+        xy_as_complex = np.array([complex(xv, yv) for xv, yv in zip(self.x, self.y)])
+        angles = np.angle(xy_as_complex)
+        normalized = geo_angle.normalize(angles)
+
+        return normalized
 
     def rotate(self, R: np.ndarray):
         """

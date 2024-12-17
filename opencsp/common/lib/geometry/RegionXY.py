@@ -51,6 +51,11 @@ class RegionXY:
         vx/vy : np.ndarray
             The X and Y sample points.
 
+        Returns
+        -------
+        np.ndarray
+            Boolean 2d mask with shape (yv.size, xv.size). True for inside this
+            region, False for outside this region.
         """
         # Create mask from first loop
         mask = self.loops[0].as_mask(vx, vy)

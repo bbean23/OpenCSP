@@ -27,6 +27,8 @@ class RectXY(RegionXY):
         """
         self.tl = tl
         self.br = br
+        self.tr = p2.Pxy([br.x, tl.y])
+        self.bl = p2.Pxy([tl.x, br.y])
         super().__init__(LoopXY.from_rectangle(self.left, self.top, self.width, self.height))
 
     @property

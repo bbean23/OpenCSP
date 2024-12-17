@@ -10,7 +10,11 @@ import scipy.spatial
 import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.geometry.RegionXY as reg
 import opencsp.common.lib.geometry.Vxyz as v3
+import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
+import opencsp.common.lib.render.view_spec as vs
+import opencsp.common.lib.render_control.RenderControlAxis as rca
+import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.log_tools as lt
@@ -28,7 +32,8 @@ class AbstractFiducials(ABC):
         Parameters
         ----------
         style : RenderControlPointSeq, optional
-            How to render this fiducial when using the defaul render_to_plot() method. By default rcps.default().
+            How to render this fiducial when using the default
+            :py:meth:`render_to_plot` method. By default rcps.default().
         pixels_to_meters : Callable[[p2.Pxy], v3.Vxyz], optional
             Conversion function to get the physical point in space for the given x/y position information. Used in the
             default self.scale implementation. A good implementation of this function will correct for many factors such
@@ -117,7 +122,7 @@ class AbstractFiducials(ABC):
             edgecolor=self.style.markeredgecolor,
         )
 
-    def render(self, axes: matplotlib.axes.Axes = None):
+    def render_to_plot(self, axes: matplotlib.axes.Axes = None):
         """
         Renders this fiducial to the active matplotlib.pyplot plot.
 
@@ -132,38 +137,73 @@ class AbstractFiducials(ABC):
             axes = plt.gca()
         self._render(axes)
 
+    def render_to_figure(self, fig_record: rcfr.RenderControlFigureRecord, image: np.ndarray = None):
+        """
+        Renders a visual representation of this fiducial to the given fig_record.
+
+        The given image should have already been rendered to the figure record
+        if it is set. If this has been called from :py:meth:`render_to_image`
+        then image is guaranteed to be set.
+
+        Parameters
+        ----------
+        fig_record : rcfr.RenderControlFigureRecord
+            The record to render with. Most render methods should be available
+            via fig_record.view.draw_*().
+        image : np.ndarray, optional
+            The image that was already rendered to the figure record, or None if
+            there hasn't been an image rendered or that data just isn't
+            available. By default None, or the image passed in to
+            :py:meth:`render_to_image` if being called from that method.
+
+        Raises
+        ------
+        NotImplementedError
+            If this method hasn't been implemented yet in one of the child
+            classes of :py:class:`AbstractFiducials`.
+        """
+        raise NotImplementedError
+
     def render_to_image(self, image: np.ndarray) -> np.ndarray:
         """
         Renders this fiducial to the a new image on top of the given image.
 
-        The default implementation creates a new matplotlib plot, and then renders to it with self.render_to_plot().
+        The default implementation creates a new matplotlib plot, and then
+        renders to it with either :py:meth:`render_to_figure` or
+        :py:meth:`render_to_plot`, depending on which has been implemented.
         """
         # Create the figure to plot to
         width = image.shape[1]
         height = image.shape[0]
-        fig = fm.mpl_pyplot_figure(figsize=(4.8 / height * width, 4.8), dpi=300)
+        figure_control = rcfg.RenderControlFigure(
+            tile=False, figsize=(4.8 / height * width, 4.8), grid=False, draw_whitespace_padding=False
+        )
+        view_spec_2d = vs.view_spec_im()
+
+        fig_record = fm.setup_figure_for_3d_data(
+            figure_control,
+            rca.image(draw_axes=False, grid=False),
+            view_spec_2d,
+            equal=False,
+            name=self.__class__.__name__,
+            code_tag=f"{__file__}.render_to_image()",
+        )
 
         try:
             # A portion of this code is from:
             # https://stackoverflow.com/questions/35355930/figure-to-image-as-a-numpy-array
 
-            # Get the axis and canvas
-            axes = fig.gca()
-            canvas = fig.canvas
+            # Prepare the image
+            fig_record.view.imshow(image)
 
-            # Image from plot
-            axes.axis('off')
-            fig.tight_layout(pad=0)
-
-            # To remove the huge white borders
-            axes.margins(0)
-
-            # Prepare the image and the feature points
-            axes.imshow(image)
-            self.render(axes)
+            # render
+            try:
+                self.render_to_figure(fig_record, image)
+            except NotImplementedError:
+                self.render_to_plot(fig_record.axis)
 
             # Convert back to a numpy array
-            new_image = rcfr.RenderControlFigureRecord.figure_to_array(fig)
+            new_image = fig_record.to_array()
             new_image = new_image.astype(image.dtype)
 
             # Return the updated image
@@ -174,4 +214,4 @@ class AbstractFiducials(ABC):
             raise
 
         finally:
-            plt.close(fig)
+            plt.close(fig_record.figure)

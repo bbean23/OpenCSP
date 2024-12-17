@@ -115,7 +115,7 @@ def images_are_identical(image_1: np.ndarray, image_2: np.ndarray, tolerance_pix
 
 
 def dims_and_nchannels(image: np.ndarray):
-    """Get the (x,y) dimensions of the image, and the number of color channels.
+    """Get the (y,x) dimensions of the image, and the number of color channels.
 
     Raises:
     -------
@@ -134,9 +134,9 @@ def dims_and_nchannels(image: np.ndarray):
             f"Error in image_tools.dims_and_nchannels(): expected image to have 2-3 dimensions (x, y, and color), but {shape=}!",
         )
 
-    xdim = shape[0]
-    ydim = shape[1]
-    return (xdim, ydim), nchannels
+    ydim = shape[0]
+    xdim = shape[1]
+    return (ydim, xdim), nchannels
 
 
 def min_max_colors(image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
