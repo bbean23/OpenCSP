@@ -16,6 +16,7 @@ from contrib.common.lib.cv.spot_analysis.image_processor.TargetBoardLocatorImage
 from contrib.common.lib.cv.spot_analysis.image_processor.ViewAnnotationsImageProcessor import (
     ViewAnnotationsImageProcessor,
 )
+from contrib.common.lib.cv.spot_analysis.image_processor.ViewHighlightImageProcessor import ViewHighlightImageProcessor
 
 # Make these classes available when importing cv.spot_analysis.image_processor.*
 __all__ = [
@@ -29,4 +30,5 @@ __all__ = [
     'StabilizationImageProcessor',
     'TargetBoardLocatorImageProcessor',
     'ViewAnnotationsImageProcessor',
+    'ViewHighlightImageProcessor',
 ]
