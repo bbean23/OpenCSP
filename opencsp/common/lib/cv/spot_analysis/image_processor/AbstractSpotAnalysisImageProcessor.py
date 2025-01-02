@@ -345,7 +345,8 @@ class AbstractSpotAnalysisImageProcessor(Iterator[SpotAnalysisOperable]):
             # possible.
             # Do nothing image processors can also return the same input
             # operable as output, such as for the EchoImageProcessor.
-            if ret[i] not in self.operables_in_flight:
+            ret_is_in_flight = np.any([ret[i] is op_in_flight for op_in_flight in self.operables_in_flight])
+            if not ret_is_in_flight:
                 ret[i] = dataclasses.replace(ret[i], previous_operables=(copy.copy(self.operables_in_flight), self))
 
         # de-register any operable on which we're waiting for results
