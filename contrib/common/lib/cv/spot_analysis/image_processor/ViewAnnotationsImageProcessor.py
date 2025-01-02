@@ -6,6 +6,7 @@ import numpy as np
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.fiducials.PointFiducials import PointFiducials
+from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
     AbstractVisualizationImageProcessor,
@@ -27,14 +28,18 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
     operable.found_fiducials, and operable.annotations.
     """
 
-    def __init__(self, interactive: bool | Callable[[SpotAnalysisOperable], bool] = False):
+    def __init__(
+        self,
+        interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
+        base_image_selector: str | ImageType = None,
+    ):
         """
         Parameters
         ----------
         interactive : bool | Callable[[SpotAnalysisOperable], bool], optional
             If True then the spot analysis pipeline is paused until the user presses the "enter" key, by default False
         """
-        super().__init__(interactive)
+        super().__init__(interactive, base_image_selector)
 
         self.axis_control = rca.image(grid=False)
         self.view_spec = vs.view_spec_im()
@@ -76,12 +81,12 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         return [self.figure]
 
     def _visualize_operable(
-        self, operable: SpotAnalysisOperable, is_last: bool
-    ) -> tuple[list[CacheableImage], list[rcfr.RenderControlFigureRecord]]:
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
+    ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         """
         Updates the figures for this instance with the data from the given operable.
         """
-        old_image = operable.primary_image.nparray
+        old_image = base_image.nparray
         new_image = np.array(old_image)
 
         for fiducials in operable.given_fiducials:
@@ -99,7 +104,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         # build the return value
         cacheable_image = CacheableImage(new_image)
 
-        return ([cacheable_image], [])
+        return [cacheable_image]
 
     def close_figures(self):
         """

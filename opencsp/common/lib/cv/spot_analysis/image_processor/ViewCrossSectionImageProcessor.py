@@ -8,6 +8,7 @@ import numpy as np
 from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelLocation
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.cv.image_reshapers as ir
+from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
     AbstractVisualizationImageProcessor,
@@ -45,9 +46,10 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         ) = None,
         label: str | rca.RenderControlAxis = 'Light Intensity',
         single_plot: bool = True,
-        interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
         crop_to_threshold: int | None = None,
         y_range: tuple[int, int] = None,
+        interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
+        base_image_selector: str | ImageType = None,
     ):
         """
         Parameters
@@ -61,9 +63,6 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             If True, then draw both the horizational and vertical cross section
             graphs on the same plot. If False, then use two separate plots.
             Default is True.
-        interactive : bool | Callable[[SpotAnalysisOperable], bool], optional
-            If True then the spot analysis pipeline is paused until the user
-            presses the "enter" key, by default False
         crop_to_threshold : int | None, optional
             Crops the input image horizontally and vertically to the first/last
             values >= the given threshold. This crop is based on the
@@ -76,7 +75,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             the y-axis range with this parameter. Default is None.
         """
         label_for_name = "" if label.strip() == "" else "_" + label
-        super().__init__(interactive, self.__class__.__name__ + label_for_name)
+        super().__init__(interactive, base_image_selector, self.__class__.__name__ + label_for_name)
 
         # validate input
         if cross_section_location is None:
@@ -317,9 +316,9 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             return 1
 
     def _visualize_operable(
-        self, operable: SpotAnalysisOperable, is_last: bool
-    ) -> tuple[list[CacheableImage], list[rcfr.RenderControlFigureRecord]]:
-        np_image = operable.primary_image.nparray
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
+    ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
+        np_image = base_image.nparray
         width, height = np_image.shape[1], np_image.shape[0]
 
         # get the cross section pixel location
@@ -390,7 +389,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             h_fig_record.view.axis.set_ylim(self.y_range)
             v_fig_record.view.axis.set_ylim(self.y_range)
 
-        return [], self.fig_records
+        return self.fig_records
 
     def close_figures(self):
         for view in self.views:

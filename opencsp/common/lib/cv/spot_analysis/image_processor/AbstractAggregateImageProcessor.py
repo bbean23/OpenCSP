@@ -30,21 +30,26 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
 
     def __init__(
         self,
-        images_group_assigner: Callable[[SpotAnalysisOperable], int],
+        images_group_assigner: Callable[[SpotAnalysisOperable], int] = None,
         group_execution_trigger: Callable[[list[tuple[SpotAnalysisOperable, int]]], int | None] = None,
         name: str = None,
     ):
         """
         Parameters
         ----------
-        images_group_assigner : Callable[[SpotAnalysisOperable], int]
-            The function that determines which group a given operable should be assigned to.
+        images_group_assigner : Callable[[SpotAnalysisOperable], int], optional
+            The function that determines which group a given operable should be
+            assigned to. If None, then all images will be assigned to the same
+            group. Default is None.
         group_execution_trigger : Callable[[], bool], optional
-            The function that determines when a group of operators is executed on, by default group_trigger_on_change.
+            The function that determines when a group of operators is executed
+            on, by default group_trigger_on_change.
         """
         super().__init__(name)
 
         # normalize arguments
+        if images_group_assigner is None:
+            images_group_assigner = lambda o: 0
         if group_execution_trigger is None:
             group_execution_trigger = self.group_trigger_on_change()
 

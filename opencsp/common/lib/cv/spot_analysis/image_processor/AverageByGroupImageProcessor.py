@@ -20,7 +20,7 @@ class AverageByGroupImageProcessor(AbstractAggregateImageProcessor):
 
     def __init__(
         self,
-        images_group_assigner: Callable[[SpotAnalysisOperable], int],
+        images_group_assigner: Callable[[SpotAnalysisOperable], int] = None,
         group_execution_trigger: Callable[[list[tuple[SpotAnalysisOperable, int]]], int | None] = None,
     ):
         super().__init__(images_group_assigner, group_execution_trigger)
