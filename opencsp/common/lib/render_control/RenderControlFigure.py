@@ -141,3 +141,9 @@ class RenderControlFigure:
             screen_y -= 100
 
         return screen_x / dpi, screen_y / dpi
+
+    @staticmethod
+    def pixel_resolution_inches(width: int, height: int) -> tuple[float, float]:
+        """Returns the number of inches (width and height) necessary to show the given pixel dimensions."""
+        dpi: float = matplotlib.pyplot.rcParams['figure.dpi']
+        return width / dpi, height / dpi

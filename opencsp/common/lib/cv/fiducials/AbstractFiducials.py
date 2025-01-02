@@ -17,6 +17,7 @@ import opencsp.common.lib.render_control.RenderControlAxis as rca
 import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
+import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -173,10 +174,10 @@ class AbstractFiducials(ABC):
         :py:meth:`render_to_plot`, depending on which has been implemented.
         """
         # Create the figure to plot to
-        width = image.shape[1]
-        height = image.shape[0]
+        (height_px, width_px), nchannel = it.dims_and_nchannels(image)
+        figsize = rcfg.RenderControlFigure.pixel_resolution_inches(width_px, height_px)
         figure_control = rcfg.RenderControlFigure(
-            tile=False, figsize=(4.8 / height * width, 4.8), grid=False, draw_whitespace_padding=False
+            tile=False, figsize=figsize, grid=False, draw_whitespace_padding=False
         )
         view_spec_2d = vs.view_spec_im()
 

@@ -22,6 +22,7 @@ import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.file_tools as ft
+import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -214,8 +215,8 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
         """
         # draw the image
         image = reshapers.false_color_reshaper(image, 255)
-        width, height = image.shape[1], image.shape[0]
-        fig_rec.view.draw_image(image, (0, 0), (width, height))
+        (height, width), nchannels = it.dims_and_nchannels(image)
+        fig_rec.view.imshow(image)
 
         # sanitize the input
         x1 = np.clip(x1, 0, width - 1)
@@ -254,8 +255,10 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
         )
         draw_debug_view = (show_debug_view) or (self.record_debug_view != False)
         if draw_debug_view:
+            (height, width), nchannels = it.dims_and_nchannels(image)
+            fig_size = rcfg.RenderControlFigure.pixel_resolution_inches(width, height)
             axis_control = rca.image(grid=False)
-            fig_control = rcfg.RenderControlFigure(tile=True, tile_array=(4, 2), grid=False)
+            fig_control = rcfg.RenderControlFigure(tile=True, tile_array=(4, 2), fig_size=fig_size, grid=False)
             view_spec_image = vs.view_spec_im()
             view_spec_pq = vs.view_spec_pq()
             debug_fig_recs: list[rcfr.RenderControlFigureRecord] = []
