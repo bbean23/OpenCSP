@@ -10,7 +10,7 @@ from opencsp.common.lib.cv.annotations.HotspotAnnotation import HotspotAnnotatio
 import opencsp.common.lib.cv.image_filters as filters
 import opencsp.common.lib.cv.image_reshapers as reshapers
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
-from opencsp.common.lib.cv.spot_analysis.image_processor.FalseColorImageProcessor import (
+from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImageProcessor,
 )
 import opencsp.common.lib.geometry.Pxy as p2
@@ -73,7 +73,8 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
             image to the visualization images. By default False.
         record_debug_view : bool | int, optional
             True to record the debug views to the visualization images. If an
-            integer, than up to that number of debug images will be recorded.
+            integer, than up to that number of debug images will be recorded. If
+            draw_debug_view is False then this option does nothing.
         """
         super().__init__()
 
