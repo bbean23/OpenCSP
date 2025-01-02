@@ -1,11 +1,12 @@
 import dataclasses
-from typing import Callable
+from typing import Callable, Type
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.fiducials.PointFiducials import PointFiducials
+from opencsp.common.lib.cv.fiducials.AbstractFiducials import AbstractFiducials
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractVisualizationImageProcessor import (
@@ -30,16 +31,20 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
 
     def __init__(
         self,
+        annotations_filter: list[Type[AbstractFiducials]] = None,
         interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
         base_image_selector: str | ImageType = None,
     ):
         """
         Parameters
         ----------
-        interactive : bool | Callable[[SpotAnalysisOperable], bool], optional
-            If True then the spot analysis pipeline is paused until the user presses the "enter" key, by default False
+        annotations_filter : list[Type[AbstractFiducials]], optional
+            If set, then the annotations that get rendered are only those that
+            match this filter.
         """
         super().__init__(interactive, base_image_selector)
+
+        self.annotations_filter = annotations_filter
 
         self.axis_control = rca.image(grid=False)
         self.view_spec = vs.view_spec_im()
@@ -80,6 +85,17 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         )
         return [self.figure]
 
+    def _annotations_match_filter(self, annotations: AbstractFiducials) -> bool:
+        if self.annotations_filter is None:
+            return True
+
+        else:
+            for annotations_type in self.annotations_filter:
+                if isinstance(annotations, annotations_type):
+                    return True
+
+        return False
+
     def _visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
@@ -89,11 +105,11 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         old_image = base_image.nparray
         new_image = np.array(old_image)
 
-        for fiducials in operable.given_fiducials:
+        for fiducials in filter(self._annotations_match_filter, operable.given_fiducials):
             new_image = fiducials.render_to_image(new_image)
-        for fiducials in operable.found_fiducials:
+        for fiducials in filter(self._annotations_match_filter, operable.found_fiducials):
             new_image = fiducials.render_to_image(new_image)
-        for annotations in operable.annotations:
+        for annotations in filter(self._annotations_match_filter, operable.annotations):
             new_image = annotations.render_to_image(new_image)
 
         # show the visualization
