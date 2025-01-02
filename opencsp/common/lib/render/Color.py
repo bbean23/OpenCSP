@@ -5,10 +5,12 @@ Color Management
 
 """
 
-from typing import Iterator, Iterable, Union
+from typing import Callable, Iterator, Iterable, Union
 
 import numpy as np
 import matplotlib.colors
+
+import opencsp.common.lib.tool.log_tools as lt
 
 
 class Color:
@@ -79,6 +81,33 @@ class Color:
         rgb = matplotlib.colors.to_rgb(sval)
 
         return cls(rgb[0], rgb[1], rgb[2], longhand, sval)
+
+    @classmethod
+    def from_generic(cls, val: Union[str, tuple, 'Color', Callable]) -> 'Color':
+        if isinstance(val, Color):
+            return val
+        elif isinstance(val, str):
+            return cls.from_str(val)
+        elif isinstance(val, tuple):
+            if len(val) != 3:
+                lt.error_and_raise(
+                    ValueError,
+                    "Error in Color.from_generic(): " + f"val of type tuple must have three values, but {val=}",
+                )
+            name = f"0x{val[0]:02x}{val[1]:02x}{val[2]:02x}"
+            return Color(val[0], val[1], val[2], name, name)
+        elif isinstance(val, Callable):
+            ret = val()
+            if not isinstance(ret, Color):
+                lt.error_and_raise(
+                    ValueError,
+                    "Error in Color.from_generic(): " + f"val of type Callable must return a Color, but {type(ret)=}",
+                )
+            return ret
+        else:
+            lt.error_and_raise(
+                ValueError, "Error in Color.from_generic(): " + f"no handler for type {type(val)}, {val=}"
+            )
 
     @classmethod
     def convert(cls, val: Union["Color", str, tuple, None]) -> "Color":
