@@ -280,7 +280,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         if self.has_visualization_coordinator:
             # let the visualization coordinator determine when we visualize an operable
             if self.visualization_coordinator.is_time_to_visualize(self, operable, is_last):
-                # visualize the operable
+                # visualize the operable now
                 self.pending_operables.append(operable)
                 op_with_vis = self.visualization_coordinator.visualize(self, operable, is_last)
                 if op_with_vis is not None:
@@ -288,11 +288,13 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
                 else:
                     ret = dataclasses.replace(operable)
             else:
-                # remember this operable, to be visualized later
+                # remember this operable, to be visualized later synchronously
+                # with the other visualization image processors
                 ret = dataclasses.replace(operable)
                 self.pending_operables.append(ret)
         else:
-            # no coordinator, always visualize the operable
+            # no coordinator for synchronized visualization, always visualize
+            # the operable immediately
             if not self.initialized_figure_records:
                 self.init_figure_records(rcf.RenderControlFigure(tile=False))
             self.pending_operables.append(operable)
@@ -316,8 +318,8 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         Calls _visualize_operable() and registers the visualizations as
         algorithm_images on the given operable.
 
-        Visualizes all pending operables that match the given operable or are
-        ancestors of the given operable.
+        Visualizes all pending operables that either are the given operable or
+        are ancestors of the given operable.
 
         Parameters
         ----------
@@ -334,21 +336,21 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             This processor's visualizations.
         """
         # Get the list of pending operables to visualize
-        vis_operables: list[SpotAnalysisOperable] = []
+        operables_to_visualize: list[SpotAnalysisOperable] = []
         if self.has_visualization_coordinator:
-            vis_operables, self.pending_operables = self.visualization_coordinator._select_pending_operables(
+            operables_to_visualize, self.pending_operables = self.visualization_coordinator._select_pending_operables(
                 self.pending_operables, operable
             )
         else:
             for pending_operable in copy.copy(self.pending_operables):
                 if (pending_operable == operable) or (pending_operable.is_ancestor_of(operable)):
-                    vis_operables.append(pending_operable)
+                    operables_to_visualize.append(pending_operable)
                     self.pending_operables.remove(pending_operable)
 
         # Visualize the matching operables
         all_vis_images: list[CacheableImage] = []
-        for i, vis_operable in enumerate(vis_operables):
-            operable_is_last = is_last and i == len(vis_operables) - 1
+        for i, vis_operable in enumerate(operables_to_visualize):
+            operable_is_last = is_last and i == len(operables_to_visualize) - 1
             base_image = self._get_image_for_visualizing(vis_operable)
             visualizations = self._visualize_operable(vis_operable, operable_is_last, base_image)
 
