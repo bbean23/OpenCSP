@@ -1,8 +1,10 @@
+import copy
 import dataclasses
 
 import cv2
 import numpy as np
 
+from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.cv.image_reshapers as reshapers
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
@@ -36,7 +38,7 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImageProcessor):
         self.map_type = map_type
         self.opencv_map = opencv_map
 
-    def apply_mapping_jet_custom(self, operable: SpotAnalysisOperable) -> SpotAnalysisOperable:
+    def apply_mapping_jet_custom(self, operable: SpotAnalysisOperable) -> np.ndarray:
         """
         Updates the primary image with a false color map ('human' or
         'large'). This has a much larger range of colors that get applied but is
@@ -58,10 +60,10 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImageProcessor):
         max_value = operable.max_popf
         from_image = operable.primary_image.nparray
         ret = reshapers.false_color_reshaper(from_image, max_value, map_type=self.map_type)
-        return dataclasses.replace(operable, primary_image=ret)
+        return ret
 
     @staticmethod
-    def apply_mapping_jet(operable: SpotAnalysisOperable, opencv_map) -> SpotAnalysisOperable:
+    def apply_mapping_jet(operable: SpotAnalysisOperable, opencv_map) -> np.ndarray:
         """
         Updates the primary image with a false color map. Opencv maps can
         represent 256 different grayscale colors and only takes ~0.007s for a
@@ -88,7 +90,7 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImageProcessor):
         # apply the mapping
         ret = cv2.applyColorMap(new_image, opencv_map)
 
-        return dataclasses.replace(operable, primary_image=ret)
+        return ret
 
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
         image = operable.primary_image.nparray
@@ -104,8 +106,13 @@ class FalseColorImageProcessor(AbstractSpotAnalysisImageProcessor):
 
         # apply the false color mapping
         if self.map_type == 'large' or self.map_type == 'human':
-            ret = [self.apply_mapping_jet_custom(operable)]
+            vis_image = self.apply_mapping_jet_custom(operable)
         else:
-            ret = [self.apply_mapping_jet(operable, self.opencv_map)]
+            vis_image = self.apply_mapping_jet(operable, self.opencv_map)
+        vis_image = CacheableImage.from_single_source(vis_image)
 
-        return ret
+        visualization_images = copy.copy(operable.visualization_images)
+        visualization_images[self] = [vis_image]
+        new_operable = dataclasses.replace(operable, visualization_images=visualization_images)
+
+        return [new_operable]
