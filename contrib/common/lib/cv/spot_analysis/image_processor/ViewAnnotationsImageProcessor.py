@@ -58,7 +58,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         """
         return 1
 
-    def _init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
+    def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
         """
         Initializes the figure windows (via figure_management.setup_figure*) for
         this instance and returns the list of initialized figures. The length of
@@ -81,7 +81,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
             self.view_spec,
             equal=True,
             title=f"{self.name}",
-            code_tag=f"{__file__}",
+            code_tag=f"{__file__}.init_figure_records()",
         )
         return [self.figure]
 
@@ -96,7 +96,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
 
         return False
 
-    def _visualize_operable(
+    def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         """

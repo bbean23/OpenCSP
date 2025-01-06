@@ -106,7 +106,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         else:
             return 3
 
-    def _init_figure_records(
+    def init_figure_records(
         self, render_control_figure: rcfg.RenderControlFigure
     ) -> list[rcfr.RenderControlFigureRecord]:
         self.view_specs = []
@@ -124,7 +124,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             number_in_name=False,
             name=name,
             title="",
-            code_tag=f"{__file__}._init_figure_records()",
+            code_tag=f"{__file__}.init_figure_records()",
         )
 
         if self.single_plot:
@@ -315,7 +315,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         else:
             return 1
 
-    def _visualize_operable(
+    def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         np_image = base_image.nparray

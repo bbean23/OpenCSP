@@ -15,17 +15,23 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
     """
     Detects and collects images that are part of the same group, so that they can be acted upon all at the same time.
 
-    Each operator is assigned to an image group. Groups are determined by the images_group_assigner function. Any
-    function with the correct signature can be used, or one of the builtin methods can be assigned. The builtin
-    methods for this include AbstractAggregateImageProcessor.*, where "*" is one of:
+    Each operator is assigned to an image group. Groups are determined by the
+    images_group_assigner function. Any function with the correct signature can
+    be used, or one of the builtin methods can be assigned. The builtin methods
+    for this include AbstractAggregateImageProcessor.*, where "*" is one of:
 
-        - group_by_brightness: groups are determined by the brightest pixel in the image
-        - group_by_name: all images with the same name match are included as part of the same group
+        - :py:meth:`group_by_brightness`: groups are determined by the brightest pixel in the image
+        - :py:meth:`group_by_name`: all images with the same name match are included as part of the same group
 
-    When the assigned group number for the current operator is different than for the previous operator, the group
-    execution is triggered. _execute_aggregate() will be called for the entire group, and afterwards the group's
-    list will be cleared. The trigger behavior can be changed by providing a value for the group_execution_trigger
-    parameter.
+    When the assigned group number for the current operator is different than
+    for the previous operator, the group execution is triggered.
+    :py:meth:`_execute_aggregate` will be called for the entire group, and
+    afterwards the group's list will be cleared. The trigger behavior can be
+    changed by providing a value for the group_execution_trigger parameter.
+
+    Inheriting classes need to implement the following method in liue of _execute():
+
+        def _execute_aggregate(self, group: int, operables: list, is_last: bool) -> list:
     """
 
     def __init__(
@@ -64,10 +70,26 @@ class AbstractAggregateImageProcessor(AbstractSpotAnalysisImageProcessor, ABC):
     @staticmethod
     def group_by_brightness(intensity_to_group: dict[int, int]) -> Callable[[SpotAnalysisOperable], int]:
         """
-        Returns a group for the given operable based on the intensity mapping and the brightest pixel in the operable's
-        primary image.
+        Returns a group for the given operable based on the intensity mapping
+        and the brightest pixel in the operable's primary image.
 
         Intended use is as the images_group_assigner parameter to this class.
+
+        Parameters
+        ----------
+        intensity_to_group: dict[int, int]
+            The mapping of minimum intensity for each group.
+
+            Example intensity_to_group value::
+
+                # All images with at least one pixel >= 200 will be assigned to group 2.
+                # Images with at least one pixel >= 125 will be assigned to group 1.
+                # All other images will be assigned to group 0.
+                intensity_to_group = {
+                    0: 0,
+                    125: 1,
+                    200: 2
+                }
         """
 
         def group_by_brightness_inner(operable: SpotAnalysisOperable, intensity_to_group: dict[int, int]):

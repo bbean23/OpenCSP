@@ -72,18 +72,18 @@ class ViewHighlightImageProcessor(AbstractVisualizationImageProcessor):
     def num_figures(self) -> int:
         return 1
 
-    def _init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
+    def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
         self.figure = fm.setup_figure(
             render_control_fig,
             self.axis_control,
             self.view_spec,
             equal=True,
             title=f"{self.name}",
-            code_tag=f"{__file__}",
+            code_tag=f"{__file__}.init_figure_records()",
         )
         return [self.figure]
 
-    def _visualize_operable(
+    def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         old_image = ir.nchannels_reshaper(base_image.nparray, 3)

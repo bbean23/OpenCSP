@@ -32,7 +32,9 @@ class VisualizationCoordinator:
     def __init__(self):
         # visualization handlers
         self.visualization_processors: list[AbstractVisualizationImageProcessor] = []
-        """ List of all visualization processors registered with this instance. """
+        """ List of all visualization processors registered with this instance.
+        They will be in the same order as given in
+        :py:meth:`register_visualization_processors`. """
         self.figures: list[weakref.ref[rcfr.RenderControlFigureRecord]] = []
         """
         List of figures returned from init_figure_records() for each of the
@@ -54,7 +56,10 @@ class VisualizationCoordinator:
 
         # user interaction
         self.shift_down = False
-        """ Monitors the state of the shift key """
+        """
+        Monitors the state of the shift key.
+        Only used in interactive mode.
+        """
         self.enter_pressed = False
         """
         True if enter has been pressed since the latest call to visualize().
@@ -62,13 +67,13 @@ class VisualizationCoordinator:
         """
         self.enter_shift_pressed = False
         """
-        True if shift+enter has been pressed an odd number of times. Only used
-        in interactive mode.
+        True if shift+enter has been pressed an odd number of times.
+        Only used in interactive mode.
         """
         self.closed = False
         """
-        True if any visualization window has ever been closed. Only used in
-        interactive mode.
+        True if any visualization window has ever been closed.
+        Only used in interactive mode.
         """
 
     def clear(self):
@@ -132,7 +137,8 @@ class VisualizationCoordinator:
             Processors to search through for visualization processors, some of
             which may be visualization processor and some not.
         """
-        # this method is not safe to be called multiple times
+        # Developer's note: this method is not safe to be called multiple times
+
         if self.has_registered_visualization_processors:
             lt.warning(
                 "Warning in VisualizationCoordinator.register_visualization_processors(): "
@@ -270,7 +276,7 @@ class VisualizationCoordinator:
         """
         # render all visualization image processors
         for processor in self.visualization_processors:
-            processor_visualizations = processor.visualize_operable(operable, is_last)
+            processor_visualizations = visualization_processor._visualize_operable(operable, is_last)
 
             # compile all visualizations together into a single operable to be returned
             if len(processor_visualizations) > 0:
