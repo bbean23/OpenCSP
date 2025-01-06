@@ -68,21 +68,21 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
     def num_figures(self) -> int:
         return 1
 
-    def _init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
+    def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
         self.fig_record = fm.setup_figure_for_3d_data(
             render_control_fig,
             self.rca,
             equal=False,
             number_in_name=False,
             name=self.rca.z_label,
-            code_tag=f"{__file__}._init_figure_records()",
+            code_tag=f"{__file__}.init_figure_records()",
         )
         self.view = self.fig_record.view
         self.axes = self.fig_record.figure.gca()
 
         return [self.fig_record]
 
-    def _visualize_operable(
+    def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         image = base_image.nparray

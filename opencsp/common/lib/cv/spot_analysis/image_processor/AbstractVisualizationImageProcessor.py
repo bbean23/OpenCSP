@@ -138,11 +138,6 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         self.initialized_figure_records = False
         """ True if init_figure_records() has been called, False otherwise. """
-        self.pending_operables: list[SpotAnalysisOperable] = []
-        """
-        Operables that this instance has attempted to visualize, but has been
-        blocked by the coordinator when asking is_time_to_visualize().
-        """
 
     @property
     @abstractmethod
@@ -289,26 +284,17 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         ret: SpotAnalysisOperable = None
 
         if self.has_visualization_coordinator:
-            # let the visualization coordinator determine when we visualize an operable
-            if self.visualization_coordinator.is_time_to_visualize(self, operable, is_last):
-                # visualize the operable now
-                self.pending_operables.append(operable)
-                op_with_vis = self.visualization_coordinator.visualize(self, operable, is_last)
-                if op_with_vis is not None:
-                    ret = op_with_vis
-                else:
-                    ret = dataclasses.replace(operable)
+            # Visualize the operable and block (if interactive).
+            op_with_vis = self.visualization_coordinator.visualize(self, operable, is_last)
+            if op_with_vis is not None:
+                ret = op_with_vis
             else:
-                # remember this operable, to be visualized later synchronously
-                # with the other visualization image processors
                 ret = dataclasses.replace(operable)
-                self.pending_operables.append(ret)
         else:
             # no coordinator for synchronized visualization, always visualize
             # the operable immediately
             if not self.initialized_figure_records:
                 self._init_figure_records(rcf.RenderControlFigure(tile=False))
-            self.pending_operables.append(operable)
             new_visualizations = self._visualize_operable(operable, is_last)
 
             # get the visualization images list
@@ -326,18 +312,12 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
 
     def _visualize_operable(self, operable: SpotAnalysisOperable, is_last: bool) -> list[CacheableImage]:
         """
-        Calls :py:meth:`visualize_operable` and registers the visualizations as
-        algorithm_images on the given operable.
-
-        Visualizes all pending operables that either are the given operable or
-        are ancestors of the given operable.
+        Calls :py:meth:`visualize_operable` and collects the visualziation images.
 
         Parameters
         ----------
         operable : SpotAnalysisOperable
-            The operable to visualize, or the decendent of the operable(s) to
-            visualize. Should either be one of self.pending_operables, or a
-            decendent of one or more pending operables.
+            The operable to visualize.
         is_last : bool
             True if this is the last operable that this method will be evaluated for.
 
@@ -346,36 +326,22 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         list[CacheableImage]
             This processor's visualizations.
         """
-        # Get the list of pending operables to visualize
-        operables_to_visualize: list[SpotAnalysisOperable] = []
-        if self.has_visualization_coordinator:
-            operables_to_visualize, self.pending_operables = self.visualization_coordinator._select_pending_operables(
-                self.pending_operables, operable
-            )
-        else:
-            for pending_operable in copy.copy(self.pending_operables):
-                if (pending_operable == operable) or (pending_operable.is_ancestor_of(operable)):
-                    operables_to_visualize.append(pending_operable)
-                    self.pending_operables.remove(pending_operable)
+        # visualize the operable
+        base_image = self._get_image_for_visualizing(operable)
+        visualizations = self.visualize_operable(operable, is_last, base_image)
 
-        # Visualize the matching operables
+        # build the list of visualization images
         all_vis_images: list[CacheableImage] = []
-        for i, vis_operable in enumerate(operables_to_visualize):
-            operable_is_last = is_last and i == len(operables_to_visualize) - 1
-            base_image = self._get_image_for_visualizing(vis_operable)
-            visualizations = self.visualize_operable(vis_operable, operable_is_last, base_image)
+        for cacheable_or_figure_rec in visualizations:
+            if isinstance(cacheable_or_figure_rec, CacheableImage):
+                all_vis_images.append(cacheable_or_figure_rec)
 
-            # build the list of visualization images
-            for cacheable_or_figure_rec in visualizations:
-                if isinstance(cacheable_or_figure_rec, CacheableImage):
-                    all_vis_images.append(cacheable_or_figure_rec)
+            else:
+                # get the figure as an numpy array
+                np_image = cacheable_or_figure_rec.to_array()
 
-                else:
-                    # get the figure as an numpy array
-                    np_image = cacheable_or_figure_rec.to_array()
-
-                    # add the image
-                    cacheable_image = CacheableImage(np_image)
-                    all_vis_images.append(cacheable_image)
+                # add the image
+                cacheable_image = CacheableImage(np_image)
+                all_vis_images.append(cacheable_image)
 
         return all_vis_images
