@@ -78,8 +78,8 @@ class SpotAnalysisOperable:
     The operable(s) that were used to generate this operable, and the image
     processor that they came from, if any. If this operable has no previous
     operables registered with it, then this will have the value (None, None).
-    Does not include no-nothing image processors such as
-    :py:class:`.EchoImageProcessor`.
+    Does not include do-nothing image processors such as
+    :py:class:`.EchoImageProcessor` or :py:class:`.SaveToFileImageProcessor`.
     """
     given_fiducials: list[af.AbstractFiducials] = field(default_factory=list)
     """ Any fiducials handed to us in the currently processing image. """
@@ -325,14 +325,14 @@ class SpotAnalysisOperable:
     def is_ancestor_of(self, other: "SpotAnalysisOperable") -> bool:
         """
         Returns true if this operable is in the other operable's
-        previous_operables tree. Does not match for equality between this and
-        the other operable.
+        previous_operables tree. Does not check if this operable is the other
+        operable.
         """
         if other.previous_operables[0] is None:
             return False
 
         for prev in other.previous_operables[0]:
-            if prev == self:
+            if prev is self:
                 return True
             elif self.is_ancestor_of(prev):
                 return True

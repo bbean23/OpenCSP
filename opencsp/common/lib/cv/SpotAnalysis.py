@@ -24,7 +24,7 @@ import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
 
-class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
+class SpotAnalysis(Iterator[SpotAnalysisOperable]):
     """Spot Analysis class for characterizing beams of light.
 
     This is meant to be a general beam characterization tool that receives as
@@ -32,8 +32,11 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
     numerical statistics as output. In general, there is an image processing
     step, an image analysis step, and a visualization step. Any number of
     processors and analyzers can be chained together to form a pipeline for
-    evaluation. Once defined, a SpotAnalysis instance can be used to evaluate
-    one image/video per evaluation.
+    evaluation.
+
+    Once defined, a SpotAnalysis instance can evaluate any number of input
+    images with either the :py:meth:`set_primary_images` or
+    :py:meth:`set_input_operables` methods.
 
     A list of possible use cases for this class include:
         a. BCS
@@ -176,15 +179,22 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         cases listed above. """
         self.image_processors: list[AbstractSpotAnalysisImageProcessor] = []
         """ List of processors, one per step of the analysis. The output from
-        each processor can include one or more images (or numeric values), and
-        is made available to all subsequent processors. """
-        self._results_iter: Iterator[SpotAnalysisOperable] = None
-        """ The returned value from iter(self.image_processors[-1]). Initialized
-        on the first call to process_next(). """
+        each processor can include one or more operables, and is made available
+        to all subsequent processors. """
         self._prev_result: SpotAnalysisOperable = None
-        """ The previously returned result. """
+        # The most recently returned result.
+        self._operables_in_flight: dict[AbstractSpotAnalysisImageProcessor, list[SpotAnalysisOperable]] = None
+        # The operables that have been returned from processors that have not
+        # been evaluated yet. This is used for book keeping with processors that
+        # return more than one result from their _execute method.
         self.input_stream: _SpotAnalysisOperablesStream = None
         """ The images to be processed. """
+        self._input_stream_iter: Iterator[SpotAnalysisOperable] = None
+        """ The current iterator, from iter(self.input_stream). """
+        self._next_input_operable: SpotAnalysisOperable = None
+        """ The next operable to be processed by the first processor in the
+        pipeline. We retrieve this operable ahead of time so that we know
+        whether to set the is_last flag when calling process_operable(). """
         self.save_dir: str = save_dir
         """ If not None, then primary images will be saved to the given
         directory as a PNG after having been fully processed. """
@@ -206,26 +216,19 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         all values here will be made available for processing as the default
         values. """
         self.visualization_coordinator = VisualizationCoordinator()
-        """ Shows the same image from all visualization processors at the same time. """
+        """ Manages interactive viewing of all visualization image processors. """
 
         self.set_image_processors(image_processors)
 
     def set_image_processors(self, image_processors: list[AbstractSpotAnalysisImageProcessor]):
         self.image_processors = image_processors
 
-        # chain the image processors together
-        for i, image_processor in enumerate(self.image_processors):
-            if i == 0:
-                continue
-            image_processor.assign_inputs(self.image_processors[i - 1])
-
         # register the visualization processors
         self.visualization_coordinator.clear()
         self.visualization_coordinator.register_visualization_processors(image_processors)
 
-        # assign the input stream to the first image processor
-        if self.input_stream != None:
-            self._assign_inputs(self.input_stream)
+        # register the image processors for in-flight results
+        self._operables_in_flight = {processor: [] for processor in image_processors}
 
     @staticmethod
     def _images2stream(
@@ -237,11 +240,16 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
             return ImagesIterable(images)
 
     def _assign_inputs(self, input_operables: Iterator[SpotAnalysisOperable]):
+        # sanitize arguments
         if not isinstance(input_operables, _SpotAnalysisOperablesStream):
             input_operables = _SpotAnalysisOperablesStream(input_operables)
+
+        # assign inputs
         self.input_stream = input_operables
-        self._results_iter = None
-        self.image_processors[0].assign_inputs(self.input_stream)
+
+        # reset temporary values
+        self._prev_result = None
+        self.set_image_processors(self.image_processors)
 
     def set_primary_images(self, images: list[str] | list[np.ndarray] | vh.VideoHandler | ImagesStream):
         """Assigns the images of the spot to be analyzed, in preparation for process_next().
@@ -254,10 +262,14 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
             handler instance set with a video to be broken into frames, or an
             images stream.
 
-        See also: set_input_operables()"""
+        Notes
+        -----
+        Only one of set_primary_images or :py:meth:`set_input_operables` should
+        be used to assign input images.
+        """
         primary_images = self._images2stream(images)
         images_stream = SpotAnalysisImagesStream(primary_images, {})
-        self._assign_inputs(_SpotAnalysisOperablesStream(images_stream))
+        self._assign_inputs(images_stream)
 
     def set_input_operables(
         self,
@@ -265,7 +277,11 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
     ):
         """Assigns primary and supporting images, and other necessary data, in preparation for process_next().
 
-        See also: set_primary_images()"""
+        Notes
+        -----
+        Only one of set_primary_images or :py:meth:`set_input_operables` should
+        be used to assign input images.
+        """
         self._assign_inputs(input_operables)
 
     def set_default_support_images(self, support_images: dict[ImageType, CacheableImage]):
@@ -273,13 +289,104 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
         default for when the support images are not otherwise from the input
         operables. Note that this does not include the primary images or other
         data."""
+        # check for state consistency
+        if self.input_stream is None:
+            lt.error_and_raise(
+                RuntimeError,
+                "Error in SpotAnalysis.set_default_support_images(): "
+                + "must call set_input_operables() or set_primary_images() first.",
+            )
+
         self.input_stream.set_defaults(support_images, self.input_stream.default_data)
 
     def set_default_data(self, operable: SpotAnalysisOperable):
         """Provides extra data for use during image processing, as a default
         for when the data is not otherwise from the input operables. Note that
         this does not include the primary or supporting images."""
+        # check for state consistency
+        if self.input_stream is None:
+            lt.error_and_raise(
+                RuntimeError,
+                "Error in SpotAnalysis.set_default_data(): "
+                + "must call set_input_operables() or set_primary_images() first.",
+            )
+
         self.input_stream.set_defaults(self.input_stream.default_support_images, operable)
+
+    @property
+    def has_next(self):
+        """
+        Returns True if there are any in-flight operables, or if there is at
+        least one more input operable.
+
+        This value is used to determine the value of the is_last flag when
+        calling process_operable.
+        """
+        if self._input_stream_iter is None:
+            lt.error_and_raise(
+                RuntimeError, "Error in SpotAnalysis.has_next: " + "must start iteration before checking for has_next."
+            )
+
+        if self._next_input_operable is not None:
+            return True
+
+        if sum(len(ops) for ops in self._operables_in_flight) > 0:
+            return True
+
+        return False
+
+    def _feed_in_flight_operable(self) -> bool:
+        """
+        Feeds a single in-flight operable to the next image processor in the
+        pipeline and returns True. If there are no in-flight operables then this
+        returns False.
+        """
+        for processor_1_idx in range(len(self.image_processors) - 2, -1, -1):
+            processor_1 = self.image_processors[processor_1_idx]
+
+            if len(self._operables_in_flight[processor_1]) > 0:
+                processor_2_idx = processor_1_idx + 1
+                processor_2 = self.image_processors[processor_2_idx]
+
+                operable = self._operables_in_flight[processor_1].pop(0)
+                is_last = not self.has_next
+                self._operables_in_flight[processor_2] += processor_2.process_operable(operable, is_last)
+
+                return True
+
+        return False
+
+    def _feed_pipeline(self):
+        """
+        Feeds a single in-flight operable to the next image processor in the
+        pipeline. If there are no in-flight operables, then the next input is
+        fed into the first processor in the pipeline.
+
+        Raises
+        ------
+        StopIteration:
+            If there are no in-flight operables and no more inputs.
+        """
+        if not self._feed_in_flight_operable():
+            # build the iterator, if it hasn't been assigned yet
+            if self._input_stream_iter is None:
+                self._initialize_iteration()
+
+            # check if there is a next input
+            if self._next_input_operable is None:
+                raise StopIteration()
+
+            # get the next input
+            input_operable = self._next_input_operable
+            try:
+                self._next_input_operable = next(self.input_stream)
+            except StopIteration:
+                self._next_input_operable = None
+
+            # process the input
+            first_processor = self.image_processors[0]
+            is_last = not self.has_next
+            self._operables_in_flight[first_processor] += first_processor.process_operable(input_operable, is_last)
 
     def process_next(self):
         """Attempts to get the next processed image and results data from the
@@ -291,22 +398,32 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
             The processed primary image and other associated data. None if done
             processing.
         """
-        if self._results_iter is None:
-            self._results_iter = iter(self.image_processors[-1])
+        last_processor = self.image_processors[-1]
+
+        # sanity check
+        if self.input_stream is None:
+            lt.error_and_raise(
+                RuntimeError,
+                "Error in SpotAnalysis.process_next(): "
+                + "must assign inputs via set_primary_images() or set_input_operables() first.",
+            )
 
         # Release memory from the previous result
         if self._prev_result is not None:
-            self.image_processors[-1].cache_images_to_disk_as_necessary()
+            last_processor.cache_images_to_disk_as_necessary()
             self._prev_result = None
 
-        # Attempt to get the next image. Raises StopIteration if there are no
-        # more results available.
-        try:
-            result = next(self._results_iter)
-        except StopIteration:
-            return None
+        # run until we have results available from the last processor
+        while len(self._operables_in_flight[last_processor]) == 0:
+            try:
+                self._feed_pipeline()
+            except StopIteration:
+                return None
 
-        return result
+        # return the result
+        ret = self._operables_in_flight[last_processor].pop(0)
+        self._prev_result = ret
+        return ret
 
     def _save_image(self, save_path_name_ext: str, image: CacheableImage, description: str):
         # check for overwrite
@@ -415,11 +532,19 @@ class SpotAnalysis(Iterator[tuple[SpotAnalysisOperable]]):
 
         return image_path_name_ext
 
+    def _initialize_iteration(self):
+        self._input_stream_iter = iter(self.input_stream)
+        try:
+            self._next_input_operable = next(self._input_stream_iter)
+        except StopIteration:
+            # ignored, should be raised in __next__ instead()
+            pass
+
     def __iter__(self):
-        self.save_idx = 0
+        self._initialize_iteration()
         return self
 
-    def __next__(self):
+    def __next__(self) -> SpotAnalysisOperable:
         ret = self.process_next()
         if ret == None:
             raise StopIteration
