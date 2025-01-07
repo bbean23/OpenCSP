@@ -182,7 +182,7 @@ def process_images(
         "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
         "_VHtSpot": ViewHighlightImageProcessor(base_image_selector='visualization'),
         "VCrosSec": ViewCustomCrossSectionImageProcessor(hotspot_pixel_locator, single_plot=False, y_range=(0, 255)),
-        "EnclEnrg": EnclosedEnergyImageProcessor("hotspot", plot_x_limit_pixels=600),
+        "EnclEnrg": EnclosedEnergyImageProcessor("hotspot", percentages_of_interest=[0.85], plot_x_limit_pixels=600),
     }
     no_sun_image_processors = {
         "EchoEcho": EchoImageProcessor(),

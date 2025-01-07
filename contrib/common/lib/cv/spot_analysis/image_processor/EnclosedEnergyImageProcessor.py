@@ -8,6 +8,7 @@ import numpy as np
 from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelLocation
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.geometry.Pxy as p2
+import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render_control.RenderControlAxis as rca
@@ -37,9 +38,9 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
         ) = None,
         enclosed_shape: str = "circle",
         plot_x_limit_pixels: int = -1,
-        # calc_inner_radius_limit: int = -1,
-        # calc_radius_resolution: int = -1,
-        # calc_outer_radius_limit: int = -1,
+        percentages_of_interest: list[float] = None,
+        enclosed_energy_style: rcee.RenderControlEnclosedEnergy = None,
+        percentages_of_interest_style: rcee.RenderControlEnclosedEnergy = None,
     ):
         """
         Parameters
@@ -55,23 +56,17 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
             visualization image, or <= 0 to determine the range automatically.
             The x-axis is the pixels radius from the image center_locator.
             Default is -1.
+        percentages_of_interest: list[float], optional
+            The percentages of total energy that will be printed to the console
+            and highlighted in the visualizations. Values should be in the range
+            of 0 to 1. Default is None
+        enclosed_energy_style: RenderControlEnclosedEnergy, optional
+            Style used to draw the enclosed energy plot. Default is
+            RenderControlEnclosedEnergy.default.
+        percentages_of_interest_style: RenderControlEnclosedEnergy, optional
+            Style used to draw the percentages_of_interest. Default is
+            enclosed_energy_style(color=lightened).
         """
-        # maybe useful parameters? idk...
-        # calc_inner_radius_limit: int, optional
-        #     All radius values within this limit will be calculated, meaning that
-        #     decimation won't be applied within this range. If <= 0 then all
-        #     radius values for the entire calc_outer_radius_limit will be
-        #     calculated (ignores calc_radius_resolution).
-        # calc_radius_resolution: int, optional
-        #     How many radius values to measure when calculating the enclosed
-        #     energy. For example, a resolution of 3 and inner radius of 4 means
-        #     that the enclosed energy will be calculated for radii 1, 2, 3, 4, 7,
-        #     10, 13... The in-between radii will be linearly interpolated from
-        #     their neighbors. If <= 0 then all radius values will be included (no
-        #     interpolation).
-        # calc_outer_radius_limit: int, optional
-        #     How large of a radius to calculate the enclosed energy for. If <= 0
-        #     then the entire size of the image is used.
         super().__init__()
 
         # validate input
@@ -85,37 +80,23 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
                 + f"enclosed_shape must be one of {allowed_shapes}, but is '{enclosed_shape}'",
             )
 
+        # use default values
+        if enclosed_energy_style is None:
+            enclosed_energy_style = rcee.default()
+        if percentages_of_interest_style is None:
+            percentages_of_interest_style = copy.deepcopy(enclosed_energy_style)
+            ees_rgb = list(percentages_of_interest_style.measured.color)[:3]
+            poi_rgb = [int((255 - v) / 2) + v for v in ees_rgb]
+            poi_color = color.Color.from_i255(*poi_rgb, 'percentages_of_interest', 'percentages_of_interest')
+            percentages_of_interest_style.measured.set_color(poi_color)
+
         self.center_locator = PixelLocation(center_locator)
         self.enclosed_shape = enclosed_shape
         self.plot_x_limit_pixels = plot_x_limit_pixels
-        # self.calc_inner_radius_limit = calc_inner_radius_limit
-        # self.calc_radius_resolution = calc_radius_resolution
-        # self.calc_outer_radius_limit = calc_outer_radius_limit
+        self.percentages_of_interest = percentages_of_interest
 
-    # def _determine_interpolated_radii(self, max_radius: int) -> tuple[list[int], list[int]]:
-    #     # Determine the subset of radii to calculate exact values for, and which
-    #     # should be interpolated values.
-    #     direct_radii: list[int] = []
-    #     interpolated_radii: list[int] = []
-
-    #     inner_limit = min(self.calc_inner_radius_limit, max_radius)
-    #     resolution = 1 if self.calc_radius_resolution <= 0 else self.calc_radius_resolution
-    #     outer_limit = max(min(self.calc_outer_radius_limit, max_radius), inner_limit)
-    #     if self.calc_outer_radius_limit <= 0:
-    #         outer_limit = max_radius
-    #     if self.calc_inner_radius_limit <= 0:
-    #         inner_limit = outer_limit
-
-    #     for i in range(1, inner_limit + 1):
-    #         direct_radii.append(i)
-    #     for i in range(inner_limit + resolution, outer_limit + 1, resolution):
-    #         direct_radii.append(i)
-
-    #     for i in range(1, outer_limit):
-    #         if i not in direct_radii:
-    #             interpolated_radii.append(i)
-
-    #     return direct_radii, interpolated_radii
+        self.enclosed_energy_style = enclosed_energy_style
+        self.percentages_of_interest_style = percentages_of_interest_style
 
     def calculate_enclosed_energy(self, image: CacheableImage, center_location: tuple[float, float]) -> list[int]:
         """
@@ -170,17 +151,11 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
         assert max_radius <= width * height
         enclosed_energy_sums = [0 for i in range(max_radius + 1)]
 
-        # Determine the subset of radii to calculate exact values for, and which
-        # should be interpolated values.
-        # direct_radii, interpolated_radii = self._determine_interpolated_radii(max_radius)
-        # y_indicies, x_indicies = np.indices(image.nparray.shape)
-        direct_radii = range(1, max_radius + 1)
-        example_radius = direct_radii[int(len(direct_radii) / 2)]
-
         # Calculate the enclosed energy
         mask = np.zeros_like(image.nparray)
         example_enclosed_image = None
-        for radius in direct_radii:
+        example_radius = int(np.round(max_radius / 2))
+        for radius in range(1, max_radius + 1):
             radius_point = p2.Pxy([radius, radius])
 
             # Create a mask using np.where to select pixels within the enclosed area
@@ -204,16 +179,6 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
             if example_enclosed_image is None:
                 if (radius == example_radius) or (enclosed_energy > total_energy * 0.5):
                     example_enclosed_image = np.copy(image.nparray) * mask
-
-        # # Interpolate the rest of the results
-        # for radius in interpolated_radii:
-        #     lower_radius = max(filter(lambda r: r < radius, direct_radii))
-        #     upper_radius = min(filter(lambda r: r > radius, direct_radii))
-        #     lower_val = enclosed_energy_sums[lower_radius - 1]
-        #     upper_val = enclosed_energy_sums[upper_radius - 1]
-        #     diff = upper_val - lower_val
-        #     val = ((diff) / (upper_radius - lower_radius) * (radius - lower_radius)) + lower_val
-        #     enclosed_energy_sums[radius - 1] = val
 
         # Sanity checks
         assert len(enclosed_energy_sums) == max_radius + 1
@@ -281,8 +246,27 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
             code_tag=f"{__file__}.build_enclosed_energy_plot()",
         )
 
+        # Draw the percentages of interest
+        if self.percentages_of_interest is not None:
+            for poi in sorted(self.percentages_of_interest):
+                closest_radius, closest_dist = 0, np.abs(poi - enclosed_energy_fractions[0])
+                for radius, fraction in enumerate(enclosed_energy_fractions):
+                    dist = np.abs(fraction - poi)
+                    if dist < closest_dist:
+                        closest_radius = radius
+                        closest_dist = dist
+                lt.info(f"Percentage of interest {poi} is at radius {closest_radius}")
+                fig_record.view.draw_pq_list(
+                    [(0, poi), (closest_radius, poi)], style=self.percentages_of_interest_style.measured
+                )
+                fig_record.view.draw_pq_list(
+                    [(closest_radius, 0), (closest_radius, poi)], style=self.percentages_of_interest_style.measured
+                )
+
         # Draw the plot
-        fig_record.view.draw_pq_list(pq_vals, style=rcee.default().measured, label="measured")
+        fig_record.view.draw_pq_list(pq_vals, style=self.enclosed_energy_style.measured, label="measured")
+
+        # Render the plot
         fig_record.view.axis.set_ylim((0.0, 1.0))
         plot_image = fig_record.to_array()
 
