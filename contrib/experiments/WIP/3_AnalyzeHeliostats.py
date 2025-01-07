@@ -15,6 +15,7 @@ from contrib.common.lib.cv.spot_analysis.image_processor import *
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.SpotAnalysis import SpotAnalysis
 from opencsp.common.lib.cv.annotations.HotspotAnnotation import HotspotAnnotation
+from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor import *
 import opencsp.common.lib.render.figure_management as fm
@@ -28,6 +29,7 @@ import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.render_control.RenderControlPowerpointPresentation as rcpp
 import opencsp.common.lib.render_control.RenderControlPowerpointSlide as rcps
+import opencsp.common.lib.tool.exception_tools as et
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
@@ -136,27 +138,17 @@ def process_images(
         The path/name.ext of the saved cross section visualization image.
     """
     # load the no-sun images
-    no_sun_image = None
+    no_sun_images = None
     if no_sun_dir is not None:
         if no_sun_images is None:
             no_sun_images = it.image_files_in_directory(no_sun_dir)
-        no_sun_image = preprocess_images(no_sun_dir, no_sun_images)
-    else:
-        no_sun_images = []
+    no_sun_images = [ft.join(no_sun_dir, image_name_ext) for image_name_ext in no_sun_images]
 
     # load the heliostat images
     if on_sun_images is None:
         on_sun_images = it.image_files_in_directory(on_sun_dir)
-    on_sun_image = preprocess_images(on_sun_dir, on_sun_images)
-
-    # average the no_sun images
-    if no_sun_image is not None:
-        _, no_sun_name, no_sun_ext = ft.path_components(no_sun_images[0])
-        avg_no_sun_image_path = ft.join(results_dir, f"{no_sun_name}_no_sun_avg.png")
-        if ft.file_exists(avg_no_sun_image_path):
-            ft.delete_file(avg_no_sun_image_path)
-        no_sun_image.to_image().save(avg_no_sun_image_path)
-        no_sun_image = CacheableImage.from_single_source(avg_no_sun_image_path)
+    on_sun_images = [ft.join(on_sun_dir, image_name_ext) for image_name_ext in on_sun_images]
+    _, on_sun_name, on_sun_ext = ft.path_components(on_sun_images[0])
 
     def hotspot_pixel_locator(operable: SpotAnalysisOperable) -> tuple[int, int]:
         """Returns the x/y pixel location of the hotspot center"""
@@ -166,54 +158,71 @@ def process_images(
         return (int(ret[0]), int(ret[1]))
 
     # build the list of image processors for the primary image
+    remove_leftover_noise = BackgroundColorSubtractionImageProcessor('constant', [2])
     image_processors = {
-        "Echo": EchoImageProcessor(),
-        "BSub": BackgroundColorSubtractionImageProcessor('plane'),
-        "HotS": HotspotImageProcessor(15, record_visualization=True),
-        "XSec": ViewCustomCrossSectionImageProcessor(hotspot_pixel_locator, single_plot=False, y_range=(0, 255)),
-        "Cent": MomentsImageProcessor(include_visualization=True),
-        "Enrg": EnclosedEnergyImageProcessor("centroid", plot_x_limit_pixels=400),
+        "EchoEcho": EchoImageProcessor(),
+        "AvgGroup": AverageByGroupImageProcessor(),
+        "BlurGaus": ConvolutionImageProcessor(),
+        "NullSubt": NullImageSubtractionImageProcessor(),
+        "ConstSub": remove_leftover_noise,
+        "FalseCl0": FalseColorImageProcessor(),
+        "VHFalseC": ViewHighlightImageProcessor(base_image_selector='visualization'),
+        "PopStats": PopulationStatisticsImageProcessor(),
+        "SaveImag": SaveToFileImageProcessor(results_dir, prefix=on_sun_name, suffix="_null_image_subtraction"),
+        "HotSpots": HotspotImageProcessor(15, record_visualization=True),
+        "Centroid": MomentsImageProcessor(include_visualization=True),
+        "FalseCl1": FalseColorImageProcessor(),
+        "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
+        "_VHtSpot": ViewHighlightImageProcessor(base_image_selector='visualization'),
+        "VCrosSec": ViewCustomCrossSectionImageProcessor(hotspot_pixel_locator, single_plot=False, y_range=(0, 255)),
+        "EnclEnrg": EnclosedEnergyImageProcessor("hotspot", plot_x_limit_pixels=600),
     }
-
-    # build the list of image processors for the no-sun image
-    nosun_image_processors = {"BSub": BackgroundColorSubtractionImageProcessor()}
+    no_sun_image_processors = {
+        "EchoEcho": EchoImageProcessor(),
+        "AvgGroup": AverageByGroupImageProcessor(),
+        "BlurGaus": ConvolutionImageProcessor()
+    }
 
     # process the on-sun and no-sun images
 
     # Find the hotspot and visualize the vertical/horizontal cross-sections
-    if no_sun_image is not None:
-        nosun_spot_analysis = SpotAnalysis(
-            "SpotAnalysis - No Sun", image_processors=list(nosun_image_processors.values())
+    if no_sun_images is not None:
+        no_sun_spot_analysis = SpotAnalysis(
+            "NoSunSpotAnalysis", image_processors=list(no_sun_image_processors.values())
         )
-        nosun_hel_operable = SpotAnalysisOperable(
-            no_sun_image, primary_image_source_path=ft.join(no_sun_dir, no_sun_images[0])
-        )
-        nosun_spot_analysis.set_input_operables([nosun_hel_operable])
-        nosun_result = next(iter(nosun_spot_analysis))
-        image_processors["XSec"].no_sun_image = nosun_result.primary_image.nparray
+        no_sun_spot_analysis.set_primary_images(no_sun_images)
+        lt.info("Processing no-sun images")
+        no_sun_image = next(iter(no_sun_spot_analysis)).primary_image
     spot_analysis = SpotAnalysis("SpotAnalysis", image_processors=list(image_processors.values()))
-    hel_operable = SpotAnalysisOperable(on_sun_image, primary_image_source_path=ft.join(on_sun_dir, on_sun_images[0]))
-    spot_analysis.set_input_operables([hel_operable])
+    spot_analysis.set_primary_images(on_sun_images)
+    spot_analysis.set_default_support_images({ImageType.NULL: no_sun_image})
+    lt.info("Processing on-sun images")
     result = next(iter(spot_analysis))
 
     # Save the visualization images to the results directory
-    background_sub_algo_images = result.algorithm_images[image_processors["BSub"]]
-    hotspot_vis_image = result.visualization_images[image_processors["HotS"]][-1]
-    crosssec_vis_images = result.visualization_images[image_processors["XSec"]]
-    moments_vis_images = result.visualization_images[image_processors["Cent"]]
-    enclosed_energy_vis_images = result.visualization_images[image_processors["Enrg"]]
-    _, on_sun_name, on_sun_ext = ft.path_components(on_sun_images[0])
+    background_sub_algo_images = result.algorithm_images[image_processors["ConstSub"]]
+    false_color_vis_image_0 = result.visualization_images[image_processors["FalseCl0"]][-1]
+    false_color_highlights_vis_image = result.visualization_images[image_processors["VHFalseC"]][-1]
+    hotspot_vis_image = result.visualization_images[image_processors["HotSpots"]][-1]
+    centroid_vis_images = result.visualization_images[image_processors["Centroid"]]
+    false_color_vis_image_1 = result.visualization_images[image_processors["FalseCl1"]][-1]
+    _hotspot_vis_image = result.visualization_images[image_processors["_VHtSpot"]][-1]
+    hotspot_vis_image = result.visualization_images[image_processors["VHotSpot"]][-1]
+    crosssec_vis_images = result.visualization_images[image_processors["VCrosSec"]]
+    enclosed_energy_vis_images = result.visualization_images[image_processors["EnclEnrg"]]
     if no_sun_image is not None:
         _, no_sun_name, no_sun_ext = ft.path_components(no_sun_images[0])
-    ft.copy_file(hel_operable.primary_image_source_path, results_dir, f"{on_sun_name}_original.png")
+    on_sun_name = ""
+    ft.copy_file(no_sun_images[0], results_dir, f"{on_sun_name}_original.png")
     for i, image in enumerate(background_sub_algo_images):
         titles = ["color", "result"]
         image.to_image().save(ft.join(results_dir, f"{on_sun_name}_background_subtraction_{titles[i]}.png"))
-    hotspot_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_hotspot.png"))
+    false_color_vis_image_0.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "FalseCl0.png"))
+    false_color_highlights_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VHFalseC.png"))
+    hotspot_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VHotSpt_Centroid.png"))
     for i, image in enumerate(crosssec_vis_images):
         titles = ["vis", "horizontal", "vertical"]
         image.to_image().save(ft.join(results_dir, f"{on_sun_name}_crosssection_{titles[i]}.png"))
-    moments_vis_images[0].to_image().save(ft.join(results_dir, f"{on_sun_name}_centroid.png"))
     enclosed_energy_vis_images[0].to_image().save(ft.join(results_dir, f"{on_sun_name}_enclosed_energy.png"))
 
 
@@ -226,15 +235,19 @@ if __name__ == "__main__":
     doi = opencsp_settings["opencsp_root_path"]["data_of_interest"]
     cross_section_dir = ft.join(process_dir, f"{doi}_Cross_Sections")
     if ft.directory_exists(cross_section_dir):
-        shutil.rmtree(cross_section_dir)
+        for file in ft.files_in_directory(cross_section_dir, sort=False, files_only=True, recursive=True):
+            ft.delete_file(ft.join(cross_section_dir, file))
+        for file in ft.files_in_directory(cross_section_dir, sort=False, files_only=False, recursive=True):
+            with et.ignored(Exception):
+                shutil.rmtree(file)
     for time_dirname in time_dirs:
         contained_dirs = ft.directories_in_directory(ft.join(data_dir, time_dirname))
 
         # make sure we have data of interest
         on_sun_dir = ft.join(time_dirname, doi)
         if doi not in contained_dirs:
-            if f"{doi}Hel" in contained_dirs:
-                ft.rename_directory(ft.join(data_dir, time_dirname, f"{doi}Hel"), ft.join(data_dir, time_dirname, doi))
+            if f"{doi}" in contained_dirs:
+                ft.rename_directory(ft.join(data_dir, time_dirname, f"{doi}"), ft.join(data_dir, time_dirname, doi))
             else:
                 lt.info(f"{time_dirname=} doesn't have any {doi} data. ({contained_dirs=})")
                 continue
@@ -246,7 +259,7 @@ if __name__ == "__main__":
 
         # check for corresponding nosun data
         no_sun_dir = None
-        possible_no_sun_dirnames = [f"NoSun{doi}", f"NoSun{doi}Hel", "NoSunSF"]
+        possible_no_sun_dirnames = [f"NoSun{doi}", f"NoSun", "NoSunSF"]
         for possible_no_sun_dirname in possible_no_sun_dirnames:
             if possible_no_sun_dirname in contained_dirs:
                 no_sun_dir = ft.join(time_dirname, possible_no_sun_dirname)
@@ -314,13 +327,13 @@ if __name__ == "__main__":
         )
         slide.add_image(
             ppi.PowerpointImage(
-                ft.join(dir, list(filter(lambda f: "_subtraction_result" in f, result_image_name_exts))[0]),
-                caption="Background Color Subtraction",
+                ft.join(dir, list(filter(lambda f: "_null_image_subtraction" in f, result_image_name_exts))[0]),
+                caption="After subtracting NoSun image",
             )
         )
         slide.add_image(
             ppi.PowerpointImage(
-                ft.join(dir, list(filter(lambda f: "_centroid" in f, result_image_name_exts))[0]), caption="Centroid"
+                ft.join(dir, list(filter(lambda f: "_hotspot" in f, result_image_name_exts))[0]), caption="Hotspot"
             )
         )
         slide.add_image(
