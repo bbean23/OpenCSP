@@ -18,6 +18,7 @@ from opencsp.common.lib.cv.annotations.HotspotAnnotation import HotspotAnnotatio
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
 from opencsp.common.lib.cv.spot_analysis.image_processor import *
+import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render.PowerpointSlide as ps
@@ -28,7 +29,7 @@ import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.render_control.RenderControlPowerpointPresentation as rcpp
-import opencsp.common.lib.render_control.RenderControlPowerpointSlide as rcps
+import opencsp.common.lib.render_control.RenderControlPowerpointSlide as rcpps
 import opencsp.common.lib.tool.exception_tools as et
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
@@ -169,8 +170,14 @@ def process_images(
         "VHFalseC": ViewHighlightImageProcessor(base_image_selector='visualization'),
         "PopStats": PopulationStatisticsImageProcessor(),
         "SaveImag": SaveToFileImageProcessor(results_dir, prefix=on_sun_name, suffix="_null_image_subtraction"),
-        "HotSpots": HotspotImageProcessor(15, record_visualization=True),
-        "Centroid": MomentsImageProcessor(include_visualization=True),
+        "Centroid": MomentsImageProcessor(
+            include_visualization=True, centroid_style=rcps.default(color=color.cyan(), markersize=20)
+        ),
+        "HotSpots": HotspotImageProcessor(
+            15,
+            style=rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=80),
+            record_visualization=True,
+        ),
         "FalseCl1": FalseColorImageProcessor(),
         "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
         "_VHtSpot": ViewHighlightImageProcessor(base_image_selector='visualization'),
@@ -180,7 +187,7 @@ def process_images(
     no_sun_image_processors = {
         "EchoEcho": EchoImageProcessor(),
         "AvgGroup": AverageByGroupImageProcessor(),
-        "BlurGaus": ConvolutionImageProcessor()
+        "BlurGaus": ConvolutionImageProcessor(),
     }
 
     # process the on-sun and no-sun images
@@ -210,10 +217,9 @@ def process_images(
     hotspot_vis_image = result.visualization_images[image_processors["VHotSpot"]][-1]
     crosssec_vis_images = result.visualization_images[image_processors["VCrosSec"]]
     enclosed_energy_vis_images = result.visualization_images[image_processors["EnclEnrg"]]
-    if no_sun_image is not None:
-        _, no_sun_name, no_sun_ext = ft.path_components(no_sun_images[0])
-    on_sun_name = ""
-    ft.copy_file(no_sun_images[0], results_dir, f"{on_sun_name}_original.png")
+
+    ft.copy_file(on_sun_images[0], results_dir, f"{on_sun_name}_original.png")
+    no_sun_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_no_sun_avg.png"))
     for i, image in enumerate(background_sub_algo_images):
         titles = ["color", "result"]
         image.to_image().save(ft.join(results_dir, f"{on_sun_name}_background_subtraction_{titles[i]}.png"))
@@ -333,7 +339,8 @@ if __name__ == "__main__":
         )
         slide.add_image(
             ppi.PowerpointImage(
-                ft.join(dir, list(filter(lambda f: "_hotspot" in f, result_image_name_exts))[0]), caption="Hotspot"
+                ft.join(dir, list(filter(lambda f: "_VHotSpt_Centroid" in f, result_image_name_exts))[0]),
+                caption="Hotspot, Centroid",
             )
         )
         slide.add_image(
