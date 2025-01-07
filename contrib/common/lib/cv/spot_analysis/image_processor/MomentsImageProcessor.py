@@ -10,6 +10,7 @@ from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysi
 from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor import (
     AbstractSpotAnalysisImageProcessor,
 )
+import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
@@ -29,17 +30,29 @@ class MomentsImageProcessor(AbstractSpotAnalysisImageProcessor):
     centroid and orientation, among other uses.
     """
 
-    def __init__(self, include_visualization: bool = False):
+    def __init__(
+        self,
+        include_visualization: bool = False,
+        centroid_style: rcps.RenderControlPointSeq = None,
+        rotation_style: rcps.RenderControlPointSeq = None,
+    ):
         """
         Parameters
         ----------
         include_visualization : bool, optional
             True to add a visualization image with a marker at the centroid and
             arrow indicating the orientation. By default False.
+        centroid_style: RenderControlPointSeq, optional
+            Style used for render the centroid point. By default
+            RenderControlPointSeq.defualt(color=magenta).
+        rotation_style: RenderControlPointSeq, optional
+            Style used for render the rotation line. By default centroid_style.
         """
         super().__init__()
 
         self.include_visualization = include_visualization
+        self.centroid_style = centroid_style
+        self.rotation_style = rotation_style
 
     def calc_moments(self, operable: SpotAnalysisOperable) -> "MomentsAnnotation":
         """Get the moments for the primary image of the given operable."""
@@ -64,7 +77,7 @@ class MomentsImageProcessor(AbstractSpotAnalysisImageProcessor):
         # get the moments
         moments = cv.moments(image)
 
-        return MomentsAnnotation(moments)
+        return MomentsAnnotation(moments, self.centroid_style, self.rotation_style)
 
     def build_vis(self, operable: SpotAnalysisOperable, moments: "MomentsAnnotation") -> CacheableImage:
         image = operable.primary_image.nparray

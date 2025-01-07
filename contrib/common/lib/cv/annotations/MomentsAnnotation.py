@@ -17,12 +17,27 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 class MomentsAnnotation(AbstractAnnotations):
-    def __init__(self, moments, style: rcps.RenderControlPointSeq = None):
-        if style is None:
-            style = rcps.RenderControlPointSeq(color=color.magenta())
-        super().__init__(style)
+    def __init__(
+        self,
+        moments,
+        centroid_style: rcps.RenderControlPointSeq = None,
+        rotation_style: rcps.RenderControlPointSeq = None,
+    ):
+        """
+        centroid_style: RenderControlPointSeq, optional
+            Style used for render the centroid point. By default
+            RenderControlPointSeq.defualt(color=magenta).
+        rotation_style: RenderControlPointSeq, optional
+            Style used for render the rotation line. By default centroid_style.
+        """
+        if centroid_style is None:
+            centroid_style = rcps.default(color=color.magenta())
+        if rotation_style is None:
+            rotation_style = copy.deepcopy(centroid_style)
+        super().__init__(centroid_style)
 
         self.moments = moments
+        self.rotation_style = rotation_style
 
     def get_bounding_box(self, index=0) -> reg.RegionXY:
         """
@@ -195,10 +210,10 @@ class MomentsAnnotation(AbstractAnnotations):
                 rotation_endpoints_list = [(intersections.x[i], intersections.y[i]) for i in range(len(intersections))]
 
         # draw the rotation as an arrow
-        style = copy.deepcopy(self.style)
+        style = copy.deepcopy(self.rotation_style)
         style.marker = "arrow"
         style.linestyle = "-"
-        fig_record.view.draw_pq_list(rotation_endpoints_list)
+        fig_record.view.draw_pq_list(rotation_endpoints_list, style=style)
 
     def __str__(self):
         return f"MomentsAnnotation"

@@ -126,11 +126,11 @@ class RenderControlPointSeq:
         super(RenderControlPointSeq, self).__init__()
 
         # Set defaults.
-        if markeredgecolor == None:
+        if markeredgecolor is None:
             markeredgecolor = color
-        if markeredgewidth == None:
+        if markeredgewidth is None:
             markeredgewidth = linewidth
-        if markerfacecolor == None:
+        if markerfacecolor is None:
             markerfacecolor = color
 
         # Set fields.
@@ -164,6 +164,8 @@ class RenderControlPointSeq:
         if self._markeredgecolor is not None:
             if self.markeralpha is not None:
                 return self._markeredgecolor.rgba(self.markeralpha)
+            else:
+                return self._markeredgecolor.rgb()
 
     @markeredgecolor.setter
     def markeredgecolor(self, val: str | cl.Color | tuple[float] | None):
@@ -175,6 +177,8 @@ class RenderControlPointSeq:
         if self._markerfacecolor is not None:
             if self.markeralpha is not None:
                 return self._markerfacecolor.rgba(self.markeralpha)
+            else:
+                return self._markerfacecolor.rgb()
 
     @markerfacecolor.setter
     def markerfacecolor(self, val: str | cl.Color | tuple[float] | None):
