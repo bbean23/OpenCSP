@@ -6,7 +6,7 @@ import unittest
 import zipfile
 
 from opencsp.common.lib.cv.SpotAnalysis import SpotAnalysis
-from opencsp.common.lib.cv.spot_analysis.image_processor import FalseColorImageProcessor
+from opencsp.common.lib.cv.spot_analysis.image_processor import ViewFalseColorImageProcessor
 from contrib.common.lib.cv.spot_analysis.image_processor import PowerpointImageProcessor
 
 import opencsp.common.lib.tool.file_tools as ft
@@ -29,7 +29,7 @@ class TestPowerpointImageProcessor(unittest.TestCase):
         self._delete_unzip_dir()
 
         # prepare the standard image processors
-        self.false_color_processor = FalseColorImageProcessor()
+        self.false_color_processor = ViewFalseColorImageProcessor()
         self.powerpoint_processor = PowerpointImageProcessor(
             self.out_dir, self._testMethodName, processors_per_slide=[[self.false_color_processor]]
         )

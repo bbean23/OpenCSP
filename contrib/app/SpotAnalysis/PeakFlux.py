@@ -74,7 +74,7 @@ class PeakFlux:
                 self.get_peak_origin, 'Hotspot', single_plot=False, crop_to_threshold=20
             ),
             'Stat': PopulationStatisticsImageProcessor(min_pop_size=1, initial_min=0, initial_max=255),
-            'Fclr': FalseColorImageProcessor(),
+            'Fclr': ViewFalseColorImageProcessor(),
             'Anno': ViewAnnotationsImageProcessor(),
         }
         self.pptx_processor = PowerpointImageProcessor(

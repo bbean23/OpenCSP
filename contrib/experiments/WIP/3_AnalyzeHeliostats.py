@@ -166,8 +166,8 @@ def process_images(
         "BlurGaus": ConvolutionImageProcessor(),
         "NullSubt": NullImageSubtractionImageProcessor(),
         "ConstSub": remove_leftover_noise,
-        "FalseCl0": FalseColorImageProcessor(),
-        "VHFalseC": ViewHighlightImageProcessor(base_image_selector='visualization'),
+        "VFalseC0": ViewFalseColorImageProcessor(),
+        "VOverExp": ViewHighlightImageProcessor(base_image_selector='visualization'),
         "PopStats": PopulationStatisticsImageProcessor(),
         "SaveImag": SaveToFileImageProcessor(results_dir, prefix=on_sun_name, suffix="_null_image_subtraction"),
         "Centroid": MomentsImageProcessor(
@@ -178,7 +178,7 @@ def process_images(
             style=rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=80),
             record_visualization=True,
         ),
-        "FalseCl1": FalseColorImageProcessor(),
+        "VFalseC1": ViewFalseColorImageProcessor(),
         "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
         "_VHtSpot": ViewHighlightImageProcessor(base_image_selector='visualization'),
         "VCrosSec": ViewCustomCrossSectionImageProcessor(hotspot_pixel_locator, single_plot=False, y_range=(0, 255)),
@@ -208,11 +208,11 @@ def process_images(
 
     # Save the visualization images to the results directory
     background_sub_algo_images = result.algorithm_images[image_processors["ConstSub"]]
-    false_color_vis_image_0 = result.visualization_images[image_processors["FalseCl0"]][-1]
-    false_color_highlights_vis_image = result.visualization_images[image_processors["VHFalseC"]][-1]
+    false_color_vis_image_0 = result.visualization_images[image_processors["VFalseC0"]][-1]
+    false_color_highlights_vis_image = result.visualization_images[image_processors["VOverExp"]][-1]
     hotspot_vis_image = result.visualization_images[image_processors["HotSpots"]][-1]
     centroid_vis_images = result.visualization_images[image_processors["Centroid"]]
-    false_color_vis_image_1 = result.visualization_images[image_processors["FalseCl1"]][-1]
+    false_color_vis_image_1 = result.visualization_images[image_processors["VFalseC1"]][-1]
     _hotspot_vis_image = result.visualization_images[image_processors["_VHtSpot"]][-1]
     hotspot_vis_image = result.visualization_images[image_processors["VHotSpot"]][-1]
     crosssec_vis_images = result.visualization_images[image_processors["VCrosSec"]]
@@ -224,7 +224,7 @@ def process_images(
         titles = ["color", "result"]
         image.to_image().save(ft.join(results_dir, f"{on_sun_name}_background_subtraction_{titles[i]}.png"))
     false_color_vis_image_0.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "FalseCl0.png"))
-    false_color_highlights_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VHFalseC.png"))
+    false_color_highlights_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VOverExp.png"))
     hotspot_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VHotSpt_Centroid.png"))
     for i, image in enumerate(crosssec_vis_images):
         titles = ["vis", "horizontal", "vertical"]

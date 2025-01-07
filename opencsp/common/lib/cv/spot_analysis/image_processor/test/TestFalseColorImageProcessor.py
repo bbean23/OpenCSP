@@ -4,7 +4,9 @@ import os
 from PIL import Image
 import unittest
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
-from opencsp.common.lib.cv.spot_analysis.image_processor.FalseColorImageProcessor import FalseColorImageProcessor
+from opencsp.common.lib.cv.spot_analysis.image_processor.ViewFalseColorImageProcessor import (
+    ViewFalseColorImageProcessor,
+)
 
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
@@ -27,7 +29,7 @@ class TestFalseColorImageProcessor(unittest.TestCase):
         self.assertEqual(large_grayscale_image[1529, 0], 1529)
         self.assertEqual(large_grayscale_image[1529, 1529], 1529)
 
-        processor = FalseColorImageProcessor(map_type='large')
+        processor = ViewFalseColorImageProcessor(map_type='large')
         operable = processor.process_operable(SpotAnalysisOperable(large_grayscale_image))[0]
         actual_result = operable.primary_image.nparray
         actual_path_name_ext = os.path.join(self.out_dir, "test_jet_large.png")
@@ -49,7 +51,7 @@ class TestFalseColorImageProcessor(unittest.TestCase):
         self.assertEqual(large_grayscale_image[1019, 0], 1019)
         self.assertEqual(large_grayscale_image[1019, 1019], 1019)
 
-        processor = FalseColorImageProcessor(map_type='human')
+        processor = ViewFalseColorImageProcessor(map_type='human')
         operable = processor.process_operable(SpotAnalysisOperable(large_grayscale_image))[0]
         actual_result = operable.primary_image.nparray
         actual_path_name_ext = os.path.join(self.out_dir, "test_jet_human.png")

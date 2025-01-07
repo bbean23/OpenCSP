@@ -469,7 +469,7 @@ if __name__ == "__main__":
         PopulationStatisticsImageProcessor(min_pop_size=-1),
         EchoImageProcessor(),
         LogScaleImageProcessor(),
-        FalseColorImageProcessor(),
+        ViewFalseColorImageProcessor(),
     ]
     sa = SpotAnalysis("BCS Test", image_processors, save_dir=outdir, save_overwrite=True)
     image_name_exts = ft.files_in_directory(indir)
