@@ -94,8 +94,21 @@ class Color:
                     ValueError,
                     "Error in Color.from_generic(): " + f"val of type tuple must have three values, but {val=}",
                 )
+            if np.any([v > 255 for v in val]):
+                lt.error_and_raise(
+                    ValueError,
+                    "Error in Color.from_generic(): "
+                    + f"val of type tuple must have values between 0-1 or 0-255, but {val=}",
+                )
+            # floating point values in the range 0-1
+            if np.all([isinstance(v, float) for v in val]):
+                if np.all([v <= 1.0 for v in val]):
+                    hexval = [f"{int(np.round(v*255)):02x}" for v in val]
+                    name = "0x" + "".join(hexval)
+                    return Color(val[0], val[1], val[2], name, name)
+            # integer values in the range 0-255
             name = f"0x{val[0]:02x}{val[1]:02x}{val[2]:02x}"
-            return Color(val[0], val[1], val[2], name, name)
+            return cls.from_i255(val[0], val[1], val[2], name, name)
         elif isinstance(val, Callable):
             ret = val()
             if not isinstance(ret, Color):
