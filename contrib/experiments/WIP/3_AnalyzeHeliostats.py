@@ -113,6 +113,7 @@ def process_images(
     results_dir: str,
     on_sun_images: list[str] = None,
     no_sun_images: list[str] = None,
+    save_name_prefix: str = "",
 ) -> tuple[str, str, str]:
     """
     Find the hotspot for the given on sun images, and plot the cross section
@@ -166,8 +167,6 @@ def process_images(
         "BlurGaus": ConvolutionImageProcessor(),
         "NullSubt": NullImageSubtractionImageProcessor(),
         "ConstSub": remove_leftover_noise,
-        "VFalseC0": ViewFalseColorImageProcessor(),
-        "VOverExp": ViewHighlightImageProcessor(base_image_selector='visualization'),
         "PopStats": PopulationStatisticsImageProcessor(),
         "SaveImag": SaveToFileImageProcessor(results_dir, prefix=on_sun_name, suffix="_null_image_subtraction"),
         "Centroid": MomentsImageProcessor(
@@ -178,10 +177,14 @@ def process_images(
             style=rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=80),
             record_visualization=True,
         ),
-        "VFalseC1": ViewFalseColorImageProcessor(),
+        "VFalseCl": ViewFalseColorImageProcessor(),
+        "VOverExp": ViewHighlightImageProcessor(base_image_selector='visualization', black_highlight_color=(70, 0, 70)),
         "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
-        "_VHtSpot": ViewHighlightImageProcessor(base_image_selector='visualization'),
-        "VCrosSec": ViewCustomCrossSectionImageProcessor(hotspot_pixel_locator, single_plot=False, y_range=(0, 255)),
+        "_VFalse2": ViewFalseColorImageProcessor(),
+        "_VOverE2": ViewHighlightImageProcessor(base_image_selector='visualization', black_highlight_color=(70, 0, 70)),
+        "VCrosSec": ViewCustomCrossSectionImageProcessor(
+            hotspot_pixel_locator, single_plot=False, y_range=(0, 255), base_image_selector='visualization'
+        ),
         "EnclEnrg": EnclosedEnergyImageProcessor("hotspot", percentages_of_interest=[0.85], plot_x_limit_pixels=600),
     }
     no_sun_image_processors = {
@@ -208,28 +211,25 @@ def process_images(
 
     # Save the visualization images to the results directory
     background_sub_algo_images = result.algorithm_images[image_processors["ConstSub"]]
-    false_color_vis_image_0 = result.visualization_images[image_processors["VFalseC0"]][-1]
-    false_color_highlights_vis_image = result.visualization_images[image_processors["VOverExp"]][-1]
-    hotspot_vis_image = result.visualization_images[image_processors["HotSpots"]][-1]
     centroid_vis_images = result.visualization_images[image_processors["Centroid"]]
-    false_color_vis_image_1 = result.visualization_images[image_processors["VFalseC1"]][-1]
-    _hotspot_vis_image = result.visualization_images[image_processors["_VHtSpot"]][-1]
+    false_color_vis_image = result.visualization_images[image_processors["VFalseCl"]][-1]
+    false_color_highlights_vis_image = result.visualization_images[image_processors["VOverExp"]][-1]
     hotspot_vis_image = result.visualization_images[image_processors["VHotSpot"]][-1]
     crosssec_vis_images = result.visualization_images[image_processors["VCrosSec"]]
     enclosed_energy_vis_images = result.visualization_images[image_processors["EnclEnrg"]]
 
-    ft.copy_file(on_sun_images[0], results_dir, f"{on_sun_name}_original.png")
-    no_sun_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_no_sun_avg.png"))
+    ft.copy_file(on_sun_images[0], results_dir, f"0_{save_name_prefix}_original.png")
+    no_sun_image.to_image().save(ft.join(results_dir, f"1_{save_name_prefix}_no_sun_avg.png"))
     for i, image in enumerate(background_sub_algo_images):
         titles = ["color", "result"]
-        image.to_image().save(ft.join(results_dir, f"{on_sun_name}_background_subtraction_{titles[i]}.png"))
-    false_color_vis_image_0.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "FalseCl0.png"))
-    false_color_highlights_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VOverExp.png"))
-    hotspot_vis_image.to_image().save(ft.join(results_dir, f"{on_sun_name}_" + "VHotSpt_Centroid.png"))
+        image.to_image().save(ft.join(results_dir, f"2_{save_name_prefix}_background_subtraction_{titles[i]}.png"))
+    false_color_vis_image.to_image().save(ft.join(results_dir, f"3_{save_name_prefix}_" + "VFalseCl.png"))
+    false_color_highlights_vis_image.to_image().save(ft.join(results_dir, f"4_{save_name_prefix}_" + "VOverExp.png"))
+    hotspot_vis_image.to_image().save(ft.join(results_dir, f"5_{save_name_prefix}_" + "VHotSpt_Centroid.png"))
     for i, image in enumerate(crosssec_vis_images):
         titles = ["vis", "horizontal", "vertical"]
-        image.to_image().save(ft.join(results_dir, f"{on_sun_name}_crosssection_{titles[i]}.png"))
-    enclosed_energy_vis_images[0].to_image().save(ft.join(results_dir, f"{on_sun_name}_enclosed_energy.png"))
+        image.to_image().save(ft.join(results_dir, f"6_{save_name_prefix}_crosssection_{titles[i]}.png"))
+    enclosed_energy_vis_images[0].to_image().save(ft.join(results_dir, f"7_{save_name_prefix}_enclosed_energy.png"))
 
 
 if __name__ == "__main__":
@@ -316,7 +316,16 @@ if __name__ == "__main__":
         )
         results_dir = ft.join(cross_section_dir, time_dirname)
         ft.create_directories_if_necessary(results_dir)
-        process_images(on_sun_dir, no_sun_dir, results_dir, on_sun_images=on_sun_images, no_sun_images=no_sun_images)
+        process_images(
+            on_sun_dir,
+            no_sun_dir,
+            results_dir,
+            on_sun_images=on_sun_images,
+            no_sun_images=no_sun_images,
+            save_name_prefix=f"{doi}_{time_dirname}",
+        )
+
+        break
 
     # build the powerpoint
     ppt = rcpp.RenderControlPowerpointPresentation()
