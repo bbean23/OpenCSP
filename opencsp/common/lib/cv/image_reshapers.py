@@ -66,7 +66,7 @@ def _map_jet_human_rgb(input_color: int):
         ret = [0, input_color - 128, 255]
     elif input_color <= 255 * 2:  # cyan to green
         ret = [0, 255, 2 * (255 * 2 - input_color)]
-    elif input_color <= 255 * 2 + 128:  # green to yellow
+    elif input_color <= 255 * 2 + 127:  # green to yellow
         ret = [2 * (input_color - (255 * 2)), 255, 0]
     elif input_color <= 255 * 3:  # yellow to red
         ret = [255, 2 * ((255 * 3) - input_color), 0]

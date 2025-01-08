@@ -318,7 +318,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
-        np_image = base_image.nparray
+        np_image = operable.primary_image.nparray
         width, height = np_image.shape[1], np_image.shape[0]
 
         # get the cross section pixel location
@@ -364,8 +364,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
 
         # Draw the image w/ cross section line overlays
         i_view = self.views[0]
-        false_color_image = ir.false_color_reshaper(np_image, 255)
-        i_view.draw_image(false_color_image, (0, 0), (cropped_width, cropped_height))
+        i_view.draw_image(base_image.nparray, (0, 0), (cropped_width, cropped_height))
         i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
         i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
 
