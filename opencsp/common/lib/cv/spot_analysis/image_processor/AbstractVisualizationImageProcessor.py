@@ -337,8 +337,8 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
                 all_vis_images.append(cacheable_or_figure_rec)
 
             else:
-                # get the figure as an numpy array
-                np_image = cacheable_or_figure_rec.to_array()
+                # get the figure as an numpy array, using the standard 8 inches figure height
+                np_image = cacheable_or_figure_rec.to_array(8.0)
 
                 # add the image
                 cacheable_image = CacheableImage(np_image)
