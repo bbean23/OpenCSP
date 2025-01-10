@@ -115,6 +115,26 @@ class Vxy:
             ys += val.y.tolist()
         return cls((xs, ys))
 
+    @classmethod
+    def from_numpy_coords(cls, yx_coords: tuple[np.ndarray, np.ndarray]):
+        if len(yx_coords) != 2:
+            lt.error_and_raise(
+                ValueError,
+                "Error in Vxy.from_numpy_yx_coords(): "
+                + f"expected yx_coords to be of length 2, but "
+                + "{len(yx_coords)=}.",
+            )
+        if not isinstance(yx_coords[0], np.ndarray) or not isinstance(yx_coords[1], np.ndarray):
+            lt.error_and_raise(
+                TypeError,
+                "Error in Vxy.from_numpy_yx_coords(): "
+                + f"expected yx_coords to contain numpy arrays, but "
+                + f"{type(yx_coords[0])=} and {type(yx_coords[1])=}.",
+            )
+
+        xy_coords = [yx_coords[1], yx_coords[0]]
+        return cls._from_data(xy_coords)
+
     def _check_is_Vxy(self, v_in):
         """
         Checks if input data is instance of Vxy for methods that require this
@@ -150,6 +170,19 @@ class Vxy:
             return self._from_data(self._data * data_in)
         else:
             raise TypeError('Vxy cannot be multipled by type, {}.'.format(type(data_in)))
+
+    def __truediv__(self, data_in):
+        """
+        Element wise addition. Operand 1 type must be int, float, or Vxy.
+        """
+        if type(data_in) in [int, float, np.float32, np.float64]:
+            return self._from_data(self._data / data_in)
+        elif isinstance(data_in, Vxy):
+            return self._from_data(self._data / data_in.data)
+        elif type(data_in) is np.ndarray:
+            return self._from_data(self._data / data_in)
+        else:
+            raise TypeError('Vxy cannot be divided by type, {}.'.format(type(data_in)))
 
     def __getitem__(self, key):
         # Check that only one dimension is being indexed
