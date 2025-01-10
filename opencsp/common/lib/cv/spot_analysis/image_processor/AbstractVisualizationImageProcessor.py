@@ -3,6 +3,8 @@ import copy
 import dataclasses
 from typing import Callable
 
+import numpy as np
+
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
 from opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable import SpotAnalysisOperable
@@ -11,6 +13,7 @@ from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisIma
 )
 import opencsp.common.lib.render_control.RenderControlFigure as rcf
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
+import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -280,6 +283,13 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         self.initialized_figure_records = True
         return ret
 
+    @staticmethod
+    def default_render_control_figure_for_operable(operable: SpotAnalysisOperable):
+        (height_px, width_px), nchannel = it.dims_and_nchannels(operable.primary_image.nparray)
+        figsize = rcf.RenderControlFigure.pixel_resolution_inches(width_px, height_px)
+        figure_control = rcf.RenderControlFigure(tile=False, figsize=figsize, grid=False, draw_whitespace_padding=False)
+        return figure_control
+
     def _execute(self, operable: SpotAnalysisOperable, is_last: bool) -> list[SpotAnalysisOperable]:
         ret: SpotAnalysisOperable = None
 
@@ -294,7 +304,9 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             # no coordinator for synchronized visualization, always visualize
             # the operable immediately
             if not self.initialized_figure_records:
-                self._init_figure_records(rcf.RenderControlFigure(tile=False))
+                # Create the figure to plot to
+                render_control = self.default_render_control_figure_for_operable(operable)
+                self._init_figure_records(render_control)
             new_visualizations = self._visualize_operable(operable, is_last)
 
             # get the visualization images list

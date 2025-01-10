@@ -52,6 +52,8 @@ class VisualizationCoordinator:
         # used to ensure a valid internal state
         self.has_registered_visualization_processors = False
         """ True if register_visualization_processors() has been evaluated. """
+        self.has_initialized_vis_processors = False
+        """ True if initialize_vis_processors() has been evaluated. """
 
         # user interaction
         self.shift_down = False
@@ -80,8 +82,9 @@ class VisualizationCoordinator:
         Closes all visualization windows, and resets the state for this coordinator.
         """
         # close all visualization windows
-        for processor in self.visualization_processors:
-            processor.close_figures()
+        if self.has_initialized_vis_processors:
+            for processor in self.visualization_processors:
+                processor.close_figures()
 
         # reset internal state
         self.visualization_processors.clear()
@@ -89,6 +92,7 @@ class VisualizationCoordinator:
         self.figures.clear()
 
         self.has_registered_visualization_processors = False
+        self.has_initialized_vis_processors = False
 
         self.shift_down = False
         self.enter_pressed = False
@@ -158,6 +162,11 @@ class VisualizationCoordinator:
                 visualization_processor.register_visualization_coordinator(self)
                 self.visualization_processors.append(visualization_processor)
 
+    def initialize_vis_processors(self, operable: SpotAnalysisOperable):
+        if self.has_initialized_vis_processors:
+            return
+        self.has_initialized_vis_processors = True
+
         # determine the tiling arangement
         num_figures_dict: dict[AbstractVisualizationImageProcessor, int] = {}
         for processor in self.visualization_processors:
@@ -168,10 +177,14 @@ class VisualizationCoordinator:
         tiles_y = np.min([tiles_y, self.max_tiles_y])
 
         # build the figure manager
+        self.render_control_fig = AbstractVisualizationImageProcessor.default_render_control_figure_for_operable(
+            operable
+        )
         if tiles_x == 1 and tiles_y == 1:
-            self.render_control_fig = rcf.RenderControlFigure(tile=False)
+            pass
         else:
-            self.render_control_fig = rcf.RenderControlFigure(tile=True, tile_array=(tiles_x, tiles_y))
+            self.render_control_fig.tile = True
+            self.render_control_fig.tile_array = (tiles_x, tiles_y)
 
         # initialize the visualizers
         for processor in self.visualization_processors:
@@ -183,9 +196,12 @@ class VisualizationCoordinator:
                     + f" Expected {num_figures_dict[processor]} but received {len(processor_figures)}!"
                 )
             for fig_record in processor_figures:
+                # register callbacks for figures
                 fig_record.figure.canvas.mpl_connect('close_event', self.on_close)
                 fig_record.figure.canvas.mpl_connect('key_release_event', self.on_key_release)
                 fig_record.figure.canvas.mpl_connect('key_press_event', self.on_key_press)
+
+                # register this figure for coordinated management
                 self.figures.append(weakref.ref(fig_record))
 
     def _get_figures(self) -> list[rcfr.RenderControlFigureRecord]:
@@ -274,6 +290,9 @@ class VisualizationCoordinator:
             A copy of the given operable with all visualization images (if any)
             appended to the operable.
         """
+        # initialize the visualization processors, as necessary
+        self.initialize_vis_processors(operable)
+
         # render the visualization image processor
         processor_visualizations = visualization_processor._visualize_operable(operable, is_last)
 
