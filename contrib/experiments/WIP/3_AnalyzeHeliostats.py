@@ -177,6 +177,7 @@ def process_images(
             style=rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=80),
             record_visualization=True,
         ),
+        "SpotSize": SpotWidthImageProcessor(spot_width_technique="fwhm"),
         "VFalseCl": ViewFalseColorImageProcessor(),
         "VOverExp": ViewHighlightImageProcessor(base_image_selector='visualization', black_highlight_color=(70, 0, 70)),
         "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),

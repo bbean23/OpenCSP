@@ -9,6 +9,7 @@ from contrib.common.lib.cv.spot_analysis.image_processor.InpaintImageProcessor i
 from contrib.common.lib.cv.spot_analysis.image_processor.MomentsImageProcessor import MomentsImageProcessor
 from contrib.common.lib.cv.spot_analysis.image_processor.PowerpointImageProcessor import PowerpointImageProcessor
 from contrib.common.lib.cv.spot_analysis.image_processor.SaveToFileImageProcessor import SaveToFileImageProcessor
+from contrib.common.lib.cv.spot_analysis.image_processor.SpotWidthImageProcessor import SpotWidthImageProcessor
 from contrib.common.lib.cv.spot_analysis.image_processor.StabilizationImageProcessor import StabilizationImageProcessor
 from contrib.common.lib.cv.spot_analysis.image_processor.TargetBoardLocatorImageProcessor import (
     TargetBoardLocatorImageProcessor,
@@ -27,6 +28,7 @@ __all__ = [
     'MomentsImageProcessor',
     'PowerpointImageProcessor',
     'SaveToFileImageProcessor',
+    'SpotWidthImageProcessor',
     'StabilizationImageProcessor',
     'TargetBoardLocatorImageProcessor',
     'ViewAnnotationsImageProcessor',
