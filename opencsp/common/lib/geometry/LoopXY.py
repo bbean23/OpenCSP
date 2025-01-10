@@ -1,4 +1,6 @@
 import copy
+import numbers
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -548,3 +550,29 @@ class LoopXY:
         # return a new loop
         ab_verts = Vxy.from_list(ab_verts_list)
         return LoopXY.from_vertices(ab_verts)
+
+    def __add__(self, other: Vxy | numbers.Number) -> "LoopXY":
+        if isinstance(other, Vxy) or isinstance(other, numbers.Number):
+            pass
+        else:
+            lt.error_and_raise(
+                TypeError,
+                "Error in LoopXY.__add__(): "
+                + f"secondary value in addition must be of type Vxy or Number, "
+                + f"but is {type(other)}",
+            )
+        if isinstance(other, Vxy) and len(other) != 1:
+            lt.error_and_raise(
+                ValueError,
+                "Error in LoopXY.__add__(): " + f"other value Vxy must have length 1, " + f"but {len(other)=}",
+            )
+
+        if isinstance(other, Vxy):
+            verticies = self.vertices + other
+        else:
+            verticies = self.vertices + Vxy([other, other])
+
+        return LoopXY.from_vertices(verticies)
+
+    def __sub__(self, other: Vxy) -> "LoopXY":
+        return self + (-other)

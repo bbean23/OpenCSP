@@ -1,4 +1,6 @@
 import copy
+import numbers
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -9,6 +11,7 @@ from opencsp.common.lib.geometry.TransformXYZ import TransformXYZ
 from opencsp.common.lib.geometry.Vxy import Vxy
 from opencsp.common.lib.geometry.Pxy import Pxy
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
+import opencsp.common.lib.tool.log_tools as lt
 
 
 class RegionXY:
@@ -213,6 +216,31 @@ class RegionXY:
         """Creates a single loop region defined by the vertices given."""
         loop = LoopXY.from_vertices(vertices)
         return RegionXY(loop)
+
+    def __add__(self, other: Vxy | numbers.Number) -> "RegionXY":
+        if isinstance(other, Vxy) or isinstance(other, numbers.Number):
+            pass
+        else:
+            lt.error_and_raise(
+                TypeError,
+                "Error in RegionXY.__add__(): "
+                + f"secondary value in addition must be of type Vxy or Number, "
+                + f"but is {type(other)}",
+            )
+        if isinstance(other, Vxy) and len(other) != 1:
+            lt.error_and_raise(
+                ValueError,
+                "Error in RegionXY.__add__(): " + f"other value Vxy must have length 1, " + f"but {len(other)=}",
+            )
+
+        ret = RegionXY(self.loops[0] + other)
+        for loop in self.loops[1:]:
+            ret.add_loop(loop + other)
+
+        return ret
+
+    def __sub__(self, other: Vxy | numbers.Number) -> "RegionXY":
+        return self + (-other)
 
 
 class Resolution:
