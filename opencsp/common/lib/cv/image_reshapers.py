@@ -78,11 +78,9 @@ def _map_jet_human_rgb(input_color: int):
 def nchannels_reshaper(from_image: np.ndarray, new_nchannels: int):
     (height, width), old_nchannels = it.dims_and_nchannels(from_image)
     new_image = from_image
-    need_copy = True
 
     if new_image.ndim < 3:
         new_image = np.expand_dims(new_image, axis=2)
-        need_copy = False
 
     if old_nchannels != new_nchannels:
         if old_nchannels == 1:
@@ -100,11 +98,8 @@ def nchannels_reshaper(from_image: np.ndarray, new_nchannels: int):
                     "Error in image_reshapers.nchannels_reshaper(): "
                     + f"unknown conversion from {old_nchannels=} to {new_nchannels=}",
                 )
-        need_copy = False
 
-    if need_copy:
-        new_image = np.copy(new_image)
-
+    new_image = np.copy(new_image)
     return new_image
 
 
