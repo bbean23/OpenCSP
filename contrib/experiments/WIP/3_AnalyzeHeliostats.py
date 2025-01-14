@@ -9,7 +9,6 @@ import numpy as np
 from PIL import Image
 import pytesseract
 
-from contrib.experiments.WIP.ViewCustomCrossSectionImageProcessor import ViewCustomCrossSectionImageProcessor
 from opencsp import opencsp_settings
 from contrib.common.lib.cv.spot_analysis.image_processor import *
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
@@ -151,6 +150,7 @@ def process_images(
         on_sun_images = it.image_files_in_directory(on_sun_dir)
     on_sun_images = [ft.join(on_sun_dir, image_name_ext) for image_name_ext in on_sun_images]
     _, on_sun_name, on_sun_ext = ft.path_components(on_sun_images[0])
+    original_image = CacheableImage.from_single_source(on_sun_images[0])
 
     def hotspot_pixel_locator(operable: SpotAnalysisOperable) -> tuple[int, int]:
         """Returns the x/y pixel location of the hotspot center"""
@@ -172,22 +172,34 @@ def process_images(
         "Centroid": MomentsImageProcessor(
             include_visualization=True, centroid_style=rcps.default(color=color.cyan(), markersize=20)
         ),
-        "HotSpots": HotspotImageProcessor(
-            15,
-            style=rcps.RenderControlPointSeq(color=color.magenta(), marker='x', markersize=80),
-            record_visualization=True,
-        ),
+        "HotSpots": HotspotImageProcessor(15, record_visualization=True),
         "SpotSize": SpotWidthImageProcessor(spot_width_technique="fwhm"),
         "VFalseCl": ViewFalseColorImageProcessor(),
         "VOverExp": ViewHighlightImageProcessor(base_image_selector='visualization', black_highlight_color=(70, 0, 70)),
-        "VHotSpot": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
+        "VAnnotat": ViewAnnotationsImageProcessor(base_image_selector='visualization'),
         "_VFalse2": ViewFalseColorImageProcessor(),
         "_VOverE2": ViewHighlightImageProcessor(base_image_selector='visualization', black_highlight_color=(70, 0, 70)),
-        "VCrosSec": ViewCustomCrossSectionImageProcessor(
+        "VCrosSec": ViewCrossSectionImageProcessor(
             hotspot_pixel_locator, single_plot=False, y_range=(0, 255), base_image_selector='visualization'
         ),
         "EnclEnrg": EnclosedEnergyImageProcessor("hotspot", percentages_of_interest=[0.85], plot_x_limit_pixels=600),
     }
+    _p = image_processors
+    processors_per_slide = [
+        [
+            original_image,
+            (_p["AvgGroup"], "Average"),
+            (_p["BlurGaus"], "Blur"),
+            (_p["NullSubt"], "Subtract No-Sun"),
+            (_p["ConstSub"], "Threshold Subtraction", ImageType.PRIMARY),
+        ],
+        [(_p["Centroid"], "Centroid & Principle Axis"), (_p["HotSpots"], "Max Intensity"), _p["SpotSize"]],
+        [_p["VAnnotat"]],
+        [_p["VAnnotat"], (_p["EnclEnrg"], "Encircled Energy", ImageType.VISUALIZATION), _p["VCrosSec"]],
+    ]
+    image_processors["PowerPnt"] = PowerpointImageProcessor(
+        results_dir, save_name_prefix, overwrite=True, processors_per_slide=processors_per_slide
+    )
     no_sun_image_processors = {
         "EchoEcho": EchoImageProcessor(),
         "AvgGroup": AverageByGroupImageProcessor(),
@@ -215,7 +227,7 @@ def process_images(
     centroid_vis_images = result.visualization_images[image_processors["Centroid"]]
     false_color_vis_image = result.visualization_images[image_processors["VFalseCl"]][-1]
     false_color_highlights_vis_image = result.visualization_images[image_processors["VOverExp"]][-1]
-    hotspot_vis_image = result.visualization_images[image_processors["VHotSpot"]][-1]
+    hotspot_vis_image = result.visualization_images[image_processors["VAnnotat"]][-1]
     crosssec_vis_images = result.visualization_images[image_processors["VCrosSec"]]
     enclosed_energy_vis_images = result.visualization_images[image_processors["EnclEnrg"]]
 
