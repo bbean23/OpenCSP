@@ -30,7 +30,7 @@ class RenderControlSpotSize:
         """
         # set defaults
         if center_style is None:
-            center_style = rcps.default(marker='^', color='yellow', linewidth=2, markersize=10)
+            center_style = rcps.default(marker='+', color='yellow')
         if full_width_style is None:
             full_width_style = center_style
         if bounding_box_style is None:

@@ -7,7 +7,7 @@ import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 class HotspotAnnotation(PointAnnotations):
     def __init__(self, style: rcps.RenderControlPointSeq = None, point: p2.Pxy = None):
         if style is None:
-            style = rcps.default(color=color.magenta(), marker='x', markersize=12)
+            style = rcps.default(color=color.magenta(), marker='x')
         super().__init__(style, point)
 
     def __str__(self):
