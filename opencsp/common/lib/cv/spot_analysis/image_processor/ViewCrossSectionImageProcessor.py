@@ -1,5 +1,5 @@
 import copy
-from typing import Callable
+from typing import Callable, Literal
 
 import matplotlib.axes
 import matplotlib.backend_bases
@@ -44,7 +44,6 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         cross_section_location: (
             Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelLocation
         ) = None,
-        label: str | rca.RenderControlAxis = 'Light Intensity',
         single_plot: bool = True,
         crop_to_threshold: int | None = None,
         y_range: tuple[int, int] = None,
@@ -56,9 +55,6 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         ----------
         cross_section_location : Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelLocation
             The (x, y) pixel location to take cross sections through.
-        label : str | rca.RenderControlAxis, optional
-            The label to use for the window title, by default 'Light Intensity
-            [cross_section_location]'
         single_plot : bool, optional
             If True, then draw both the horizational and vertical cross section
             graphs on the same plot. If False, then use two separate plots.
@@ -74,8 +70,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             Set the y-range of the cross-section plots. None to not constrain
             the y-axis range with this parameter. Default is None.
         """
-        label_for_name = "" if label.strip() == "" else "_" + label
-        super().__init__(interactive, base_image_selector, self.__class__.__name__ + label_for_name)
+        super().__init__(interactive, base_image_selector)
 
         # validate input
         if cross_section_location is None:
@@ -141,17 +136,17 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             else:
                 if self.single_plot:
                     rc_axis = rca.RenderControlAxis(x_label='index', y_label='value')
-                    name_suffix = ""
+                    name = "Cross Section"
                 else:
                     if "Horizontal" in plot_title:
                         rc_axis = rca.RenderControlAxis(x_label='x', y_label='value')
-                        name_suffix = " (Horizontal)"
+                        name = "Cross Section (Horizontal)"
                     else:
                         rc_axis = rca.RenderControlAxis(x_label='y', y_label='value')
-                        name_suffix = " (Vertical)"
+                        name = "Cross Section (Vertical)"
 
                 view_spec = vs.view_spec_xy()
-                fig_record = setup_figure(rc_axis, view_spec, self.label + name_suffix)
+                fig_record = setup_figure(rc_axis, view_spec, name)
 
             self.view_specs.append(view_spec)
             self.rc_axises.append(rc_axis)
@@ -170,71 +165,6 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         if not self.single_plot:
             v_fig_record = self.fig_records[2]
         return v_fig_record, h_fig_record
-
-    def pre_visualize(
-        self, operable: SpotAnalysisOperable, cs_loc: tuple[int, int], cropped_region: tuple[int, int, int, int]
-    ) -> int:
-        """
-        An overrideable method that is called before the main cross section
-        drawing code. The user can extend the ViewCrossSectionImageProcessor
-        class to implement additional drawing code with this method and the
-        :py:meth:`post_visualize` method.
-
-        Parameters
-        ----------
-        operable : SpotAnalysisOperable
-            The operable being rendered.
-        cs_loc : tuple[int, int]
-            The x/y location of the (cropped) image that the cross section goes through.
-        cropped_region : tuple[int, int, int, int]
-            The cropped [left,top,right,bottom] region if crop_to_threshold is
-            not None, or the full image region if it is None.
-
-        Returns
-        -------
-        num_additional_graphs: int
-            How many additional graphs this method rendered to either of the fig_record plots.
-
-        Notes
-        -----
-        The figure records to draw to can be obtained with :py:attr:`_fig_records`.
-        """
-        return 0
-
-    def post_visualize(
-        self,
-        operable: SpotAnalysisOperable,
-        cs_loc: tuple[int, int],
-        cropped_region: tuple[int, int, int, int],
-        v_fig_record: rcfr.RenderControlFigureRecord,
-        h_fig_record: rcfr.RenderControlFigureRecord,
-    ) -> int:
-        """
-        An overrideable method that is called after the main cross section
-        drawing code. The user can extend the ViewCrossSectionImageProcessor
-        class to implement additional drawing code with this method and the
-        :py:meth:`pre_visualize` method.
-
-        Parameters
-        ----------
-        operable : SpotAnalysisOperable
-            The operable being rendered.
-        cs_loc : tuple[int, int]
-            The x/y location of the (cropped) image that the cross section goes through.
-        cropped_region : tuple[int, int, int, int]
-            The cropped [left,top,right,bottom] region if crop_to_threshold is
-            not None, or the full image region if it is None.
-
-        Returns
-        -------
-        num_additional_graphs: int
-            How many additional graphs this method rendered to either of the fig_record plots.
-
-        Notes
-        -----
-        The figure records to draw to can be obtained with :py:attr:`_fig_records`.
-        """
-        return 0
 
     def _draw_cross_section(
         self,
@@ -315,6 +245,28 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         else:
             return 1
 
+    def _draw_null_image_cross_section(
+        self, operable: SpotAnalysisOperable, cs_loc: tuple[int, int], cropped_region: tuple[int, int, int, int]
+    ) -> int:
+        if ImageType.NULL in operable.supporting_images:
+            # get the cropped no-sun image
+            no_sun_image = operable.supporting_images[ImageType.NULL].nparray.copy()
+            cx1, cy1, cx2, cy2 = cropped_region
+            no_sun_image = no_sun_image[cy1:cy2, cx1:cx2, ...]
+
+            # get the render styles for the no-sun image
+            vstyle = copy.copy(self.vertical_style)
+            hstyle = copy.copy(self.horizontal_style)
+            vstyle.set_color(color.yellow())
+            hstyle.set_color(color.plot_colors["purple"])
+
+            # add the no-sun cross sections to the plots
+            label = "No Sun"
+            return self._draw_cross_section(no_sun_image, cs_loc, cropped_region, vstyle, hstyle, label, label)
+
+        else:
+            return 0
+
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
@@ -368,15 +320,11 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
         i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
 
-        # Pre-plot call to the custom renderer
+        # Draw the cross sections for the no-sun image.
+        # Draw the cross sections for the primary image using the same axes.
         graphs_per_plot_cnt = 0
-        graphs_per_plot_cnt += self.pre_visualize(operable, cs_loc_cropped, cropped_region)
-
-        # Draw the cross sections graphs using the same axes
+        graphs_per_plot_cnt += self._draw_null_image_cross_section(operable, cs_loc_cropped, cropped_region)
         graphs_per_plot_cnt += self._draw_cross_section(np_image, cs_loc, cropped_region)
-
-        # Post-plot call to the custom renderer
-        graphs_per_plot_cnt += self.post_visualize(operable, cs_loc_cropped, cropped_region)
 
         # draw
         for view in self.views:
