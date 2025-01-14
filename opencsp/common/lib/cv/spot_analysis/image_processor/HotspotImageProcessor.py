@@ -259,7 +259,7 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
             (height, width), nchannels = it.dims_and_nchannels(image)
             fig_size = rcfg.RenderControlFigure.pixel_resolution_inches(width, height)
             axis_control = rca.image(grid=False)
-            fig_control = rcfg.RenderControlFigure(tile=True, tile_array=(4, 2), fig_size=fig_size, grid=False)
+            fig_control = rcfg.RenderControlFigure(tile=True, tile_array=(4, 2), figsize=fig_size, grid=False)
             view_spec_image = vs.view_spec_im()
             view_spec_pq = vs.view_spec_pq()
             debug_fig_recs: list[rcfr.RenderControlFigureRecord] = []
@@ -378,9 +378,9 @@ class HotspotImageProcessor(AbstractSpotAnalysisImageProcessor):
             if isinstance(self.record_debug_view, int):
                 to_draw_count = np.min([to_draw_count, self.record_debug_view])
             ppt_fig_images = ppt_fig_images[-to_draw_count:]
-            visualization_images = copy.copy(new_operable.visualization_images)
-            visualization_images[self] = [CacheableImage(img) for img in ppt_fig_images]
-            new_operable = dataclasses.replace(new_operable, visualization_images=visualization_images)
+            algorithm_images = copy.copy(new_operable.algorithm_images)
+            algorithm_images[self] = [CacheableImage(img) for img in ppt_fig_images]
+            new_operable = dataclasses.replace(new_operable, algorithm_images=algorithm_images)
 
         # add the visualization of this step to the visualization images
         if self.record_visualization:
