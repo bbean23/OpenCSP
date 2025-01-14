@@ -47,6 +47,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         single_plot: bool = True,
         crop_to_threshold: int | None = None,
         y_range: tuple[int, int] = None,
+        plot_title: str | Callable[[SpotAnalysisOperable], str] | Literal[False] = None,
         interactive: bool | Callable[[SpotAnalysisOperable], bool] = False,
         base_image_selector: str | ImageType = None,
     ):
@@ -69,6 +70,9 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         y_range : tuple[int, int] | None, optional
             Set the y-range of the cross-section plots. None to not constrain
             the y-axis range with this parameter. Default is None.
+        plot_title : str | Callable[[SpotAnalysisOperable], str] | Literal[False], optional
+            The title to use for the plots, or the boolean value False to
+            supress the title. Default is the image name.
         """
         super().__init__(interactive, base_image_selector)
 
@@ -77,10 +81,10 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             cross_section_location = "center"
 
         self.cross_section_location = PixelLocation(cross_section_location)
-        self.label = label
         self.single_plot = single_plot
         self.crop_to_threshold = crop_to_threshold
         self.y_range = y_range
+        self.plot_title = plot_title
 
         # initialize certain visualization values
         self.horizontal_style = rcps.RenderControlPointSeq(color=color.magenta(), linewidth=2, marker='None')
@@ -305,7 +309,15 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
 
         # Update the title
         for plot_title_prefix, fig_record in zip(self.plot_titles, self.fig_records):
-            fig_record.title = plot_title_prefix + operable.best_primary_nameext
+            if self.plot_title is False:
+                fig_record.title = None
+            else:
+                _plot_title = operable.best_primary_pathnameext
+                if isinstance(self.plot_title, str):
+                    _plot_title = self.plot_title
+                elif isinstance(self.plot_title, Callable):
+                    _plot_title = self.plot_title(operable)
+                fig_record.title = plot_title_prefix + _plot_title
 
         # get the horizontal and vertical figure records
         v_fig_record, h_fig_record = self._figure_records
