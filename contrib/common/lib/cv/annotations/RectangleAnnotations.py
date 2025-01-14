@@ -8,7 +8,7 @@ from opencsp.common.lib.cv.annotations.AbstractAnnotations import AbstractAnnota
 import opencsp.common.lib.geometry.LoopXY as l2
 import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.geometry.RegionXY as reg
-import opencsp.common.lib.render.color as color
+import opencsp.common.lib.render.Color as color
 import opencsp.common.lib.render.figure_management as fm
 import opencsp.common.lib.render.view_spec as vs
 import opencsp.common.lib.render.View3d as v3d
@@ -80,10 +80,9 @@ class RectangleAnnotations(AbstractAnnotations):
             )
         return [self.size * self.pixels_to_meters]
 
-    def _render(self, axes: matplotlib.axes.Axes):
-        """
-        Called from render(). The parameters are always guaranteed to be set.
-        """
+    def render_to_figure(self, fig: rcfr.RenderControlFigureRecord, image: np.ndarray = None, include_label=False):
+        label = self.get_label(include_label)
+
         # get the corner vertices for each bounding box
         draw_loops: list[list[tuple[int, int]]] = []
         for index in range(len(self.points[0])):
@@ -94,9 +93,9 @@ class RectangleAnnotations(AbstractAnnotations):
                 draw_loops.append(loop_verts)
 
         # draw the bounding boxes
-        view = v3d.View3d(axes.figure, axes, vs.view_spec_xy())
-        for draw_loop in draw_loops:
-            view.draw_pq_list(draw_loop, close=True, style=self.style)
+        for i, draw_loop in enumerate(draw_loops):
+            fig.view.draw_pq_list(draw_loop, close=True, style=self.style, label=label)
+            label = None
 
 
 if __name__ == "__main__":
@@ -105,7 +104,7 @@ if __name__ == "__main__":
     import opencsp.common.lib.opencsp_path.opencsp_root_path as orp
     from opencsp.common.lib.opencsp_path import opencsp_settings
     import opencsp.common.lib.tool.file_tools as ft
-    import opencsp.common.lib.render.color as color
+    import opencsp.common.lib.render.Color as color
     import opencsp.common.lib.render.figure_management as fm
     import opencsp.common.lib.render.view_spec as vs
     import opencsp.common.lib.render_control.RenderControlAxis as rca

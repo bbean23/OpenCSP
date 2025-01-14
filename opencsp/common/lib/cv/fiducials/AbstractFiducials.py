@@ -19,6 +19,7 @@ import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
+import opencsp.common.lib.tool.string_tools as st
 
 
 class AbstractFiducials(ABC):
@@ -109,42 +110,39 @@ class AbstractFiducials(ABC):
 
         return ret
 
-    def _render(self, axes: matplotlib.axes.Axes):
+    def get_label(self, include_label=False) -> str | None:
         """
-        Called from render(). The parameters are always guaranteed to be set.
+        Get the label either from self.label (if set) or from the class name.
+        Returns None if include_label is False.
         """
-        axes.scatter(
-            self.origin.x,
-            self.origin.y,
-            linewidth=self.style.linewidth,
-            marker=self.style.marker,
-            s=self.style.markersize,
-            color=self.style.markerfacecolor,
-            edgecolor=self.style.markeredgecolor,
-        )
+        if not include_label:
+            label = None
+        if hasattr(self, "label"):
+            label = self.label
+        else:
+            class_name = self.__class__.__name__
 
-    def render_to_plot(self, axes: matplotlib.axes.Axes = None):
-        """
-        Renders this fiducial to the active matplotlib.pyplot plot.
+            class_name_endings = ["Fiducial", "Fiducials", "Annotation", "Annotations"]
+            for class_name_ending in class_name_endings:
+                if class_name.endswith(class_name_ending):
+                    class_name = class_name[: -len(class_name_ending)]
 
-        The default implementation uses plt.scatter().
+            label = " ".join(st.camel_case_split(class_name))
 
-        Parameters
-        ----------
-        axes: matplotlib.axes.Axes, optional
-            The plot to render to. Uses the active plot if None. Default is None.
-        """
-        if axes is None:
-            axes = plt.gca()
-        self._render(axes)
+        return label
 
-    def render_to_figure(self, fig_record: rcfr.RenderControlFigureRecord, image: np.ndarray = None):
+    def render_to_figure(
+        self, fig_record: rcfr.RenderControlFigureRecord, image: np.ndarray = None, include_label=False
+    ):
         """
         Renders a visual representation of this fiducial to the given fig_record.
 
         The given image should have already been rendered to the figure record
         if it is set. If this has been called from :py:meth:`render_to_image`
         then image is guaranteed to be set.
+
+        The default version of this method renders the origin point. Overwrite
+        this method for a custom implementation.
 
         Parameters
         ----------
@@ -156,14 +154,12 @@ class AbstractFiducials(ABC):
             there hasn't been an image rendered or that data just isn't
             available. By default None, or the image passed in to
             :py:meth:`render_to_image` if being called from that method.
-
-        Raises
-        ------
-        NotImplementedError
-            If this method hasn't been implemented yet in one of the child
-            classes of :py:class:`AbstractFiducials`.
+        include_label: bool, optional
+            True if this fiducial should add a label during it's plot method. By
+            default False.
         """
-        raise NotImplementedError
+        label = self.get_label(include_label)
+        fig_record.view.draw_pq(([self.origin.x[0]], [self.origin.y[0]]), style=self.style, label=label)
 
     def render_to_image(self, image: np.ndarray) -> np.ndarray:
         """
@@ -186,8 +182,8 @@ class AbstractFiducials(ABC):
             rca.image(draw_axes=False, grid=False),
             view_spec_2d,
             equal=False,
-            name=self.__class__.__name__,
-            code_tag=f"{__file__}.render_to_image()",
+            name="Fiducials and Annotations",
+            code_tag=f"{__file__}.render_fiducials_to_image()",
         )
 
         try:
@@ -198,10 +194,7 @@ class AbstractFiducials(ABC):
             fig_record.view.imshow(image)
 
             # render
-            try:
-                self.render_to_figure(fig_record, image)
-            except NotImplementedError:
-                self.render_to_plot(fig_record.axis)
+            self.render_to_figure(fig_record, image)
 
             # Convert back to a numpy array
             new_image = fig_record.to_array()

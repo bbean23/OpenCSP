@@ -174,9 +174,12 @@ class MomentsAnnotation(AbstractAnnotations):
 
     # other uses of moments...
 
-    def render_to_figure(self, fig_record: rcfr.RenderControlFigureRecord, image: np.ndarray = None):
+    def render_to_figure(
+        self, fig_record: rcfr.RenderControlFigureRecord, image: np.ndarray = None, include_label: bool = False
+    ):
         # draw the centroid marker
-        fig_record.view.draw_pq(([self.cX], [self.cY]), self.style)
+        label = None if not include_label else "centroid"
+        fig_record.view.draw_pq(([self.cX], [self.cY]), self.style, label=label)
 
         # start by assuming that the plot is >= 30 pixels
         height, width, rotation_arrow_dist = None, None, 30

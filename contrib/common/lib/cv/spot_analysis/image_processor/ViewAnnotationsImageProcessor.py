@@ -21,6 +21,7 @@ import opencsp.common.lib.render_control.RenderControlFigure as rcf
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
 import opencsp.common.lib.render_control.RenderControlPointSeq as rcps
 import opencsp.common.lib.tool.file_tools as ft
+import opencsp.common.lib.tool.image_tools as it
 
 
 class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
@@ -102,25 +103,27 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         """
         Updates the figures for this instance with the data from the given operable.
         """
-        old_image = base_image.nparray
-        new_image = np.array(old_image)
+        image = base_image.nparray
 
-        for fiducials in filter(self._annotations_match_filter, operable.given_fiducials):
-            new_image = fiducials.render_to_image(new_image)
-        for fiducials in filter(self._annotations_match_filter, operable.found_fiducials):
-            new_image = fiducials.render_to_image(new_image)
-        for annotations in filter(self._annotations_match_filter, operable.annotations):
-            new_image = annotations.render_to_image(new_image)
+        # get a list of the fiducials to be rendered
+        to_render: list[AbstractFiducials] = []
+        to_render += list(filter(self._annotations_match_filter, operable.given_fiducials))
+        to_render += filter(self._annotations_match_filter, operable.found_fiducials)
+        to_render += filter(self._annotations_match_filter, operable.annotations)
+
+        # initialize the figure
+        self.figure.clear()
+        self.figure.view.imshow(image)
+
+        # render
+        include_label = len(to_render) > 1
+        for fiducials in to_render:
+            fiducials.render_to_figure(self.figure, image, include_label)
 
         # show the visualization
-        self.figure.clear()
-        self.figure.view.imshow(new_image)
-        self.figure.view.show(block=False)
+        self.figure.view.show(block=False, legend=include_label)
 
-        # build the return value
-        cacheable_image = CacheableImage(new_image)
-
-        return [cacheable_image]
+        return [self.figure]
 
     def close_figures(self):
         """

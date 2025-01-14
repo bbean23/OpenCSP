@@ -89,11 +89,8 @@ class SpotWidthAnnotation(AbstractAnnotations):
     def size(self) -> list[float]:
         raise NotImplementedError
 
-    def _render(self, axes: matplotlib.axes.Axes):
-        """
-        Called from render(). The parameters are always guaranteed to be set.
-        """
-        view = v3d.View3d(axes.figure, axes, vs.view_spec_xy())
+    def render_to_figure(self, fig: rcfr.RenderControlFigureRecord, image: np.ndarray, include_label=False):
+        label = self.get_label(include_label)
 
         # draw the full-width boundary
         if self.style.full_width_style != 'None':
@@ -103,7 +100,9 @@ class SpotWidthAnnotation(AbstractAnnotations):
                 'linestyle': self.style.full_width_style.linestyle,
                 'linewidth': self.style.full_width_style.linewidth,
                 'alpha': self.style.full_width_style.markeralpha,
+                'label': label,
             }
+            label = None
             if self.spot_width_technique == "fwhm":
                 ellipse = matplotlib.patches.Ellipse(
                     xy=self.long_axis_center.astuple(),
@@ -112,12 +111,12 @@ class SpotWidthAnnotation(AbstractAnnotations):
                     angle=np.rad2deg(self.long_axis_rotation),
                     **style_params
                 )
-                axes.add_patch(ellipse)
+                fig.view.axis.add_patch(ellipse)
             else:
                 ellipse = matplotlib.patches.Ellipse(
                     xy=self.centroid_loc.astuple(), width=self.width, height=self.width, **style_params
                 )
-                axes.add_patch(ellipse)
+                fig.view.axis.add_patch(ellipse)
 
         # draw the bounding box
         if self.style.bounding_box_style != "None":
@@ -125,8 +124,10 @@ class SpotWidthAnnotation(AbstractAnnotations):
             for loop in bbox.loops:
                 loop_verts = list(zip(loop.vertices.x, loop.vertices.y))
                 loop_verts = [(int(x), int(y)) for x, y in loop_verts]
-                view.draw_pq_list(loop_verts, close=True, style=self.style.bounding_box_style)
+                fig.view.draw_pq_list(loop_verts, close=True, style=self.style.bounding_box_style, label=label)
+                label = None
 
         # draw the centroid
         if self.style.center_style != "None":
-            view.draw_pq(self.centroid_loc.data, self.style.center_style)
+            fig.view.draw_pq(self.centroid_loc.data, self.style.center_style, label=label)
+            label = None
