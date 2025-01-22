@@ -117,6 +117,7 @@ class Vxy:
 
     @classmethod
     def from_numpy_coords(cls, yx_coords: tuple[np.ndarray, np.ndarray]):
+        """Builds a Vxy instance from numpy coordinates, such as those returned by np.where(arr == 0)."""
         if len(yx_coords) != 2:
             lt.error_and_raise(
                 ValueError,
@@ -173,7 +174,7 @@ class Vxy:
 
     def __truediv__(self, data_in):
         """
-        Element wise addition. Operand 1 type must be int, float, or Vxy.
+        Element wise division. Operand 1 type must be int, float, or Vxy.
         """
         if type(data_in) in [int, float, np.float32, np.float64]:
             return self._from_data(self._data / data_in)
