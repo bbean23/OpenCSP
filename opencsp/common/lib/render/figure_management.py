@@ -272,6 +272,18 @@ def _setup_figure(
 
 
 def hide_axes(fig_record: RenderControlFigureRecord, figure_control: RenderControlFigure):
+    """
+    Hides the axes for the plot if axis_control.draw_axes is False. Hides the
+    whitespace around the plot if figure_control.draw_whitespace_padding is
+    False.
+
+    Parameters
+    ----------
+    fig_record : RenderControlFigureRecord
+        The figure record to be modified.
+    figure_control : RenderControlFigure
+        The control that manages if axes and whitespace are drawn.
+    """
     axis_control = fig_record.axis_control
 
     # hide the axes

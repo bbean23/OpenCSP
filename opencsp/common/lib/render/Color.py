@@ -84,6 +84,24 @@ class Color:
 
     @classmethod
     def from_generic(cls, val: Union[str, tuple, 'Color', Callable]) -> 'Color':
+        """
+        Create a color instance from any of the possible input methods.
+
+        Parameters
+        ----------
+        val : str, tuple, Color, Callable
+            The value to create the color from. Can be any of:
+            - hex string such as "0x1f77b4"
+            - name of a color such as "blue"
+            - a tuple of floating point values such as (.12, .47, .71)
+            - a tuple of integer values in the range 0-255 such as (31, 119, 180)
+            - a function that, when called, generates a Color instance
+
+        Returns
+        -------
+        Color
+            The new Color instance for the given value.
+        """        
         if isinstance(val, Color):
             return val
         elif isinstance(val, str):
