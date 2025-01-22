@@ -26,11 +26,13 @@ class AbstractFiducials(ABC):
     """
     A collection of markers (such as an ArUco board) that is used to orient the camera relative to observed objects
     in the scene. It is suggested that each implementing class be paired with a complementary locator method or
-    SpotAnalysisImageProcessor.
+    :py:class:`opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisImageProcessor`.
     """
 
     def __init__(self, style: rcps.RenderControlPointSeq = None, pixels_to_meters: Callable[[p2.Pxy], v3.Vxyz] = None):
         """
+        Initializes the AbstractFiducials with a specified rendering style and pixel-to-meter conversion function.
+
         Parameters
         ----------
         style : RenderControlPointSeq, optional
@@ -42,62 +44,115 @@ class AbstractFiducials(ABC):
             as relative camera position and camera distortion. For extreme accuracy, this will also account for
             non-uniformity in the target surface. Defaults to a simple 1 meter per pixel model.
         """
+        # "ChatGPT 4o" assisted with generating this docstring.
         self.style = style if style is not None else rcps.default()
         self.pixels_to_meters = pixels_to_meters
 
     @abstractmethod
     def get_bounding_box(self, index=0) -> reg.RegionXY:
-        """The X/Y bounding box(es) of this instance, in pixels."""
+        """
+        Get the X/Y bounding box of this instance, in pixels.
+
+        Parameters
+        ----------
+        index : int, optional
+            The index of the fiducial for which to retrieve the bounding box, for fiducials that have more than one bounding box. Defaults to 0.
+
+        Returns
+        -------
+        reg.RegionXY
+            The bounding box of the fiducial.
+        """
+
+        # "ChatGPT 4o" assisted with generating this docstring.
 
     @property
     @abstractmethod
     def origin(self) -> p2.Pxy:
-        """The origin point(s) of this instance, in pixels."""
+        """
+        Get the origin point(s) of this instance, in pixels.
+
+        Returns
+        -------
+        p2.Pxy
+            The origin point(s) of the fiducial.
+        """
+
+        # "ChatGPT 4o" assisted with generating this docstring.
 
     @property
     @abstractmethod
     def rotation(self) -> scipy.spatial.transform.Rotation:
         """
-        The pointing of the normal vector(s) of this instance.
+        Get the pointing of the normal vector(s) of this instance.
+
         This is relative to the camera's reference frame, where x is positive
         to the right, y is positive down, and z is positive in (away from the
-        camera).
+        camera)
 
-        This can be used to describe the forward transformation from the
-        camera's perspective. For example, an aruco marker whose origin is in
-        the center of the image and is facing towards the camera could have the
-        rotation::
+        Returns
+        -------
+        scipy.spatial.transform.Rotation
+            The rotation of the fiducial relative to the camera's reference frame.
+
+        Notes
+        -----
+        This can be used to describe the forward transformation from the camera's perspective. For example, an ArUco
+        marker whose origin is in the center of the image and is facing towards the camera could have the rotation
+        defined as:
+
+        .. code-block:: python
 
             Rotation.from_euler('y', np.pi)
 
-        If that same aruco marker was also placed upside down, then it's
-        rotation could be::
+        If that same ArUco marker was also placed upside down, then its rotation could be defined as:
+
+        .. code-block:: python
 
             Rotation.from_euler(
                 'yz',
-                [ [np.pi, 0],
-                  [0,     np.pi] ]
+                [[np.pi, 0],
+                [0,     np.pi]]
             )
 
-        Not that this just describes rotation, and not the translation. We call
-        the rotation and translation together the orientation.
+        Note that this just describes rotation, and not the translation. We call the rotation and translation together
+        the orientation.
         """
+
+    # "ChatGPT 4o" assisted with generating this docstring.
 
     @property
     @abstractmethod
     def size(self) -> list[float]:
-        """The scale(s) of this fiducial, in pixels, relative to its longest axis.
-        For example, if the fiducial is a square QR-code and is oriented tangent
+        """
+        Get the scale(s) of this fiducial, in pixels, relative to its longest axis.
+
+        As an example, if the fiducial is a square QR-code and is oriented tangent
         to the camera, then the scale will be the number of pixels from one
-        corner to the other."""  # TODO is this a good definition?
+        corner to the other.
+
+        Returns
+        -------
+        list[float]
+            The sizes of the fiducial in pixels.
+        """
+
+        # "ChatGPT 4o" assisted with generating this docstring.
 
     @property
     def scale(self) -> list[float]:
         """
-        The scale(s) of this fiducial, in meters, relative to its longest axis.
-        This can be used to determine the distance and rotation of the
-        fiducial relative to the camera.
+        Get the scale(s) of this fiducial, in meters, relative to its longest axis.
+
+        This value, together with the size, can potentially be used to determine the
+        distance and rotation of the fiducial relative to the camera.
+
+        Returns
+        -------
+        list[float]
+            The scales of the fiducial in meters.
         """
+        # "ChatGPT 4o" assisted with generating this docstring.
         ret = []
 
         for i in range(len(self.origin)):
@@ -163,12 +218,28 @@ class AbstractFiducials(ABC):
 
     def render_to_image(self, image: np.ndarray) -> np.ndarray:
         """
-        Renders this fiducial to the a new image on top of the given image.
+        Renders this fiducial to a new image on top of the given image.
 
         The default implementation creates a new matplotlib plot, and then
         renders to it with either :py:meth:`render_to_figure` or
         :py:meth:`render_to_plot`, depending on which has been implemented.
+
+        Parameters
+        ----------
+        image : np.ndarray
+            The original image to which the fiducial will be rendered.
+
+        Returns
+        -------
+        np.ndarray
+            The updated image with the fiducial rendered on top.
+
+        Raises
+        ------
+        Exception
+            If an error occurs during the rendering process.
         """
+        # "ChatGPT 4o" assisted with generating this docstring.
         # Create the figure to plot to
         (height_px, width_px), nchannel = it.dims_and_nchannels(image)
         figsize = rcfg.RenderControlFigure.pixel_resolution_inches(width_px, height_px)
