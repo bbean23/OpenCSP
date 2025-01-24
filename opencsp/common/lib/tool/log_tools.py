@@ -327,12 +327,18 @@ def critical(*vargs, **kwargs) -> int:
     return 0
 
 
-def error_and_raise(exception_class: Exception.__class__, msg: str) -> None:
+def error_and_raise(exception_class: Exception.__class__, msg: str, base_exception: Exception = None) -> None:
     """Logs the given message at the "error" level and raises the given exception, also with this message.
 
-    Args:
-        exception_class (Exception.__class__): An exception class. See below for built-in exception types.
-        msg (str): The message to go along with the exception.
+    Parameters
+    ----------
+    exception_class: Exception.__class__
+        An exception class. See below for built-in exception types.
+    msg: str
+        The message to go along with the exception.
+    base_exception: Exception
+        The exception that caused this code to be called, if any. This will be
+        added onto the newly created exception_class' history.
 
     Example::
 
@@ -411,19 +417,30 @@ def error_and_raise(exception_class: Exception.__class__, msg: str) -> None:
     """
     msg = str(msg)  # Ensure that message is a string, to enable concatenation.
     error(msg)
+
     try:
         e = exception_class(msg)
     except Exception as exc:
         raise RuntimeError(msg) from exc
-    raise e
+
+    if base_exception is not None:
+        raise e from base_exception
+    else:
+        raise e
 
 
-def critical_and_raise(exception_class: Exception.__class__, msg: str) -> None:
+def critical_and_raise(exception_class: Exception.__class__, msg: str, base_exception: Exception = None) -> None:
     """Logs the given message at the "critical" level and raises the given exception, also with this message.
 
-    Args:
-        exception_class (Exception.__class__): An exception class. See error_and_raise() for a description of built-in exceptions.
-        msg (str): The message to go along with the exception.
+    Parameters
+    ----------
+    exception_class: Exception.__class__
+        An exception class. See error_and_raise() for a description of built-in exceptions.
+    msg: str
+        The message to go along with the exception.
+    base_exception: Exception
+        The exception that caused this code to be called, if any. This will be
+        added onto the newly created exception_class' history.
 
     Example::
 
@@ -433,11 +450,16 @@ def critical_and_raise(exception_class: Exception.__class__, msg: str) -> None:
     """
     msg = str(msg)  # Ensure that message is a string, to enable concatenation.
     critical(msg)
+
     try:
         e = exception_class(msg)
     except Exception as exc:
         raise RuntimeError(msg) from exc
-    raise e
+
+    if base_exception is not None:
+        raise e from base_exception
+    else:
+        raise e
 
 
 def log_and_raise_value_error(local_logger, msg) -> None:

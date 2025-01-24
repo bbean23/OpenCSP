@@ -593,6 +593,13 @@ def create_directories_if_necessary(input_dir):
         except FileExistsError:
             # probably just created this directory in another thread
             pass
+        except Exception as ex:
+            lt.error_and_raise(
+                RuntimeError,
+                "Error in file_tools.create_directories_if_necessary(): "
+                + f"failed to create directory '{input_dir}' with error {ex}",
+                ex,
+            )
 
 
 def create_subdir_path(base_dir: str, dir_name: str):
