@@ -22,7 +22,8 @@ import platform
 
 
 if platform.system() == 'Darwin':
-    # on Mac, force matplotlib to use the TkAgg
+    # On Mac, force matplotlib to use the TkAgg.
+    # Maybe we consider doing this for all systems?
     import matplotlib
 
     matplotlib.use('TkAgg')
