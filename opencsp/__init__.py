@@ -21,9 +21,11 @@ import argparse
 import platform
 
 
-if (platform.system() == 'Darwin'):
-    # on Mac, force matplotlib to use the TkAgg
+if platform.system() == 'Darwin':
+    # On Mac, force matplotlib to use the TkAgg.
+    # Maybe we consider doing this for all systems?
     import matplotlib
+
     matplotlib.use('TkAgg')
 
 
