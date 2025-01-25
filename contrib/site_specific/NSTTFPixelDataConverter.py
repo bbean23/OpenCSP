@@ -1,17 +1,18 @@
 import os
 import re
+import sys
 
 import numpy as np
 import numpy.typing as npt
 from PIL import Image
 
-from opencsp.common.lib.opencsp_path import opencsp_settings
+from opencsp import opencsp_settings
 import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
 
-class PixelData:
+class NSTTFPixelDataConverter:
     """
     Some of the files that the NSTTF BCS camera capture software generates are the
     raw pixel data, in the form of text-readable values, one value per pixel, one
@@ -274,6 +275,13 @@ if __name__ == "__main__":
     search_dir = ft.join(opencsp_settings["opencsp_root_path"]["collaborative_dir"], "NSTTF_Optics/Experiments")
     files = find_pixel_data_files(search_dir)
 
+    # Comment out the following two lines to enable this script.
+    lt.error(
+        f"This will convert and delete all pixel data files in {search_dir}. "
+        + f"If you want to continue, please comment out this line {__file__}{sys._getframe(1).f_lineno} and the next."
+    )
+    sys.exit(1)
+
     for csv_path_name_ext in files:
-        pd = PixelData(csv_path_name_ext)
+        pd = NSTTFPixelDataConverter(csv_path_name_ext)
         pd.convert_file(delete_after_conversion=True)
