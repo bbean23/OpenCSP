@@ -6,11 +6,11 @@ import opencsp.common.lib.cv.spot_analysis.SpotAnalysisOperable as sao
 import opencsp.common.lib.tool.log_tools as lt
 
 
-class PixelLocation:
+class PixelOfInterest:
     def __init__(
         self,
         locator_method: (
-            Callable[[sao.SpotAnalysisOperable], tuple[float, float]] | tuple[float, float] | str | "PixelLocation"
+            Callable[[sao.SpotAnalysisOperable], tuple[float, float]] | tuple[float, float] | str | "PixelOfInterest"
         ),
     ):
         """
@@ -26,8 +26,8 @@ class PixelLocation:
             - "hotspot": use the hotspot value calculated from the HotspotImageProcessor
         """
         # copy constructor support
-        if isinstance(locator_method, PixelLocation):
-            other: PixelLocation = locator_method
+        if isinstance(locator_method, PixelOfInterest):
+            other: PixelOfInterest = locator_method
             locator_method = other.locator_method
 
         # validate the input
@@ -41,7 +41,7 @@ class PixelLocation:
             if locator_method_value not in allowed_str_vals:
                 lt.error_and_raise(
                     ValueError,
-                    f"Error in PixelLocation{method_name}(): "
+                    f"Error in PixelOfInterest.{method_name}(): "
                     + f"the provided locator_method_value is '{locator_method_value}', "
                     + f"but it must be one of {allowed_str_vals}!",
                 )
@@ -49,7 +49,7 @@ class PixelLocation:
             if len(locator_method_value) != 2:
                 lt.error_and_raise(
                     ValueError,
-                    f"Error in PixelLocation{method_name}(): "
+                    f"Error in PixelOfInterest.{method_name}(): "
                     + f"the provided locator_method_value is {locator_method_value} with length {len(locator_method_value)}, "
                     + "but it must have a length of 2!",
                 )
@@ -67,7 +67,7 @@ class PixelLocation:
         if len(moments) == 0:
             lt.error_and_raise(
                 RuntimeError,
-                "Error in PixelLocation._get_centroid_location(): "
+                "Error in PixelOfInterest.._get_centroid_location(): "
                 + "no MomentsAnnotation found for the current operable! "
                 + "Maybe you need to run the MomentsImageProcessor first?",
             )
@@ -79,7 +79,7 @@ class PixelLocation:
         if len(hotspots) == 0:
             lt.error_and_raise(
                 RuntimeError,
-                "Error in PixelLocation._get_hotspot_location(): "
+                "Error in PixelOfInterest.._get_hotspot_location(): "
                 + "no HotspotAnnotation found for the current operable! "
                 + "Maybe you need to run the HotspotImageProcessor first?",
             )
@@ -96,7 +96,9 @@ class PixelLocation:
             elif locator_method == "hotspot":
                 locator_method = self._get_hotspot_location
             else:
-                lt.error_and_raise(f"Error in PixelLocation.get_location(): unknown locator method '{locator_method}'!")
+                lt.error_and_raise(
+                    f"Error in PixelOfInterest..get_location(): unknown locator method '{locator_method}'!"
+                )
 
         elif isinstance(locator_method, tuple):
             return locator_method
