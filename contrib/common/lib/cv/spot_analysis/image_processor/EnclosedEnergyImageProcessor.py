@@ -5,7 +5,7 @@ from typing import Callable
 import cv2 as cv
 import numpy as np
 
-from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelLocation
+from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelOfInterest
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.geometry.Pxy as p2
 import opencsp.common.lib.render.Color as color
@@ -34,7 +34,7 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
     def __init__(
         self,
         center_locator: (
-            Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelLocation
+            Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelOfInterest
         ) = None,
         enclosed_shape: str = "circle",
         plot_x_limit_pixels: int = -1,
@@ -90,7 +90,7 @@ class EnclosedEnergyImageProcessor(AbstractSpotAnalysisImageProcessor):
             poi_color = color.Color.from_i255(*poi_rgb, 'percentages_of_interest', 'percentages_of_interest')
             percentages_of_interest_style.measured.set_color(poi_color)
 
-        self.center_locator = PixelLocation(center_locator)
+        self.center_locator = PixelOfInterest(center_locator)
         self.enclosed_shape = enclosed_shape
         self.plot_x_limit_pixels = plot_x_limit_pixels
         self.percentages_of_interest = percentages_of_interest

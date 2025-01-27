@@ -5,7 +5,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
-from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelLocation
+from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelOfInterest
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.cv.image_reshapers as ir
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
@@ -42,7 +42,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     def __init__(
         self,
         cross_section_location: (
-            Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelLocation
+            Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelOfInterest
         ) = None,
         single_plot: bool = True,
         crop_to_threshold: int | None = None,
@@ -80,7 +80,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         if cross_section_location is None:
             cross_section_location = "center"
 
-        self.cross_section_location = PixelLocation(cross_section_location)
+        self.cross_section_location = PixelOfInterest(cross_section_location)
         self.single_plot = single_plot
         self.crop_to_threshold = crop_to_threshold
         self.y_range = y_range
