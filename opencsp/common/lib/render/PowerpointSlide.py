@@ -42,8 +42,16 @@ class PowerpointSlide:
                 self.texts[idx] = pps_text._replace(is_title=False)
 
     @classmethod
-    def template_title(cls, title: str, authors: str, slide_control: RenderControlPowerpointSlide) -> "PowerpointSlide":
-        raise NotImplementedError
+    def template_title(
+        cls, title: str, authors: str, slide_control: RenderControlPowerpointSlide = None
+    ) -> "PowerpointSlide":
+        if slide_control == None:
+            slide_control = RenderControlPowerpointSlide(inter_cell_buffer=0.35)
+        title_slide_control = copy.copy(slide_control)
+        title_slide_control.is_title_slide = True
+        ret = cls(title_slide_control)
+        ret.set_title(title)
+        return ret
 
     @classmethod
     def template_planning(cls, slide_control: RenderControlPowerpointSlide = None) -> "PowerpointSlide":
