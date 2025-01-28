@@ -57,7 +57,7 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
             self.rca = rca.RenderControlAxis(z_label=label)
         else:
             self.rca = label
-        self.rcs = rcs.RenderControlSurface(alpha=1.0, color=None, contour="xyz")
+        self.rcs = rcs.RenderControlSurface(alpha=1.0, color=None, contour='xyz')
 
         # declare future values
         self.fig_record: rcfr.RenderControlFigureRecord
