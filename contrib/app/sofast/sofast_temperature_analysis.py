@@ -8,3 +8,11 @@ a user through how to automatically process such data, how to automatically
 plot slope maps, and how to generate slope difference plots to show the
 change in slope from room temerature.
 """
+
+
+def run_example():
+    pass
+
+
+if __name__ == '__main__':
+    run_example()
