@@ -3736,6 +3736,401 @@ class TestMotionBasedCanting(to.TestOutput):
             actual_output_dir,
         )
 
+<<<<<<< HEAD:opencsp/common/lib/test/TstMotionBasedCanting.py
+=======
+    def test_canting_angles_in_off_axis_config_code(
+        self,
+        heliostat_name: str = None,
+        target: str = 'target',
+        canting_details: str = None,
+        test_output_dir: str = None,
+        off_output_dir: str = None,
+        actual_output_dir: str = None,
+        expected_output_dir: str = None,
+    ) -> None:
+
+        # Initialize test.
+        self.start_test()
+
+        # View Setup
+        if actual_output_dir == None:
+            actual_output_dir = self.actual_output_dir
+            expected_output_dir = self.expected_output_dir
+
+        # View Setup
+        canting_details = canting_details
+        # heliostat_name = "9W1"
+        f_index = "13"
+        title = canting_details + "-Axis Canted " + heliostat_name + " in Off-Axis configuration"
+        caption = 'A single Sandia NSTTF heliostat ' + heliostat_name + 'facet' + f_index
+        comments = []
+        count = int(0)
+
+        if target == "G3P3":
+            wire_frame = 'G3P3 Tower'
+        elif target == 'BCS':
+            wire_frame = 'BCS Tower'
+        else:
+            wire_frame = None
+
+        # Initial positions
+        print(f"In test_find_all_canting_angles: heliostat = {heliostat_name}")
+        tower = Tower(name='Sandia NSTTF', origin=np.array([0, 0, 0]), parts=["whole tower", target, wire_frame])
+        if target == 'TowerTop':
+            target_loc = tower.target_loc
+
+        elif target == 'BCS':
+            target_loc = tower.bcs
+
+        elif target == "G3P3":
+            target_loc = tower.g3p3
+        else:
+            target_loc = Pxyz([[0], [0], [0]])
+
+        target_plane_normal = Uxyz([0, 1, 0])
+        test_tolerance = 0.0001
+        tower_control = rct.normal_tower()
+        test_canted_x_angle = 0
+        test_canted_y_angle = 0
+
+        target_x = str(target_loc.x).strip("[]")
+        target_y = str(target_loc.y).strip("[]")
+        target_z = str(target_loc.z).strip("[]")
+
+        # Define tracking time
+        # https://gml.noaa.gov/grad/solcalc/ using NSTTF lon: -106.509 and lat: 34.96
+        TIME = (2024, 3, 21, 13, 13, 5, -6)  # NSTTF spring equinox, solar noon
+        AIMPOINT = target_loc
+        UP = Vxyz([0, 0, 1])
+
+        opencsp_dir = test_output_dir
+        opencsp_dir_off = off_output_dir
+
+        canted_x_angles = self.read_csv_float(
+            os.path.join(
+                opencsp_dir,
+                heliostat_name
+                + '_facet_details_canted_'
+                + canting_details
+                + '_axis_'
+                + target
+                + '_'
+                + f'{float(target_x): .2f}'
+                + '_'
+                + f'{float(target_y): .2f}'
+                + '_'
+                + f'{float(target_z): .2f}'
+                + '.csv',
+            ),
+            'Face Up Canting Rotation about X (rad)',
+        )
+        canted_y_angles = self.read_csv_float(
+            os.path.join(
+                opencsp_dir,
+                heliostat_name
+                + '_facet_details_canted_'
+                + canting_details
+                + '_axis_'
+                + target
+                + '_'
+                + f'{float(target_x): .2f}'
+                + '_'
+                + f'{float(target_y): .2f}'
+                + '_'
+                + f'{float(target_z): .2f}'
+                + '.csv',
+            ),
+            'Face Up Canting Rotation about Y (rad)',
+        )
+
+        azim = self.read_csv_float(
+            os.path.join(
+                opencsp_dir_off,
+                heliostat_name
+                + '_facet_details_canted_off_axis_'
+                + target
+                + '_'
+                + f'{float(target_x): .2f}'
+                + '_'
+                + f'{float(target_y): .2f}'
+                + '_'
+                + f'{float(target_z): .2f}'
+                + '.csv',
+            ),
+            'Tracking Az (rad)',
+        )
+        elev = self.read_csv_float(
+            os.path.join(
+                opencsp_dir_off,
+                heliostat_name
+                + '_facet_details_canted_off_axis_'
+                + target
+                + '_'
+                + f'{float(target_x): .2f}'
+                + '_'
+                + f'{float(target_y): .2f}'
+                + '_'
+                + f'{float(target_z): .2f}'
+                + '.csv',
+            ),
+            'Tracking El (rad)',
+        )
+
+        # Configuration setup
+        solar_field = self.solar_field
+        test_heliostat = solar_field.lookup_heliostat(heliostat_name)
+        self.set_tracking(test_heliostat, AIMPOINT, lln.NSTTF_ORIGIN, TIME)
+
+        test_heliostat_loc = test_heliostat._self_to_parent_transform
+        test_heliostat = test_heliostat.no_parent_copy()
+
+        scene = Scene()
+        scene.add_object(test_heliostat)
+        scene.set_position_in_space(test_heliostat, test_heliostat_loc)
+
+        azimuth = test_heliostat._az
+        elevation = test_heliostat._el
+        print(f"az and el = {azimuth}, {elevation}")
+        # self.off_axis_canting(test_heliostat, AIMPOINT, lln.NSTTF_ORIGIN, TIME)
+
+        canting_rotations: list[TransformXYZ] = []
+
+        for facet in range(0, 25):
+            canting = Rotation.from_euler('xyz', [canted_x_angles[facet], canted_y_angles[facet], 0], degrees=False)
+            canting_rotations.append(canting)
+        test_heliostat.set_facet_cantings(canting_rotations)
+
+        # Add ray trace to field
+        sun_1ray = LightSourceSun()
+        sun_1ray.set_incident_rays(lln.NSTTF_ORIGIN, TIME, 1)
+        scene.add_light_source(sun_1ray)
+
+        trace = rt.trace_scene(scene, Resolution.center())
+
+        # Add intersection point
+        place_to_intersect = (AIMPOINT, target_plane_normal)
+        intersection_point = Intersection.plane_intersect_from_ray_trace(trace, place_to_intersect)
+
+        facet_ensemble_control = rcfe.facet_outlines_thin()
+        heliostat_style = rch.RenderControlHeliostat(facet_ensemble_style=facet_ensemble_control)
+        heliostat_style.facet_ensemble_style.add_special_style(f_index, rcf.outline('blue'))
+
+        heliostat_origin, __ = test_heliostat.survey_of_points(Resolution.center())
+
+        # array = sun_1ray.get_incident_rays(heliostat_origin)[0]
+        # print(array.current_direction.x)
+        # print('done')
+
+        focal_length = Pxyz.distance(target_loc, heliostat_origin)  # meters
+        current_length = focal_length + (focal_length * 0.15)
+        init = 80
+        x_min = float(target_loc.x[0]) - 1.5
+        x_max = float(target_loc.x[0]) + 1.5
+        exaggerated_x = [x_min, x_max]
+        z_min = f'{(float(target_loc.z[0]) - 1.5): .2f}'
+        z_max = f'{(float(target_loc.z[0]) + 1.5): .2f}'
+        exaggerated_z = [float(z_max), float(z_min)]
+
+        # Comment
+        comments.append(
+            "Ray trace at NSTTF spring equinox solar noon from center of heliostat facet to target on tower."
+        )
+        target_origin = AIMPOINT
+        target_x = str(target_loc.x).strip("[]")
+        target_y = str(target_loc.y).strip("[]")
+        target_z = str(target_loc.z).strip("[]")
+        target_plot_name = (
+            target
+            + ' Target ('
+            + f'{float(target_x): .2f}'
+            + ', '
+            + f'{float(target_y): .2f}'
+            + ', '
+            + f'{float(target_z): .2f}'
+            + ')'
+        )
+        target_file_name = (
+            target + ' ' + f'{float(target_x): .2f}' + ' ' + f'{float(target_y): .2f}' + ' ' + f'{float(target_z): .2f}'
+        )
+
+        # DRAWING
+        count = count + 1
+        figure_control = fm.setup_figure_for_3d_data(
+            rcfg.RenderControlFigure(tile=True, tile_array=(1, 1)),
+            rca.meters(grid=False),
+            vs.view_spec_3d(),
+            number_in_name=False,
+            input_prefix=self.figure_prefix(count),
+            name=title + ' Ray Trace 3D ' + target_file_name,
+            title=title + ", " + target_plot_name,
+        )
+        test_heliostat.draw(figure_control.view, heliostat_style)
+        tower.draw(figure_control.view, tower_control)
+        # trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+        trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+        # figure_control.view.draw_single_Pxyz(AIMPOINT)
+        target_origin.draw_points(figure_control.view)
+        # figure_control.view.show()
+        # self.show_save_and_check_figure(figure_control)
+        stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+        if not self.interactive:
+            plt.close('all')
+
+        count = count + 1
+        figure_control = fm.setup_figure_for_3d_data(
+            rcfg.RenderControlFigure(),
+            rca.meters(),
+            vs.view_spec_xy(),
+            number_in_name=False,
+            input_prefix=self.figure_prefix(count),
+            name=title + ' Ray Trace Birds View ' + target_file_name,
+            title=title + ", " + target_plot_name,
+        )
+        test_heliostat.draw(figure_control.view)
+        tower.draw(figure_control.view, tower_control)
+        trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+        # figure_control.view.draw_single_Pxyz(AIMPOINT, rcps.marker(color='r'))
+        target_origin.draw_points(figure_control.view)
+        # figure_control.view.show()
+        # self.show_save_and_check_figure(figure_control)
+        stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+        if not self.interactive:
+            plt.close('all')
+
+        count = count + 1
+        figure_control = fm.setup_figure_for_3d_data(
+            rcfg.RenderControlFigure(),
+            rca.meters(),
+            vs.view_spec_xz(),
+            number_in_name=False,
+            input_prefix=self.figure_prefix(count),
+            name=title + ' Ray Trace Looking North View ' + target_file_name,
+            title=title + ", " + target_plot_name,
+        )
+        test_heliostat.draw(figure_control.view)
+        tower.draw(figure_control.view, tower_control)
+        trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+        # figure_control.view.draw_single_Pxyz(AIMPOINT, rcps.marker(color='r'))
+        target_origin.draw_points(figure_control.view)
+        # figure_control.view.show()
+        # self.show_save_and_check_figure(figure_control)
+        stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+        if not self.interactive:
+            plt.close('all')
+
+        count = count + 1
+        figure_control = fm.setup_figure_for_3d_data(
+            rcfg.RenderControlFigure(),
+            rca.meters(),
+            vs.view_spec_yz(),
+            number_in_name=False,
+            input_prefix=self.figure_prefix(count),
+            name=title + ' Ray Trace Side View ' + target_file_name,
+            title=title + ", " + target_plot_name,
+        )
+        test_heliostat.draw(figure_control.view)
+        tower.draw(figure_control.view, tower_control)
+        trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+        # figure_control.view.draw_single_Pxyz(AIMPOINT, rcps.marker(color='r'))
+        target_origin.draw_points(figure_control.view)
+        # figure_control.view.show()
+        # self.show_save_and_check_figure(figure_control)
+        stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+        if not self.interactive:
+            plt.close('all')
+
+        count = count + 1
+        figure_control = fm.setup_figure_for_3d_data(
+            rcfg.RenderControlFigure(),
+            rca.meters(),
+            vs.view_spec_xz(),
+            number_in_name=False,
+            input_prefix=self.figure_prefix(count),
+            name=title + ' Intersection at Aimpoint ' + target_file_name,
+            title=title + ', ' + target_plot_name,
+        )
+        figure_control.x_limits = exaggerated_x
+        figure_control.z_limits = exaggerated_z
+        intersection_point.draw(figure_control.view)
+        # figure_control.view.draw_single_Pxyz(AIMPOINT, rcps.marker(color='r'))
+        target_origin.draw_points(figure_control.view, rcps.marker(color='r'))
+        # figure_control.view.show()
+        # self.show_save_and_check_figure(figure_control)
+        stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+        if not self.interactive:
+            plt.close('all')
+
+        count_ = int(15)
+
+        for facet in test_heliostat.facet_ensemble.facets:
+            facet_no_parent = facet.no_parent_copy()
+            facet_loc = facet.self_to_global_tranformation
+
+            # # # FOR CREATING PHOTO OF CANTING ANGLES ALL  Set solar field scene
+            scene = Scene()
+            scene.add_object(facet_no_parent)
+            scene.set_position_in_space(facet_no_parent, facet_loc)
+            # Add ray trace to field
+            sun_1ray = LightSourceSun()
+            sun_1ray.set_incident_rays(lln.NSTTF_ORIGIN, TIME, 1)
+            scene.add_light_source(sun_1ray)
+            trace = rt.trace_scene(scene, Resolution.center(), verbose=True)
+
+            # Add intersection point
+            place_to_intersect = (AIMPOINT, target_plane_normal)
+            intersection_point = Intersection.plane_intersect_from_ray_trace(trace, place_to_intersect)
+
+            facet_ensemble_control = rcfe.facet_outlines_thin()
+            heliostat_style = rch.RenderControlHeliostat(facet_ensemble_style=facet_ensemble_control)
+            heliostat_style.facet_ensemble_style.add_special_style(facet.name, rcf.outline('blue'))
+            count_ = int(count_ + 1)
+
+            figure_control = fm.setup_figure_for_3d_data(
+                rcfg.RenderControlFigure(tile=True, tile_array=(1, 1)),
+                rca.meters(grid=False),
+                vs.view_spec_3d(),
+                number_in_name=False,
+                input_prefix=self.figure_prefix(count_),
+                name=title + ' Facet ' + facet.name + ' Ray Trace 3D ' + target_file_name,
+                title=title + ', Facet ' + facet.name + ", " + target_plot_name,
+            )
+            test_heliostat.draw(figure_control.view, heliostat_style)
+            tower.draw(figure_control.view, tower_control)
+            trace.draw(figure_control.view, rcrt.init_current_lengths(init_len=init, current_len=current_length))
+            # figure_control.view.draw_single_Pxyz(AIMPOINT)
+            target_origin.draw_points(figure_control.view)
+            # figure_control.view.show()
+            # self.show_save_and_check_figure(figure_control)
+            stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+            if not self.interactive:
+                plt.close('all')
+
+            count_ = int(count_ + 1)
+            figure_control = fm.setup_figure_for_3d_data(
+                rcfg.RenderControlFigure(),
+                rca.meters(),
+                vs.view_spec_xz(),
+                number_in_name=False,
+                input_prefix=self.figure_prefix(count_),
+                name=title + ' Facet ' + facet.name + ' Intersection at Aimpoint ' + target_file_name,
+                title=title + ', Facet ' + facet.name + ", " + target_plot_name,
+                caption='A single Sandia NSTTF heliostat ' + heliostat_name + ' facet ' + facet.name,
+                comments=comments.append(
+                    "XZ Ray trace at NSTTF spring equinox solar noon from center of heliostat facet to target on tower."
+                ),
+            )
+            figure_control.x_limits = exaggerated_x
+            figure_control.z_limits = exaggerated_z
+            intersection_point.draw(figure_control.view)
+            # figure_control.view.draw_single_Pxyz(AIMPOINT, rcps.marker(color='r'))
+            target_origin.draw_points(figure_control.view, rcps.marker(color='r'))
+            # figure_control.view.show()
+            # self.show_save_and_check_figure(figure_control)
+            stest.show_save_and_check_figure(figure_control, actual_output_dir, expected_output_dir, self.verify)
+            if not self.interactive:
+                plt.close('all')
+
+>>>>>>> 72e6d613 (adding to contrib):contrib/common/lib/test/TstMotionBasedCanting.py
     def test_off_axis_code(
         self,
         heliostat_name: str = None,
@@ -10232,6 +10627,41 @@ class TestMotionBasedCanting(to.TestOutput):
             )
             # self.test_on_axis_code_individual_facets(heliostat_name, target, actual_output_dir, expected_output_dir)
 
+<<<<<<< HEAD:opencsp/common/lib/test/TstMotionBasedCanting.py
+=======
+    def test_on_axis_canting_in_off_axis_orientation_vector_towertop(self) -> None:
+        canting_details = 'On'
+        heliostat_spec_list: list[str]
+        heliostat_spec_list = ['5E9', '5W1', '5W9', '9E11', '9W1', '9W11', '14E6', '14W1', '14W6']
+        # heliostat_spec_list = self.solar_field.heliostat_name_list()
+        target = 'TowerTop'
+        on_axis_folder_name = os.path.join(self.actual_output_dir, 'OnAxis_' + target + '_(0.00,6.25,63.55)')
+        off_axis_folder_name = os.path.join(self.actual_output_dir, 'OffAxis_' + target + '_(0.00,6.25,63.55)')
+        parent_folder_name = os.path.join(
+            self.actual_output_dir, 'OnAxisInOffAxisConfig_' + target + '_(0.00,6.25,63.55)'
+        )
+        if not os.path.exists(parent_folder_name):
+            os.mkdir(parent_folder_name)
+        for heliostat_name in heliostat_spec_list:
+            helio = re.sub(r'(\d+)([WE])(\d)(?!\d)', lambda m: f"{m.group(1)}{m.group(2)}0{m.group(3)}", heliostat_name)
+            folder_name = os.path.join(self.actual_output_dir, parent_folder_name, helio)
+            if not os.path.exists(folder_name):
+                os.mkdir(folder_name)
+            on_output_dir = os.path.join(self.actual_output_dir, on_axis_folder_name, helio)
+            off_output_dir = os.path.join(self.actual_output_dir, off_axis_folder_name, helio)
+            actual_output_dir = os.path.join(self.actual_output_dir, parent_folder_name, helio)
+            expected_output_dir = os.path.join(self.expected_output_dir, parent_folder_name, helio)
+            self.test_canting_angles_in_off_axis_config_code(
+                heliostat_name,
+                target,
+                canting_details,
+                on_output_dir,
+                off_output_dir,
+                actual_output_dir,
+                expected_output_dir,
+            )
+
+>>>>>>> 72e6d613 (adding to contrib):contrib/common/lib/test/TstMotionBasedCanting.py
     def test_sofast_axis_canting_angles_vector_towertop(self) -> None:
         canting_details = 'Off'
         heliostat_spec_list: list[str]
@@ -13532,6 +13962,7 @@ if __name__ == "__main__":
     # test_object.test_off_axis_canting_angles_vector_bcs()
     # test_object.test_on_axis_canting_angles_vector_towertop()
 
+<<<<<<< HEAD:opencsp/common/lib/test/TstMotionBasedCanting.py
     test_object.test_off_axis_canting_angles_vector_towertop_8_14_with_9()
     # test_object.test_off_axis_canting_angles_vector_towertop_8_13()
     # test_object.test_off_axis_canting_angles_vector_towertop_8_50()
@@ -13554,6 +13985,9 @@ if __name__ == "__main__":
 
     # test_object.test_with_9_per_facet()
     # test_object.save_master_csv()
+=======
+    test_object.test_on_axis_canting_in_off_axis_orientation_vector_towertop()
+>>>>>>> 72e6d613 (adding to contrib):contrib/common/lib/test/TstMotionBasedCanting.py
 
     # test_object.test_off_axis_code(heliostat_name)
 
