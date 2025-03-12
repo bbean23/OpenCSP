@@ -64,23 +64,23 @@ def example_process_single_facet():
     # =============
 
     # Define save dir
-    dir_save = join(dirname(__file__), 'data/output/single_facet')
+    dir_save = join(dirname(__file__), "data/output/single_facet")
     ft.create_directories_if_necessary(dir_save)
 
     # Set up logger
-    lt.logger(join(dir_save, 'log.txt'), lt.log.WARN)
+    lt.logger(join(dir_save, "log.txt"), lt.log.WARN)
 
     # Define sample data directory
-    dir_data_sofast = join(opencsp_code_dir(), 'test/data/sofast_fringe')
-    dir_data_common = join(opencsp_code_dir(), 'test/data/sofast_common')
+    dir_data_sofast = join(opencsp_code_dir(), "test/data/sofast_fringe")
+    dir_data_common = join(opencsp_code_dir(), "test/data/sofast_common")
 
     # Directory Setup
-    file_measurement = join(dir_data_sofast, 'data_measurement/measurement_facet.h5')
-    file_camera = join(dir_data_common, 'camera_sofast_downsampled.h5')
-    file_display = join(dir_data_common, 'display_distorted_2d.h5')
-    file_orientation = join(dir_data_common, 'spatial_orientation.h5')
-    file_calibration = join(dir_data_sofast, 'data_measurement/image_calibration.h5')
-    file_facet = join(dir_data_common, 'Facet_NSTTF.json')
+    file_measurement = join(dir_data_sofast, "data_measurement/measurement_facet.h5")
+    file_camera = join(dir_data_common, "camera_sofast_downsampled.h5")
+    file_display = join(dir_data_common, "display_distorted_2d.h5")
+    file_orientation = join(dir_data_common, "spatial_orientation.h5")
+    file_calibration = join(dir_data_sofast, "data_measurement/image_calibration.h5")
+    file_facet = join(dir_data_common, "Facet_NSTTF.json")
 
     # Or, optionally, process high-resolution  SOFAST sample data by uncommenting the lines below
     #
@@ -107,45 +107,45 @@ def example_process_single_facet():
     # 2. Save projected sinusoidal fringe images to PNG format
     # ========================================================
     fringes = Fringes(measurement.fringe_periods_x, measurement.fringe_periods_y)
-    images = fringes.get_frames(640, 320, 'uint8', [0, 255])
-    dir_save_cur = join(dir_save, '1_images_fringes_projected')
+    images = fringes.get_frames(640, 320, "uint8", [0, 255])  # writes images we projected from sofast projector to disk
+    dir_save_cur = join(dir_save, "1_images_fringes_projected")
     ft.create_directories_if_necessary(dir_save_cur)
     # Save y images
     for idx_image in range(measurement.num_y_ims):
         image = images[..., idx_image]
-        imageio.imwrite(join(dir_save_cur, f'y_{idx_image:02d}.png'), image)
+        imageio.imwrite(join(dir_save_cur, f"y_{idx_image:02d}.png"), image)
     # Save x images
     for idx_image in range(measurement.num_x_ims):
         image = images[..., measurement.num_y_ims + idx_image]
-        imageio.imwrite(join(dir_save_cur, f'x_{idx_image:02d}.png'), image)
+        imageio.imwrite(join(dir_save_cur, f"x_{idx_image:02d}.png"), image)
 
     # 3. Save captured sinusoidal fringe images and mask images to PNG format
     # =======================================================================
-    dir_save_cur = join(dir_save, '2_images_captured')
+    dir_save_cur = join(dir_save, "2_images_captured")
     ft.create_directories_if_necessary(dir_save_cur)
 
-    # Save mask images
+    # Save mask (like a pixel mask value (all 0s, all 255s)) images
     for idx_image in [0, 1]:
         image = measurement.mask_images[..., idx_image]
-        imageio.imwrite(join(dir_save_cur, f'mask_{idx_image:02d}.png'), image)
-    # Save y images
+        imageio.imwrite(join(dir_save_cur, f"mask_{idx_image:02d}.png"), image)
+    # Save y images (when lines were vertical, e.g.)
     for idx_image in range(measurement.num_y_ims):
         image = measurement.fringe_images_y[..., idx_image]
-        imageio.imwrite(join(dir_save_cur, f'y_{idx_image:02d}.png'), image)
-    # Save x images
+        imageio.imwrite(join(dir_save_cur, f"y_{idx_image:02d}.png"), image)
+    # Save x images (when lines were horizontal, e.g.)
     for idx_image in range(measurement.num_x_ims):
         image = measurement.fringe_images_x[..., idx_image]
-        imageio.imwrite(join(dir_save_cur, f'x_{idx_image:02d}.png'), image)
+        imageio.imwrite(join(dir_save_cur, f"x_{idx_image:02d}.png"), image)
 
     # 4. Processes data with Sofast and save processed data to HDF5
     # =============================================================
-    dir_save_cur = join(dir_save, '3_processed_data')
+    dir_save_cur = join(dir_save, "3_processed_data")
     ft.create_directories_if_necessary(dir_save_cur)
 
-    # Define surface definition (parabolic surface)
+    # Define surface definition (parabolic surface), this is the mirror
     surface = Surface2DParabolic(initial_focal_lengths_xy=(300.0, 300.0), robust_least_squares=True, downsample=10)
 
-    # Calibrate fringes
+    # Calibrate fringes - (aka sinosoidal image)
     measurement.calibrate_fringe_images(calibration)
 
     # Instantiate sofast object
@@ -155,7 +155,7 @@ def example_process_single_facet():
     sofast.process_optic_singlefacet(facet_data, surface)
 
     # Save processed data to HDF5 format
-    sofast.save_to_hdf(join(dir_save_cur, 'data_sofast_processed.h5'))
+    sofast.save_to_hdf(join(dir_save_cur, "data_sofast_processed.h5"))
 
     # Save measurement statistics to JSON
     config = SofastConfiguration()
@@ -163,12 +163,12 @@ def example_process_single_facet():
     measurement_stats = config.get_measurement_stats()
 
     # Save measurement stats as JSON
-    with open(join(dir_save_cur, 'measurement_statistics.json'), 'w', encoding='utf-8') as f:
+    with open(join(dir_save_cur, "measurement_statistics.json"), "w", encoding="utf-8") as f:
         json.dump(measurement_stats, f, indent=3)
 
     # 5. Generate plot suite and save images files
     # ============================================
-    dir_save_cur = join(dir_save, '4_processed_output_figures')
+    dir_save_cur = join(dir_save, "4_processed_output_figures")
     ft.create_directories_if_necessary(dir_save_cur)
 
     # Get measured and reference optics
@@ -209,5 +209,5 @@ def example_process_single_facet():
     plots.plot()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     example_process_single_facet()
