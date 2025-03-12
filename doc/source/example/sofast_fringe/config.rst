@@ -36,3 +36,12 @@ Generating Standard Mirror Output Plots
 .. automodule:: example.sofast_fringe.example_standard_mirror_plot_output
    :members:
    :show-inheritance:
+
+Generate Rectangular Screen Definition
+======================================
+
+.. currentmodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+
+.. automodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+   :members:
+   :show-inheritance:
