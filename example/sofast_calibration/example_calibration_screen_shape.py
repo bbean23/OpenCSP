@@ -73,6 +73,8 @@ def example_screen_shape_calibration():
         camera,
         image_projection_data,
         [MeasurementSofastFringe.load_from_hdf(f) for f in files_screen_shape_measurement],
+        assume_located_points=True,  # False to let xyz marker points float while optimizing
+        ray_intersection_threshold=0.001,  # meters, intersection error threshold to consider successful intersection
     )
 
     # 2. Perform screen shape calibration
