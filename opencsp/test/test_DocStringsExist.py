@@ -3,7 +3,9 @@ import unittest
 
 # Assume opencsp is in PYHTONPATH
 import opencsp as opencsp
-import example as example
+
+# Examples
+import example.sofast_fringe.sofast_temperature_analysis
 
 # TODO: why aren't these imported from import opencsp as opencsp above
 from opencsp.app.camera_calibration import CameraCalibration
