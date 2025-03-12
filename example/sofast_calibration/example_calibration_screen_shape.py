@@ -1,3 +1,19 @@
+"""
+Calibrates the 3D shape of a screen using photogrammetry and projected SOFAST fringes.
+
+This module provides a function to perform the calibration of a screen's 3D shape
+by utilizing calibration data obtained from photogrammetry and SOFAST measurements.
+The calibration process involves loading measured data, performing the calibration,
+and saving the resulting screen shape as a DisplayShape object. Additionally,
+calculation figures are generated and saved for further analysis.
+
+Usage:
+    To execute the calibration process, run the module directly. The output files
+    will be saved in a specified directory structure.
+"""
+
+# ChatGPT 40-mini assisted with docstring generation
+
 from glob import glob
 from os.path import join, dirname
 
@@ -14,12 +30,37 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 def example_screen_shape_calibration():
-    """Calibrates the 3d shape of a screen using photogrammetry and projected Sofast fringes.
+    """
+    Calibrates the 3D shape of a screen using photogrammetry and projected SOFAST fringes.
 
-    1. Load measured calibration data
-    2. Perform screen shpae calibration
-    3. Save 3d shape data as DisplayShape object
-    4. Save calculation figures
+    This function performs the following steps:
+
+        1. Loads measured calibration data from specified input files.
+        2. Performs the calibration of the screen shape using the loaded data.
+        3. Saves the resulting 3D shape data as a DisplayShape object in HDF5 format.
+        4. Generates and saves calculation figures for visual analysis.
+
+    The function expects the necessary input files to be located in the specified
+    directories within the OpenCSP code structure. The output files, including the
+    DisplayShape object and figures, are saved in a designated output directory.
+
+    Notes
+    -----
+    The following input files are required:
+
+        - Aruco marker corner locations (CSV format)
+        - Screen calibration point pairs (CSV format)
+        - Camera distortion data (HDF5 format)
+        - Image projection data (HDF5 format)
+        - SOFAST measurement files (HDF5 format)
+
+    Example
+    -------
+    To perform the screen shape calibration, simply call the function:
+
+    >>> example_screen_shape_calibration()
+
+    The resulting DisplayShape file and figures will be saved in the output directory.
     """
     # General setup
     # =============
