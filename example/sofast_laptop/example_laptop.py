@@ -213,9 +213,9 @@ def example_laptop():
     plots.optic_reference = mirror_reference
 
     # Update visualization parameters
-    plots.options_slope_vis.clim = 20  # maximum slope at edge of mirror (we know focal length and radius of mirror, )
+    plots.options_slope_vis.clim = 150  # maximum slope at edge of mirror (we know focal length and radius of mirror, )
     plots.options_slope_vis.resolution = 0.001
-    plots.options_slope_vis.quiver_scale = 2000  # TODO: can this be set to auto and computed by default?
+    plots.options_slope_vis.quiver_scale = 1200  # TODO: can this be set to auto and computed by default?
     plots.options_slope_vis.quiver_density = 0.05  # TODO: can this be set to auto and computed by default?
 
     plots.options_slope_deviation_vis.clim = 15
@@ -223,11 +223,12 @@ def example_laptop():
     # TODO: Document why the quiver scale and denisty doesn't need to be updated. (Our magnitude of error is about 15 mrad, CSP mirrors are typically 7-10)
 
     plots.options_curvature_vis.resolution = 0.001
+    plots.options_curvature_vis.clim = 50
 
     plots.options_ray_trace_vis.enclosed_energy_max_semi_width = 1
     plots.options_ray_trace_vis.hist_extent = 0.05  # image of light source reflection
     plots.options_ray_trace_vis.hist_bin_res = 0.00075  # TODO: maybe also have a auto default to compute defaults
-    plots.options_ray_trace_vis.ray_trace_optic_res = 0.01  # TODO: maybe also have a auto default to compute defaults
+    plots.options_ray_trace_vis.ray_trace_optic_res = 0.007  # TODO: maybe also have a auto default to compute defaults
 
     plots.options_file_output.to_save = True
     plots.options_file_output.number_in_name = False

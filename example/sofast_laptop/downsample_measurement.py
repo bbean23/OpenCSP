@@ -1,5 +1,15 @@
 import contrib.test_data_generation.sofast_fringe.downsample_data as dd
+import contrib.test_data_generation.downsample_data_general as ddg
 from os.path import join, dirname
+
+
+def do_downsample_camera():
+    dir_measurement_data = join(dirname(__file__), 'data/calibration/camera_calibration')
+    file_camera = join(dir_measurement_data, 'camera.full_res.h5')
+
+    downsampled_data = ddg.downsample_camera(str(file_camera), 4)
+
+    downsampled_data.save_to_hdf("camera.h5")
 
 
 def do_downsample():
@@ -13,4 +23,5 @@ def do_downsample():
 
 
 if __name__ == '__main__':
-    do_downsample()
+    # do_downsample()
+    do_downsample_camera()
