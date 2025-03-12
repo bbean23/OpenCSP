@@ -29,7 +29,7 @@ import opencsp.common.lib.tool.file_tools as ft
 import opencsp.common.lib.tool.log_tools as lt
 
 
-def example_process_with_debug_mode():
+def example_process_in_debug_mode():
     """
     Processes SOFAST data with debug mode enabled. This example intentionally runs SOFAST
     on a single facet with erroneous facet corner location information. When SOFAST is in
@@ -63,7 +63,7 @@ def example_process_with_debug_mode():
     -------
     To process the SOFAST data with debug mode enabled, simply call the function:
 
-    >>> example_process_with_debug_mode()
+    >>> example_process_in_debug_mode()
 
     The resulting debug figures will be saved in the output directory if an error
     occurs during processing.
@@ -124,4 +124,4 @@ def example_process_with_debug_mode():
 
 
 if __name__ == "__main__":
-    example_process_with_debug_mode()
+    example_process_in_debug_mode()

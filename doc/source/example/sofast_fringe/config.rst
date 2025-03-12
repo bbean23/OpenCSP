@@ -36,3 +36,13 @@ Generating Standard Mirror Output Plots
 .. automodule:: example.sofast_fringe.example_standard_mirror_plot_output
    :members:
    :show-inheritance:
+
+
+Running SOFAST in Debug Mode
+============================
+
+.. currentmodule:: example.sofast_fringe.example_process_in_debug_mode
+
+.. automodule:: example.sofast_fringe.example_process_in_debug_mode
+   :members:
+   :show-inheritance:
