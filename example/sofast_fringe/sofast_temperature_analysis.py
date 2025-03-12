@@ -7,12 +7,18 @@ done for a range of temperatures from +5C to -50C. This example will walk
 a user through how to automatically process such data, how to automatically
 plot slope maps, and how to generate slope difference plots to show the
 change in slope from a reference temerature.
+
+To run, the base directory containing the calibration and measurement data
+must be defined and passed in as the first argument:
+```
+python sofast_temperature_analysis.py "path/to/base/dir"
+```
 """
 
 import sys
 import glob
 import os
-from os.path import join, basename, exists
+from os.path import join, basename, exists, dirname
 import re
 
 import matplotlib.pyplot as plt
@@ -32,7 +38,7 @@ from opencsp.common.lib.camera.Camera import Camera
 import opencsp.common.lib.tool.log_tools as lt
 
 
-def run_example(dir_working: str) -> None:
+def example_run_temperature_analysis(dir_working: str, dir_save: str) -> None:
     """Runs a temperature analysis SOFAST example. This example runs by passing in a
     base directory path.
 
@@ -41,6 +47,8 @@ def run_example(dir_working: str) -> None:
     dir_working : str
         The input working directory that contains a "calibration" and a "measurements" directory
         as described above.
+    dir_save : str
+        The directory to save all output figure
 
     The directory needs to have the following structure for the example to run. The SOFAST
     measurements need to be of the form `measurement_XXC.h5` where XX is the analysis temperature.
@@ -80,7 +88,6 @@ def run_example(dir_working: str) -> None:
     # Define file paths
     dir_calibration = join(dir_working, 'calibration')
     dir_measurement = join(dir_working, 'measurements')
-    dir_save = join(dir_working, 'output')
 
     # Create save directory if needed
     if not exists(dir_save):
@@ -190,4 +197,5 @@ def run_example(dir_working: str) -> None:
 
 if __name__ == '__main__':
     path = sys.argv[1]
-    run_example(path)
+    save_path = join(dirname(__file__), 'data/output/temperature_analysis')
+    example_run_temperature_analysis(path, save_path)
