@@ -39,21 +39,44 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 def example_run_temperature_analysis(dir_working: str, dir_save: str) -> None:
-    """Runs a temperature analysis SOFAST example. This example runs by passing in a
-    base directory path.
+    """
+    Runs a temperature analysis example using SOFAST. This function processes multiple
+    SOFAST measurements of the same mirror at different temperatures by utilizing
+    calibration data and measurement files organized in a specified directory structure.
 
     Parameters
     ----------
     dir_working : str
-        The input working directory that contains a "calibration" and a "measurements" directory
-        as described above.
-    dir_save : str
-        The directory to save all output figure
+        The path to the working directory that contains the required subdirectories:
 
-    The directory needs to have the following structure for the example to run. The SOFAST
-    measurements need to be of the form `measurement_XXC.h5` where XX is the analysis temperature.
-    All measurement HDF5 files need to be in the measurements/ folder. All calibration files
-    listed below need to be present in the calibration/ folder.
+            - `calibration/` Should contain calibration files including:
+
+                - camera.h5
+                - facet_definition.json
+                - image_projection.h5
+                - screen_shape.h5
+                - spatial_orientation.h5
+
+            - `measurements/` Should contain measurement files named in the format
+              `measurement_XXC.h5`, where XX represents the analysis temperature.
+    dir_save : str
+        The directory where all output figures will be saved. This directory will be created
+        if it does not already exist.
+
+    Notes
+    -----
+    The function performs the following steps:
+
+        1. Checks for the existence of the input and output directories.
+        2. Loads all calibration files necessary for processing the measurements.
+        3. Characterizes all measurement files by calibrating fringe images and processing
+           them with the SOFAST algorithm.
+        4. Calculates the slope deviation of the mirrors from a reference temperature of
+           20°C and generates visualizations of the slope magnitude and differences,
+           saving them as PNG files in the specified output directory.
+
+    The expected directory structure is as follows:
+
     ```
     dir_working/
     ├── calibration/
@@ -71,14 +94,11 @@ def example_run_temperature_analysis(dir_working: str, dir_save: str) -> None:
     │   └── measurement_50C.h5
     └── output/
     ```
-    This script Processes multiple SOFAST measurements of the same mirror at different
-    temperatures using the following steps:
-    1. Checks all input/output directories exist
-    2. Loads all calibration files
-    3. Characterize all measurement files
-    4. Calculate slope deviation from 20°C reference temperature
 
+    This function is intended for use in scientific research and analysis involving
+    temperature-dependent measurements of optical surfaces.
     """
+
     # 1. Check input/output directory exist
     # =====================================
     # Check input directory exists
