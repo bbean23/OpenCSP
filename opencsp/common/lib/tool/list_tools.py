@@ -16,6 +16,27 @@ _V = TypeVar("_V")
 
 
 def remove_duplicates(list):
+    """
+    Remove duplicate elements from a list while preserving the original order.
+
+    Parameters
+    ----------
+    list : list
+        The input list from which duplicates will be removed.
+
+    Returns
+    -------
+    list
+        A new list containing the unique elements from the input list, in the order they first appeared.
+
+    Examples
+    --------
+    >>> remove_duplicates([1, 2, 2, 3, 4, 4, 5])
+    [1, 2, 3, 4, 5]
+    >>> remove_duplicates(['a', 'b', 'a', 'c'])
+    ['a', 'b', 'c']
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     result = []
     for x in list:
         if x not in result:
@@ -24,6 +45,27 @@ def remove_duplicates(list):
 
 
 def contains_duplicates(list):
+    """
+    Check if a list contains any duplicate elements.
+
+    Parameters
+    ----------
+    list : list
+        The input list to check for duplicates.
+
+    Returns
+    -------
+    bool
+        True if the list contains duplicates, False otherwise.
+
+    Examples
+    --------
+    >>> contains_duplicates([1, 2, 3, 4])
+    False
+    >>> contains_duplicates([1, 2, 2, 3])
+    True
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     return len(list) != len(remove_duplicates(list))
 
 
@@ -194,7 +236,7 @@ def natural_sort(values: list[str]):
 
     Adapted from https://stackoverflow.com/questions/11150239/natural-sorting"""
     convert = lambda text: int(text) if text.isdigit() else text.lower()
-    alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+    alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
     return sorted(values, key=alphanum_key)
 
 
@@ -212,7 +254,7 @@ def print_list(
     """
     # Check input.
     if not isinstance(input_list, list):
-        print('ERROR: In print_list(), Non-list input_list:', input_list)
+        print("ERROR: In print_list(), Non-list input_list:", input_list)
         assert False
     # Content.
     for item in input_list[0:max_items]:
@@ -220,13 +262,13 @@ def print_list(
         item_str = str(item)
         trimmed_item_str = item_str[0:max_item_length]
         if len(item_str) > len(trimmed_item_str):
-            trimmed_item_str += '...'
+            trimmed_item_str += "..."
         # Print item.
         if indent == None:
-            indent_str = ''
+            indent_str = ""
         else:
-            indent_str = ' ' * indent
+            indent_str = " " * indent
         print(indent_str + trimmed_item_str)
     # Postamble.
     if max_items < len(input_list):
-        print(indent_str + '...')
+        print(indent_str + "...")

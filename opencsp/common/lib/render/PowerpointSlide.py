@@ -12,6 +12,10 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 class PowerpointSlide:
+    """
+    Generate a powerpoint slide. Once completed, it should be added to a powerpoint presentation.
+    """
+
     def __init__(
         self,
         slide_control: RenderControlPowerpointSlide,
@@ -136,12 +140,12 @@ class PowerpointSlide:
 
         return cls(slide_control, images, texts)
 
-    def _next_empty_cell_index(self, which_shapes='any'):
-        if which_shapes == 'any':
+    def _next_empty_cell_index(self, which_shapes="any"):
+        if which_shapes == "any":
             shape_groups = [self.images, self.texts]
-        elif which_shapes == 'images':
+        elif which_shapes == "images":
             shape_groups = [self.images]
-        elif which_shapes == 'texts':
+        elif which_shapes == "texts":
             shape_groups = [self.texts]
         else:
             lt.error_and_raise(
@@ -191,7 +195,7 @@ class PowerpointSlide:
 
         # find the next cell index into which to slot this image
         if index < 0 or index >= len(self.images):
-            next_cell_idx = self._next_empty_cell_index('images')
+            next_cell_idx = self._next_empty_cell_index("images")
             if next_cell_idx < len(self.images):
                 index = next_cell_idx
 
@@ -218,7 +222,7 @@ class PowerpointSlide:
 
     def add_text(self, text: PowerpointText, index: int = -1, replace_or_shift="replace"):
         if replace_or_shift not in ["replace", "shift"]:
-            lt.error_and_raise(ValueError, f"Invalid argument replace_or_shift=\"{replace_or_shift}\"")
+            lt.error_and_raise(ValueError, f'Invalid argument replace_or_shift="{replace_or_shift}"')
 
         # set this as the text's parent
         text = copy.copy(text)
@@ -226,7 +230,7 @@ class PowerpointSlide:
 
         # find the next cell index into which to slot this text
         if index < 0 or index >= len(self.images):
-            next_cell_idx = self._next_empty_cell_index('texts')
+            next_cell_idx = self._next_empty_cell_index("texts")
             if next_cell_idx < len(self.images):
                 index = next_cell_idx
 
@@ -430,7 +434,7 @@ class PowerpointSlide:
             if pps_text.has_val():
                 if not pps_text.has_dims():
                     lt.warn(
-                        f"Warning: text \"{pps_text.get_val()}\" does not have a location set!\n\tOrigin: {pps_text.code_location}"
+                        f'Warning: text "{pps_text.get_val()}" does not have a location set!\n\tOrigin: {pps_text.code_location}'
                     )
                     pps_text.dims = pps_text.cell_dims
                 txBox = slide.shapes.add_textbox(*pps_text.dims_pptx())

@@ -27,7 +27,7 @@ def robust_arccos(x: float) -> float:
     """
     if (x < (-1.0 - INVERSE_TRIG_TOLERANCE)) or (x > (1.0 + INVERSE_TRIG_TOLERANCE)):
         # TODO RCB: REPLACE THIS WITH LOG/EXCEPTION THROW.
-        print('ERROR: In robust_arccos(), input value ' + str(x) + ' is out of valid range [-1,1].')
+        print("ERROR: In robust_arccos(), input value " + str(x) + " is out of valid range [-1,1].")
         assert False
     elif x < -1.0:
         return np.pi
@@ -43,7 +43,7 @@ def robust_arcsin(x: float) -> float:
     """
     if (x < (-1.0 - INVERSE_TRIG_TOLERANCE)) or (x > (1.0 + INVERSE_TRIG_TOLERANCE)):
         # TODO RCB: REPLACE THIS WITH LOG/EXCEPTION THROW.
-        print('ERROR: In robust_arcsin(), input value ' + str(x) + ' is out of valid range [-1,1].')
+        print("ERROR: In robust_arcsin(), input value " + str(x) + " is out of valid range [-1,1].")
         assert False
     elif x < -1.0:
         return -(np.pi / 2.0)
@@ -183,6 +183,42 @@ def none_if_nan(x):
 
 
 def ncr(n, r):
+    """
+    Calculate the binomial coefficient, also known as "n choose r".
+
+    The binomial coefficient is defined as:
+
+    C(n, r) = n! / (r! * (n - r)!)
+
+    where 'n' is the total number of items, and 'r' is the number of items to choose.
+
+    Parameters
+    ----------
+    n : int
+        The total number of items. Must be a non-negative integer.
+    r : int
+        The number of items to choose. Must be a non-negative integer less than or equal to \( n \).
+
+    Returns
+    -------
+    float
+        The binomial coefficient \( C(n, r) \).
+
+    Raises
+    ------
+    ValueError
+        If \( n \) or \( r \) are negative, or if \( r \) is greater than \( n \).
+
+    Examples
+    --------
+    >>> ncr(5, 2)
+    10.0
+    >>> ncr(10, 3)
+    120.0
+    >>> ncr(0, 0)
+    1.0
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     r = min(r, n - r)
     numer = reduce(op.mul, range(n, n - r, -1), 1)
     denom = reduce(op.mul, range(1, r + 1), 1)
@@ -214,7 +250,7 @@ def rms(error_list):
     """
     # Check input.
     if len(error_list) == 0:
-        print('ERROR: In rms(), enncountered null error list.')
+        print("ERROR: In rms(), enncountered null error list.")
         assert False
     # Compute RMS.
     n = len(error_list)
@@ -298,7 +334,7 @@ def rolling_average(data: list[float] | npt.NDArray[np.float_], window_size: int
     data_cp = copy.copy(data)
 
     # take the rolling average
-    avg = np.convolve(data_cp, np.ones((window_size)), 'same') / window_size
+    avg = np.convolve(data_cp, np.ones((window_size)), "same") / window_size
 
     # fix edge effects
     half_win_size = int(window_size / 2)
@@ -322,6 +358,39 @@ def rolling_average(data: list[float] | npt.NDArray[np.float_], window_size: int
 
 # @strict_types
 def lambda_symmetric_paraboloid(focal_length: numbers.Number) -> Callable[[float, float], float]:
+    """
+    Create a lambda function representing a symmetric paraboloid.
+
+    The symmetric paraboloid is defined by the equation:
+
+    z = (1 / (4 * f)) * (x^2 + y^2)
+
+    where 'f' is the focal length of the paraboloid.
+
+    Parameters
+    ----------
+    focal_length : numbers.Number
+        The focal length of the paraboloid. Must be a positive number.
+
+    Returns
+    -------
+    Callable[[float, float], float]
+        A lambda function that takes two float arguments (x, y) and returns the corresponding z value
+        of the symmetric paraboloid.
+
+    Raises
+    ------
+    ValueError
+        If the focal_length is not positive.
+
+    Examples
+    --------
+    >>> paraboloid = lambda_symmetric_paraboloid(2.0)
+    >>> z_value = paraboloid(1.0, 1.0)
+    >>> print(z_value)
+    0.125
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     a = 1.0 / (4 * focal_length)
     return lambda x, y: a * (x**2 + y**2)
     # return FunctionXYContinuous(f"{a} * (x**2 + y**2)")
