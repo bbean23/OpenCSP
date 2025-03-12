@@ -3,7 +3,7 @@ import unittest
 
 # Assume opencsp is in PYHTONPATH
 import opencsp as opencsp
-import example as example
+import example.sofast_fringe.example_make_rectangular_screen_definition
 
 # TODO: why aren't these imported from import opencsp as opencsp above
 from opencsp.app.camera_calibration import CameraCalibration
@@ -178,6 +178,7 @@ class test_Docstrings(unittest.TestCase):
     # TODO: example_sofast_calibration_list
     # TODO: example_sofast_fringe_list
     # TODO: example_targetcolor_list
+    example_list = [example.sofast_fringe.example_make_rectangular_screen_definition]
 
     app_class_list = (
         camera_calibration_class_list
