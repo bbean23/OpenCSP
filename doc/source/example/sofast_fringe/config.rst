@@ -36,3 +36,13 @@ Generating Standard Mirror Output Plots
 .. automodule:: example.sofast_fringe.example_standard_mirror_plot_output
    :members:
    :show-inheritance:
+
+
+Process SOFAST Temperature Experiment Data
+==========================================
+
+.. currentmodule:: example.sofast_fringe.sofast_temperature_analysis
+
+.. automodule:: example.sofast_fringe.sofast_temperature_analysis
+   :members:
+   :show-inheritance:
