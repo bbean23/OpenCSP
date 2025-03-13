@@ -2,6 +2,7 @@ import glob
 from os.path import join
 from dataclasses import dataclass
 import datetime as dt
+import sys
 
 import matplotlib.pyplot as plt
 
@@ -19,6 +20,7 @@ from opencsp.common.lib.camera.Camera import Camera
 from opencsp.common.lib.camera.ImageAcquisitionAbstract import ImageAcquisitionAbstract
 from opencsp.common.lib.camera.image_processing import highlight_saturation
 from opencsp.common.lib.camera.LiveView import LiveView
+from opencsp.common.lib.csp.StandardPlotOutput import StandardPlotOutput
 from opencsp.common.lib.deflectometry.ImageProjection import ImageProjection
 from opencsp.common.lib.deflectometry.Surface2DParabolic import Surface2DParabolic
 from opencsp.common.lib.geometry.Vxy import Vxy
@@ -83,6 +85,7 @@ class SofastInterface:
         # Common parameters
         self.image_acquisition = image_acquisition
         self.image_projection = ImageProjection.instance()
+        self.plotting: StandardPlotOutput = StandardPlotOutput()
 
         # Sofast system objects
         self.system_fixed: SystemSofastFixed = None
@@ -177,14 +180,10 @@ class SofastInterface:
 
         # Plot optic
         mirror = sofast.get_optic().mirror
-
-        # lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
-        # figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
-        # axis_control_m = rca.meters()
-        # fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
-        # mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
-        # fig_record.save(self.dir_save_fringe, f"{self.timestamp_fringe_measurement:s}_slope_magnitude_fringe", "png")
-        # fig_record.close()
+        lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
+        self.plotting.optic_measured = mirror
+        self.plotting.options_file_output.output_dir = self.paths.dir_save_fringe
+        self.plotting.plot()
 
         # Save processed sofast data
         sofast.save_to_hdf(f"{self.paths.dir_save_fringe:s}/{self.file_timestamp:s}_data_sofast_fringe.h5")
@@ -224,13 +223,10 @@ class SofastInterface:
 
         # Plot optic
         mirror = process_sofast_fixed.get_optic()
-
-        # lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
-        # figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
-        # axis_control_m = rca.meters()
-        # fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
-        # mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
-        # fig_record.save(self.dir_save_fixed, f"{self.timestamp_fixed_measurement:s}_slope_magnitude_fixed", "png")
+        lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
+        self.plotting.optic_measured = mirror
+        self.plotting.options_file_output.output_dir = self.paths.dir_save_fringe
+        self.plotting.plot()
 
         # Save processed sofast data
         process_sofast_fixed.save_to_hdf(f"{self.paths.dir_save_fixed:s}/{self.file_timestamp:s}_data_sofast_fixed.h5")
@@ -334,7 +330,7 @@ class SofastInterface:
         # Get user input
         retval = input("> ")
         self.timestamp = dt.datetime.now()
-        lt.debug(f"{self.timestamp:s} user input: {retval:s}")
+        lt.debug(f"{timestamp():s} user input: {retval:s}")
 
         try:
             self._run_given_input(retval)
@@ -438,7 +434,7 @@ class SofastInterface:
                 self.system_fringe.close_all()
             if self.system_fixed is not None:
                 self.system_fixed.close_all()
-            return
+            sys.exit(0)
         # Show single camera image
         elif retval == "im":
             self.show_cam_image()

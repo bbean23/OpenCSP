@@ -16,10 +16,12 @@ from opencsp.app.sofast.lib.SofastInterface import (
 from opencsp.app.sofast.lib.SpatialOrientation import SpatialOrientation
 from opencsp.common.lib.camera.Camera import Camera
 from opencsp.common.lib.camera.ImageAcquisition_DCAM_mono import ImageAcquisition
+from opencsp.common.lib.csp.MirrorParametric import MirrorParametric
 from opencsp.common.lib.deflectometry.ImageProjection import ImageProjection
 from opencsp.common.lib.deflectometry.Surface2DParabolic import Surface2DParabolic
 from opencsp.common.lib.geometry.Vxy import Vxy
 from opencsp.common.lib.geometry.Vxyz import Vxyz
+from opencsp.common.lib.geometry.RegionXY import RegionXY
 import opencsp.common.lib.tool.log_tools as lt
 
 
@@ -71,6 +73,14 @@ def example_sofast_command_line_tool(dir_cal: str, dir_save: str):
     inter.data_sofast_fixed_process = SofastFixedProcessData(
         fixed_pattern_dot_locs=DotLocationsFixedPattern.load_from_hdf(file_dot_locs), surface_2d=surface_fixed
     )
+
+    # Set up plotting
+    shape = RegionXY.rectangle(1.5)
+    focal_length = 100
+    inter.plotting.optic_reference = MirrorParametric.generate_symmetric_paraboloid(focal_length, shape)
+    inter.plotting.options_ray_trace_vis.to_plot = False
+    inter.plotting.options_file_output.number_in_name = False
+    inter.plotting.options_file_output.to_save = True
 
     # Set up save paths
     inter.paths.dir_save_fixed = dir_save
