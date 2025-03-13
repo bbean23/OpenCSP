@@ -1,5 +1,6 @@
 import glob
 from os.path import join
+import os
 from dataclasses import dataclass
 import datetime as dt
 import sys
@@ -25,9 +26,6 @@ from opencsp.common.lib.deflectometry.ImageProjection import ImageProjection
 from opencsp.common.lib.deflectometry.Surface2DParabolic import Surface2DParabolic
 from opencsp.common.lib.geometry.Vxy import Vxy
 from opencsp.common.lib.geometry.Vxyz import Vxyz
-import opencsp.common.lib.render.figure_management as fm
-import opencsp.common.lib.render_control.RenderControlAxis as rca
-import opencsp.common.lib.render_control.RenderControlFigure as rcfg
 import opencsp.common.lib.tool.log_tools as lt
 from opencsp.common.lib.tool.time_date_tools import current_date_time_string_forfile as timestamp
 
@@ -104,7 +102,7 @@ class SofastInterface:
     @property
     def file_timestamp(self) -> str:
         """Returns current run timestamp in string format"""
-        return self.timestamp.strftime(r"%Y-%m-%d_%H_%M_%S.%f")
+        return self.timestamp.strftime(r"%Y-%m-%d_%H_%M_%S_%f")
 
     def run_cli(self) -> None:
         """Runs command line Sofast"""
@@ -178,11 +176,15 @@ class SofastInterface:
 
         lt.info(f"{timestamp():s} Completed Sofast Fringe data processing")
 
-        # Plot optic
+        # Get optic
         mirror = sofast.get_optic().mirror
+
+        # Plot optic
         lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
+        output_dir = join(self.paths.dir_save_fringe, self.file_timestamp)
+        os.makedirs(output_dir, exist_ok=True)
         self.plotting.optic_measured = mirror
-        self.plotting.options_file_output.output_dir = self.paths.dir_save_fringe
+        self.plotting.options_file_output.output_dir = output_dir
         self.plotting.plot()
 
         # Save processed sofast data
@@ -221,11 +223,15 @@ class SofastInterface:
 
         lt.info(f"{timestamp():s} Completed Sofast Fixed data processing")
 
-        # Plot optic
+        # Get optic
         mirror = process_sofast_fixed.get_optic()
+
+        # Plot optic
         lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
+        output_dir = join(self.paths.dir_save_fringe, self.file_timestamp)
+        os.makedirs(output_dir, exist_ok=True)
         self.plotting.optic_measured = mirror
-        self.plotting.options_file_output.output_dir = self.paths.dir_save_fringe
+        self.plotting.options_file_output.output_dir = output_dir
         self.plotting.plot()
 
         # Save processed sofast data
