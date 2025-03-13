@@ -1,3 +1,30 @@
+"""
+Command-line tool for processing optical measurements using SOFAST.
+
+This module provides a command-line interface for processing optical measurements
+using the SOFAST framework. It sets up the necessary components for image acquisition,
+image projection, and SOFAST processing, allowing users to run measurements and
+generate results based on the provided calibration and configuration files.
+
+NOTE:
+
+    - To run this example, you will need a full physical SOFAST setup. This includes
+      a camera, display (LCD screen or projector), and a mirror to test.
+    - The calibration files required to run this example are not included in the
+      OpenCSP repository. You will need to generate your own for your own system.
+
+Usage:
+
+To run the command-line tool, provide the paths to the calibration directory and the
+directory where results should be saved as command-line arguments.
+
+For example:
+
+```
+python sofast_command_line_tool.py path/to/calibration/files path/to/save/outputs
+```
+"""
+
 from os.path import join
 import sys
 
@@ -25,7 +52,39 @@ from opencsp.common.lib.geometry.RegionXY import RegionXY
 import opencsp.common.lib.tool.log_tools as lt
 
 
-def example_sofast_command_line_tool(dir_cal: str, dir_save: str):
+def example_sofast_command_line_tool(dir_cal: str, dir_save: str) -> None:
+    """
+    Processes optical measurements using SOFAST via command-line interface.
+
+    This function performs the following steps:
+
+        1. Sets up logging for the processing session.
+        2. Configures image acquisition settings for the camera.
+        3. Loads image projection data from an HDF5 file.
+        4. Initializes the SOFAST interface and fringe system.
+        5. Loads necessary processing data, including facet definitions, camera data,
+           spatial orientation, display shape, and dot locations.
+        6. Configures plotting options and save paths for output files.
+        7. Executes the SOFAST processing routine.
+
+    Parameters
+    ----------
+    dir_cal : str
+        The directory path containing calibration files required for processing,
+        including image projection, facet definitions, camera data, and spatial
+        orientation data.
+    dir_save : str
+        The directory path where the output results and figures will be saved.
+
+    Example
+    -------
+    To run the SOFAST command-line tool, execute the script with the required
+    directories as arguments:
+
+    >>> python script_name.py /path/to/calibration /path/to/save/results
+
+    The results will be saved in the specified directory.
+    """
     # Set up OpenCSP logger
     lt.logger(join(dir_save, "log.txt"), lt.log.WARN)
 
