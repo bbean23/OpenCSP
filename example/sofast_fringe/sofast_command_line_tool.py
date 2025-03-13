@@ -1,11 +1,10 @@
 from os.path import join
 import sys
 
+from opencsp.app.sofast.lib.DefinitionFacet import DefinitionFacet
 from opencsp.app.sofast.lib.DotLocationsFixedPattern import DotLocationsFixedPattern
+from opencsp.app.sofast.lib.DisplayShape import DisplayShape
 from opencsp.app.sofast.lib.Fringes import Fringes
-from opencsp.common.lib.deflectometry.Surface2DParabolic import Surface2DParabolic
-from opencsp.common.lib.camera.ImageAcquisition_MSMF import ImageAcquisition
-from opencsp.common.lib.deflectometry.ImageProjection import ImageProjection
 from opencsp.app.sofast.lib.SofastInterface import (
     SofastInterface,
     SofastCommonRunData,
@@ -14,26 +13,27 @@ from opencsp.app.sofast.lib.SofastInterface import (
     SofastFringeProcessData,
     SofastFixedProcessData,
 )
-import opencsp.common.lib.tool.log_tools as lt
-from opencsp.common.lib.geometry.Vxyz import Vxyz
-from opencsp.common.lib.geometry.Vxy import Vxy
-from opencsp.app.sofast.lib.DefinitionFacet import DefinitionFacet
-from opencsp.common.lib.camera.Camera import Camera
 from opencsp.app.sofast.lib.SpatialOrientation import SpatialOrientation
-from opencsp.app.sofast.lib.DisplayShape import DisplayShape
+from opencsp.common.lib.camera.Camera import Camera
+from opencsp.common.lib.camera.ImageAcquisition_DCAM_mono import ImageAcquisition
+from opencsp.common.lib.deflectometry.ImageProjection import ImageProjection
+from opencsp.common.lib.deflectometry.Surface2DParabolic import Surface2DParabolic
+from opencsp.common.lib.geometry.Vxy import Vxy
+from opencsp.common.lib.geometry.Vxyz import Vxyz
+import opencsp.common.lib.tool.log_tools as lt
 
 
 def example_sofast_command_line_tool(dir_cal: str, dir_save: str):
     # Set up OpenCSP logger
-    lt.logger(join(dir_save, "log.txt"))
+    lt.logger(join(dir_save, "log.txt"), lt.log.WARN)
 
     # Define image acquisition
     image_acquisition_in = ImageAcquisition(instance=0)  # First camera instance found
-    # image_acquisition_in.frame_size = (1626, 1236)  # Set frame size
-    # image_acquisition_in.gain = 230  # Set gain (higher=faster/more noise, lower=slower/less noise)
+    image_acquisition_in.frame_size = (1626, 1236)  # Set frame size
+    image_acquisition_in.gain = 230  # Set gain (higher=faster/more noise, lower=slower/less noise)
 
     # Define image projection
-    file_image_projection = join(dir_cal, "image_projection_test_small.h5")
+    file_image_projection = join(dir_cal, "image_projection_optics_lab_landscape_square.h5")
     image_projection = ImageProjection.load_from_hdf(file_image_projection)
     image_projection.display_data.image_delay_ms = 200  # define projector-camera delay
 

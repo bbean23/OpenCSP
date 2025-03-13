@@ -98,6 +98,11 @@ class SofastInterface:
         self.data_sofast_fixed_process: SofastFixedProcessData = None
         self.paths = _Paths()
 
+    @property
+    def file_timestamp(self) -> str:
+        """Returns current run timestamp in string format"""
+        return self.timestamp.strftime(r"%Y-%m-%d_%H_%M_%S.%f")
+
     def run_cli(self) -> None:
         """Runs command line Sofast"""
         self._func_user_input()
@@ -181,9 +186,9 @@ class SofastInterface:
         # fig_record.save(self.dir_save_fringe, f"{self.timestamp_fringe_measurement:s}_slope_magnitude_fringe", "png")
         # fig_record.close()
 
-        # # Save processed sofast data
-        # sofast.save_to_hdf(f"{self.dir_save_fringe:s}/{self.timestamp_fringe_measurement:s}_data_sofast_fringe.h5")
-        # lt.debug(f"{timestamp():s} Sofast Fringe data saved to HDF5")
+        # Save processed sofast data
+        sofast.save_to_hdf(f"{self.paths.dir_save_fringe:s}/{self.file_timestamp:s}_data_sofast_fringe.h5")
+        lt.debug(f"{timestamp():s} Sofast Fringe data saved to HDF5")
 
         # Continue
         self.system_fringe.run_next_in_queue()
@@ -227,11 +232,9 @@ class SofastInterface:
         # mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
         # fig_record.save(self.dir_save_fixed, f"{self.timestamp_fixed_measurement:s}_slope_magnitude_fixed", "png")
 
-        # # Save processed sofast data
-        # process_sofast_fixed.save_to_hdf(
-        #     f"{self.dir_save_fixed:s}/{self.timestamp_fixed_measurement:s}_data_sofast_fixed.h5"
-        # )
-        # lt.debug(f"{timestamp():s} Sofast Fixed data saved to HDF5")
+        # Save processed sofast data
+        process_sofast_fixed.save_to_hdf(f"{self.paths.dir_save_fixed:s}/{self.file_timestamp:s}_data_sofast_fixed.h5")
+        lt.debug(f"{timestamp():s} Sofast Fixed data saved to HDF5")
 
         # Continue
         self.system_fixed.run_next_in_queue()
@@ -243,8 +246,7 @@ class SofastInterface:
             self.data_sofast_common_run.dist_optic_screen,
             self.data_sofast_common_run.name_optic,
         )[0]
-        file_timestamp = self.timestamp.strftime(r"%Y-%m-%d_%H_%M_%S.%f")
-        file = f"{self.paths.dir_save_fringe:s}/{file_timestamp:s}_measurement_fringe.h5"
+        file = f"{self.paths.dir_save_fringe:s}/{self.file_timestamp:s}_measurement_fringe.h5"
         measurement.save_to_hdf(file)
         self.system_fringe.calibration.save_to_hdf(file)
         self.system_fringe.run_next_in_queue()
@@ -257,8 +259,7 @@ class SofastInterface:
             self.data_sofast_fixed_run.origin,
             name=self.data_sofast_common_run.name_optic,
         )
-        file_timestamp = self.timestamp.strftime(r"%Y-%m-%d_%H_%M_%S.%f")
-        measurement.save_to_hdf(f"{self.paths.dir_save_fixed:s}/{file_timestamp:s}_measurement_fixed.h5")
+        measurement.save_to_hdf(f"{self.paths.dir_save_fixed:s}/{self.file_timestamp:s}_measurement_fixed.h5")
         self.system_fixed.run_next_in_queue()
 
     def func_load_last_sofast_fringe_image_cal(self):
