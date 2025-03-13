@@ -1,9 +1,7 @@
 import glob
-from os.path import join, dirname, abspath
+from os.path import join
 from dataclasses import dataclass
 import datetime as dt
-import time
-import threading
 
 import matplotlib.pyplot as plt
 
@@ -33,50 +31,45 @@ from opencsp.common.lib.tool.time_date_tools import current_date_time_string_for
 
 
 @dataclass
-class SofastProcessingData:
-    # Common
-    image_acquisition: ImageAcquisitionAbstract = None
-    image_projection: ImageProjection = None
-    camera: Camera = None
-    facet_definition: DefinitionFacet = None
-    spatial_orientation: SpatialOrientation = None
-    # Sofast Fringe
-    display_shape: DisplayShape = None
-    surface_fringe: Surface2DParabolic = None
-    # Sofast Fixed
-    fixed_pattern_dot_locs: DotLocationsFixedPattern = None
-    surface_fixed: Surface2DParabolic = None
-    process_sofast_fixed: ProcessSofastFixed = None
-
-
-@dataclass
 class SofastFixedRunData:
-    origin: Vxy = None
+    origin: Vxy
+    """The xy pixel location in the camera image of the center of the xy_known dot"""
+    xy_known: tuple[int, int] = (0, 0)
+    """The xy index of a known dot location seen by the camera"""
     pattern_width = 3
     """Fixed pattern dot width, pixels"""
     pattern_spacing = 6
-    """Fixed pattern dot spacing, pixels"""
-
-    def is_ready(self) -> bool:
-        if (self.origin is None) or (self.pattern_width is None) or (self.pattern_spacing is None):
-            return False
-        return True
+    """Fixed pattern dot spacing between edges of neighboring dots, pixels."""
 
 
 @dataclass
 class SofastCommonRunData:
-    measure_point_optic: Vxyz = None
-    dist_optic_screen: float = None
-    name_optic: str = None
-
-    def is_ready(self) -> bool:
-        if (self.measure_point_optic is None) or (self.dist_optic_screen is None) or (self.name_optic is None):
-            return False
-        return True
+    measure_point_optic: Vxyz
+    dist_optic_screen: float
+    name_optic: str
 
 
 @dataclass
-class Paths:
+class SofastCommonProcessData:
+    facet_definition: DefinitionFacet
+    camera: Camera
+    spatial_orientation: SpatialOrientation
+
+
+@dataclass
+class SofastFringeProcessData:
+    display_shape: DisplayShape
+    surface_2d: Surface2DParabolic
+
+
+@dataclass
+class SofastFixedProcessData:
+    fixed_pattern_dot_locs: DotLocationsFixedPattern
+    surface_2d: Surface2DParabolic
+
+
+@dataclass
+class _Paths:
     dir_save_fringe: str = ""
     """Location to save Sofast Fringe measurement data"""
     dir_save_fixed: str = ""
@@ -87,31 +80,27 @@ class Paths:
 
 class SofastInterface:
     def __init__(self, image_acquisition: ImageAcquisitionAbstract) -> "SofastInterface":
+        # Common parameters
         self.image_acquisition = image_acquisition
         self.image_projection = ImageProjection.instance()
 
-        self.data_sofast_processing = SofastProcessingData()
-        self.data_sofast_common_run = SofastCommonRunData()
-        self.data_sofast_fixed_run = SofastFixedRunData()
-        self.paths = Paths
-        self.timestamp: dt.datetime = None
-
+        # Sofast system objects
         self.system_fixed: SystemSofastFixed = None
         self.system_fringe: SystemSofastFringe = None
+        self.timestamp: dt.datetime = None
+        self._process_sofast_fixed: ProcessSofastFixed = None
+
+        # User input objects
+        self.data_sofast_common_run: SofastCommonRunData = None
+        self.data_sofast_fixed_run: SofastFixedRunData = None
+        self.data_sofast_common_proccess: SofastCommonProcessData = None
+        self.data_sofast_fringe_process: SofastFringeProcessData = None
+        self.data_sofast_fixed_process: SofastFixedProcessData = None
+        self.paths = _Paths()
 
     def run_cli(self) -> None:
         """Runs command line Sofast"""
         self._func_user_input()
-
-    def set_sofast_processing_data(self, data: SofastProcessingData) -> None:
-        """Sets common parametes for Sofast Fringe and Fixed
-
-        Parameters
-        ----------
-        data : SofastProcessingData
-            SofastProcessingData object
-        """
-        self.data_sofast_processing = data
 
     def initialize_sofast_fringe(self, fringes: Fringes) -> None:
         """Initializes sofast fringe system"""
@@ -158,34 +147,43 @@ class SofastInterface:
 
         # Get Measurement object
         measurement = self.system_fringe.get_measurements(
-            self.measure_point_optic, self.dist_optic_screen, self.name_optic
+            self.data_sofast_common_run.measure_point_optic,
+            self.data_sofast_common_run.dist_optic_screen,
+            self.data_sofast_common_run.name_optic,
         )[0]
 
         # Calibrate fringe images
         measurement.calibrate_fringe_images(self.system_fringe.calibration)
 
         # Instantiate ProcessSofastFringe
-        sofast = ProcessSofastFringe(measurement, self.spatial_orientation, self.camera, self.display_shape)
+        sofast = ProcessSofastFringe(
+            measurement,
+            self.data_sofast_common_proccess.spatial_orientation,
+            self.data_sofast_common_proccess.camera,
+            self.data_sofast_fringe_process.display_shape,
+        )
 
         # Process
-        sofast.process_optic_singlefacet(self.facet_definition, self.surface_fringe)
+        sofast.process_optic_singlefacet(
+            self.data_sofast_common_proccess.facet_definition, self.data_sofast_fringe_process.surface_2d
+        )
 
         lt.info(f"{timestamp():s} Completed Sofast Fringe data processing")
 
         # Plot optic
         mirror = sofast.get_optic().mirror
 
-        lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
-        figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
-        axis_control_m = rca.meters()
-        fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
-        mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
-        fig_record.save(self.dir_save_fringe, f"{self.timestamp_fringe_measurement:s}_slope_magnitude_fringe", "png")
-        fig_record.close()
+        # lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
+        # figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
+        # axis_control_m = rca.meters()
+        # fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
+        # mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
+        # fig_record.save(self.dir_save_fringe, f"{self.timestamp_fringe_measurement:s}_slope_magnitude_fringe", "png")
+        # fig_record.close()
 
-        # Save processed sofast data
-        sofast.save_to_hdf(f"{self.dir_save_fringe:s}/{self.timestamp_fringe_measurement:s}_data_sofast_fringe.h5")
-        lt.debug(f"{timestamp():s} Sofast Fringe data saved to HDF5")
+        # # Save processed sofast data
+        # sofast.save_to_hdf(f"{self.dir_save_fringe:s}/{self.timestamp_fringe_measurement:s}_data_sofast_fringe.h5")
+        # lt.debug(f"{timestamp():s} Sofast Fringe data saved to HDF5")
 
         # Continue
         self.system_fringe.run_next_in_queue()
@@ -193,35 +191,47 @@ class SofastInterface:
     def func_process_sofast_fixed_data(self):
         """Process Sofast Fixed data"""
         lt.info(f"{timestamp():s} Starting Sofast Fixed data processing")
+        # Instantiate sofast processing object
+        process_sofast_fixed = ProcessSofastFixed(
+            self.data_sofast_common_proccess.spatial_orientation,
+            self.data_sofast_common_proccess.camera,
+            self.data_sofast_fixed_process.fixed_pattern_dot_locs,
+        )
+
         # Get Measurement object
         measurement = self.system_fixed.get_measurement(
-            self.measure_point_optic, self.dist_optic_screen, self.origin, name=self.name_optic
+            self.data_sofast_common_run.measure_point_optic,
+            self.data_sofast_common_run.dist_optic_screen,
+            self.data_sofast_fixed_run.origin,
+            name=self.data_sofast_common_run.name_optic,
         )
-        self.process_sofast_fixed.load_measurement_data(measurement)
+        process_sofast_fixed.load_measurement_data(measurement)
 
         # Process
-        xy_known = (0, 0)
-        self.process_sofast_fixed.process_single_facet_optic(
-            self.facet_definition, self.surface_fixed, self.origin, xy_known=xy_known
+        process_sofast_fixed.process_single_facet_optic(
+            self.data_sofast_common_proccess.facet_definition,
+            self.data_sofast_fixed_process.surface_2d,
+            self.data_sofast_fixed_run.origin,
+            xy_known=self.data_sofast_fixed_run.xy_known,
         )
 
         lt.info(f"{timestamp():s} Completed Sofast Fixed data processing")
 
         # Plot optic
-        mirror = self.process_sofast_fixed.get_optic()
+        mirror = process_sofast_fixed.get_optic()
 
-        lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
-        figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
-        axis_control_m = rca.meters()
-        fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
-        mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
-        fig_record.save(self.dir_save_fixed, f"{self.timestamp_fixed_measurement:s}_slope_magnitude_fixed", "png")
+        # lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
+        # figure_control = rcfg.RenderControlFigure(tile_array=(1, 1), tile_square=True)
+        # axis_control_m = rca.meters()
+        # fig_record = fm.setup_figure(figure_control, axis_control_m, title="")
+        # mirror.plot_orthorectified_slope(self.res_plot, clim=self.colorbar_limit, axis=fig_record.axis)
+        # fig_record.save(self.dir_save_fixed, f"{self.timestamp_fixed_measurement:s}_slope_magnitude_fixed", "png")
 
-        # Save processed sofast data
-        self.process_sofast_fixed.save_to_hdf(
-            f"{self.dir_save_fixed:s}/{self.timestamp_fixed_measurement:s}_data_sofast_fixed.h5"
-        )
-        lt.debug(f"{timestamp():s} Sofast Fixed data saved to HDF5")
+        # # Save processed sofast data
+        # process_sofast_fixed.save_to_hdf(
+        #     f"{self.dir_save_fixed:s}/{self.timestamp_fixed_measurement:s}_data_sofast_fixed.h5"
+        # )
+        # lt.debug(f"{timestamp():s} Sofast Fixed data saved to HDF5")
 
         # Continue
         self.system_fixed.run_next_in_queue()
@@ -289,14 +299,14 @@ class SofastInterface:
         LiveView(self.image_acquisition)
 
     def _check_fixed_run_data_loaded(self) -> bool:
-        if not self.data_sofast_fixed_run.is_ready():
-            lt.error(f"{timestamp()} Sofast Fixed processing data not fully loaded")
+        if self.data_sofast_fixed_run is None:
+            lt.error(f"{timestamp()} Sofast Fixed processing data not loaded")
             return False
         return True
 
     def _check_common_run_data_loaded(self) -> bool:
-        if not self.data_sofast_common_run.is_ready():
-            lt.error(f"{timestamp()} Sofast Fringe processing data not fully loaded")
+        if self.data_sofast_common_run is None:
+            lt.error(f"{timestamp()} Sofast Fringe processing data not loaded")
             return False
         return True
 
