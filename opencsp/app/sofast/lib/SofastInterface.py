@@ -424,7 +424,6 @@ class SofastInterface:
         return True
 
     def _func_user_input(self) -> None:
-        """Function that requests and processes user input"""
         # Get user input
         retval = input("> ")
         self.timestamp = dt.datetime.now()
@@ -436,7 +435,6 @@ class SofastInterface:
             lt.error(repr(error))
 
     def _run_given_input(self, retval: str) -> None:
-        """Runs the given command"""
         # Run fringe measurement and process/save
         if retval == "help":
             print("\n")
