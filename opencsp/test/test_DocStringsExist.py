@@ -166,6 +166,7 @@ class test_Docstrings(unittest.TestCase):
         opencsp.app.sofast.lib.process_optics_geometry,
         opencsp.app.sofast.lib.sofast_common_functions,
         opencsp.app.sofast.lib.spatial_processing,
+        opencsp.app.sofast.lib.SofastInterface,
     ]
 
     target_class_list = [opencsp.app.target.target_color.lib.ImageColor]
