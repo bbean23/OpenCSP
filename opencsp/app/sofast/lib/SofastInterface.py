@@ -155,6 +155,17 @@ class SofastInterface:
     """
 
     def __init__(self, image_acquisition: ImageAcquisitionAbstract) -> "SofastInterface":
+        """Instantiates SofastInterface
+
+        Parameters
+        ----------
+        image_acquisition : ImageAcquisitionAbstract
+            Image acquisition object connected to camera.
+
+        Returns
+        -------
+        SofastInterface
+        """
         # Common parameters
         self.image_acquisition = image_acquisition
         self.image_projection = ImageProjection.instance()
