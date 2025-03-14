@@ -1,3 +1,43 @@
+"""
+Sofast Interface Module for Optical Measurement Processing.
+
+This module provides the `SofastInterface` class, which facilitates the
+configuration and execution of optical measurements using the SOFAST framework.
+It includes functionality for initializing measurement systems, processing
+fringe and fixed measurements, and handling user interactions. The module
+also supports saving and loading calibration data, displaying camera images,
+and managing the overall workflow of optical measurements.
+
+Usage:
+
+To use this module, create an instance of the `SofastInterface` class
+with an image acquisition object, and then call the appropriate methods
+to run measurements and process data. See /example/ for more information.
+
+TODO:
+
+Refactor so that common code is separate from end-of-file input/execution block, move this to common.
+
+Make this a "kitchen sink" file, which includes all aspects:
+
+    1. Data collection:
+
+    - Fringe measurement
+    - Fixed measurement with projector
+    - Fixed measurement with printed target in ambient lght
+
+    2. Data analysis -- finding the best-fit instance of the class of shapes.
+
+    3. Fitting to a desired reference optical shape.  (Make this an enhancement issue added to SOFAST.  Then, another file?)
+
+    4. Plotting/ray tracing
+
+    5. (Suggest puttting calibration in another file.)
+
+    - This file contains 1 and 2.
+
+"""
+
 import glob
 from os.path import join
 import os
@@ -32,6 +72,8 @@ from opencsp.common.lib.tool.time_date_tools import current_date_time_string_for
 
 @dataclass
 class SofastFixedRunData:
+    """Data class holding data required to run Sofast Fixed"""
+
     origin: Vxy
     """The xy pixel location in the camera image of the center of the xy_known dot"""
     xy_known: tuple[int, int] = (0, 0)
@@ -44,28 +86,46 @@ class SofastFixedRunData:
 
 @dataclass
 class SofastCommonRunData:
+    """Data class holding data required to run Sofast Fixed and Fringe"""
+
     measure_point_optic: Vxyz
+    """The measurement point in 3D space for the optical system."""
     dist_optic_screen: float
+    """The distance from the optic to the screen, in meters."""
     name_optic: str
+    """A descriptive name for the optical system."""
 
 
 @dataclass
 class SofastCommonProcessData:
+    """Data class holding data common to processing captured Sofast Fixed or Fringe measurements"""
+
     facet_definition: DefinitionFacet
+    """The definition of the optical facet being measured."""
     camera: Camera
+    """The camera calibration parameters for the camera used during measurements."""
     spatial_orientation: SpatialOrientation
+    """The spatial orientation of the measurement setup."""
 
 
 @dataclass
 class SofastFringeProcessData:
+    """Data class holding data required to process captured Sofast Fringe measurements"""
+
     display_shape: DisplayShape
+    """The display shape used in the fringe measurement."""
     surface_2d: Surface2DParabolic
+    """The 2D surface model used for processing fringe data."""
 
 
 @dataclass
 class SofastFixedProcessData:
+    """Data class holding data required to process captured Sofast Fixed measurements"""
+
     fixed_pattern_dot_locs: DotLocationsFixedPattern
+    """The locations of fixed pattern dots used in measurements."""
     surface_2d: Surface2DParabolic
+    """The 2D surface model used for processing fixed data."""
 
 
 @dataclass
@@ -79,6 +139,21 @@ class _Paths:
 
 
 class SofastInterface:
+    """
+    Interface for managing SOFAST optical measurement systems.
+
+    The `SofastInterface` class provides methods to initialize and run
+    measurements using the SOFAST framework. It manages the configuration
+    of fringe and fixed measurement systems, processes measurement data,
+    and handles user interactions. The class also supports saving and
+    loading calibration data and displaying camera images.
+
+    Parameters
+    ----------
+    image_acquisition : ImageAcquisitionAbstract
+        Object responsible for acquiring images from the camera.
+    """
+
     def __init__(self, image_acquisition: ImageAcquisitionAbstract) -> "SofastInterface":
         # Common parameters
         self.image_acquisition = image_acquisition
@@ -109,7 +184,13 @@ class SofastInterface:
         self._func_user_input()
 
     def initialize_sofast_fringe(self, fringes: Fringes) -> None:
-        """Initializes sofast fringe system"""
+        """Initializes sofast fringe system
+
+        Parameters
+        ----------
+        fringes : Fringes
+            Input fringe object to initialize Sofast Fringe system
+        """
         self.system_fringe = SystemSofastFringe(self.image_acquisition)
         self.system_fringe.set_fringes(fringes)
 
@@ -142,12 +223,12 @@ class SofastInterface:
         self.system_fixed.prepend_to_queue([self.system_fixed.run_measurement, _f1])
         self.system_fixed.run_next_in_queue()
 
-    def func_show_crosshairs_fringe(self):
+    def func_show_crosshairs_fringe(self) -> None:
         """Shows crosshairs and run next in Sofast fringe queue after a 0.2s wait"""
         self.image_projection.show_crosshairs()
         self.system_fringe.root.after(200, self.system_fringe.run_next_in_queue)
 
-    def func_process_sofast_fringe_data(self):
+    def func_process_sofast_fringe_data(self) -> None:
         """Processes Sofast Fringe data"""
         lt.info(f"{timestamp():s} Starting Sofast Fringe data processing")
 
@@ -194,7 +275,7 @@ class SofastInterface:
         # Continue
         self.system_fringe.run_next_in_queue()
 
-    def func_process_sofast_fixed_data(self):
+    def func_process_sofast_fixed_data(self) -> None:
         """Process Sofast Fixed data"""
         lt.info(f"{timestamp():s} Starting Sofast Fixed data processing")
         # Instantiate sofast processing object
@@ -241,7 +322,7 @@ class SofastInterface:
         # Continue
         self.system_fixed.run_next_in_queue()
 
-    def func_save_measurement_fringe(self):
+    def func_save_measurement_fringe(self) -> None:
         """Saves measurement to HDF file"""
         measurement = self.system_fringe.get_measurements(
             self.data_sofast_common_run.measure_point_optic,
@@ -253,7 +334,7 @@ class SofastInterface:
         self.system_fringe.calibration.save_to_hdf(file)
         self.system_fringe.run_next_in_queue()
 
-    def func_save_measurement_fixed(self):
+    def func_save_measurement_fixed(self) -> None:
         """Save fixed measurement files"""
         measurement = self.system_fixed.get_measurement(
             self.data_sofast_common_run.measure_point_optic,
@@ -264,7 +345,7 @@ class SofastInterface:
         measurement.save_to_hdf(f"{self.paths.dir_save_fixed:s}/{self.file_timestamp:s}_measurement_fixed.h5")
         self.system_fixed.run_next_in_queue()
 
-    def func_load_last_sofast_fringe_image_cal(self):
+    def func_load_last_sofast_fringe_image_cal(self) -> None:
         """Loads last ImageCalibration object"""
         # Find file
         files = glob.glob(join(self.paths.dir_save_fringe_calibration, "image_calibration_scaling*.h5"))
@@ -280,7 +361,7 @@ class SofastInterface:
         self.system_fringe.set_calibration(image_calibration)
         lt.info(f"{timestamp()} Loaded image calibration file: {file}")
 
-    def func_gray_levels_cal(self):
+    def func_gray_levels_cal(self) -> None:
         """Runs gray level calibration sequence"""
         file = join(self.paths.dir_save_fringe_calibration, f"image_calibration_scaling_{timestamp():s}.h5")
         self.system_fringe.run_gray_levels_cal(
@@ -290,14 +371,14 @@ class SofastInterface:
             on_processing=self.func_show_crosshairs_fringe,
         )
 
-    def show_cam_image(self):
+    def show_cam_image(self) -> None:
         """Shows a camera image"""
         image = self.image_acquisition.get_frame()
         image_proc = highlight_saturation(image, self.image_acquisition.max_value)
         plt.imshow(image_proc)
         plt.show()
 
-    def show_live_view(self):
+    def show_live_view(self) -> None:
         """Shows live view window"""
         LiveView(self.image_acquisition)
 
@@ -331,7 +412,7 @@ class SofastInterface:
             return False
         return True
 
-    def _func_user_input(self):
+    def _func_user_input(self) -> None:
         """Function that requests and processes user input"""
         # Get user input
         retval = input("> ")
