@@ -45,3 +45,12 @@ Generate Rectangular Screen Definition
 .. automodule:: example.sofast_fringe.example_make_rectangular_screen_definition
    :members:
    :show-inheritance:
+
+Process SOFAST Temperature Experiment Data
+==========================================
+
+.. currentmodule:: example.sofast_fringe.sofast_temperature_analysis
+
+.. automodule:: example.sofast_fringe.sofast_temperature_analysis
+   :members:
+   :show-inheritance:
