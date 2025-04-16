@@ -3,6 +3,7 @@ import unittest
 
 # Assume opencsp is in PYHTONPATH
 import opencsp as opencsp
+import example.sofast_calibration.example_calibration_screen_shape
 
 # Examples
 import example.sofast_fringe.sofast_temperature_analysis
