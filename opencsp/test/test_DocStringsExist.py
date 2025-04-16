@@ -182,7 +182,11 @@ class test_Docstrings(unittest.TestCase):
     # TODO: example_sofast_calibration_list
     # TODO: example_sofast_fringe_list
     # TODO: example_targetcolor_list
-    example_list = [example.sofast_fringe.sofast_temperature_analysis, example.sofast_fringe.example_make_rectangular_screen_definition, example.sofast_calibration.example_calibration_screen_shape]
+    example_list = [
+        example.sofast_fringe.sofast_temperature_analysis,
+        example.sofast_fringe.example_make_rectangular_screen_definition,
+        example.sofast_calibration.example_calibration_screen_shape,
+    ]
 
     app_class_list = (
         camera_calibration_class_list
