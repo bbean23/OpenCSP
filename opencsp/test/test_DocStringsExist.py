@@ -3,6 +3,7 @@ import unittest
 
 # Assume opencsp is in PYHTONPATH
 import opencsp as opencsp
+import example.sofast_calibration.example_calibration_screen_shape
 
 # Examples
 import example.sofast_fringe.sofast_temperature_analysis
@@ -180,6 +181,7 @@ class test_Docstrings(unittest.TestCase):
     # TODO: example_sofast_calibration_list
     # TODO: example_sofast_fringe_list
     # TODO: example_targetcolor_list
+    # example_list = [example.sofast_calibration.example_calibration_screen_shape]
     example_list = [example.sofast_fringe.sofast_temperature_analysis]
 
     app_class_list = (
