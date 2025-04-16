@@ -37,6 +37,14 @@ Generating Standard Mirror Output Plots
    :members:
    :show-inheritance:
 
+Generate Rectangular Screen Definition
+======================================
+
+.. currentmodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+
+.. automodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+   :members:
+   :show-inheritance:
 
 Process SOFAST Temperature Experiment Data
 ==========================================
