@@ -1,9 +1,15 @@
 import inspect
 import unittest
 
-# Assume opencsp is in PYHTONPATH
+# Assume opencsp is in PYTHONPATH
 import opencsp as opencsp
 import example.sofast_fringe.example_process_in_debug_mode
+import example.sofast_calibration.example_calibration_screen_shape
+
+# Examples
+import example.sofast_fringe.example_make_rectangular_screen_definition
+import example.sofast_fringe.sofast_temperature_analysis
+
 
 # TODO: why aren't these imported from import opencsp as opencsp above
 from opencsp.app.camera_calibration import CameraCalibration
@@ -178,7 +184,12 @@ class test_Docstrings(unittest.TestCase):
     # TODO: example_sofast_calibration_list
     # TODO: example_sofast_fringe_list
     # TODO: example_targetcolor_list
-    example_list = [example.sofast_fringe.example_process_in_debug_mode]
+    example_list = [
+        example.sofast_fringe.example_process_in_debug_mode,
+        example.sofast_fringe.sofast_temperature_analysis,
+        example.sofast_fringe.example_make_rectangular_screen_definition,
+        example.sofast_calibration.example_calibration_screen_shape,
+    ]
 
     app_class_list = (
         camera_calibration_class_list

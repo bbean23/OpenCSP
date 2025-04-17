@@ -44,5 +44,23 @@ Running SOFAST in Debug Mode
 .. currentmodule:: example.sofast_fringe.example_process_in_debug_mode
 
 .. automodule:: example.sofast_fringe.example_process_in_debug_mode
+
+
+Generate Rectangular Screen Definition
+======================================
+
+.. currentmodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+
+.. automodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+   :members:
+   :show-inheritance:
+
+
+Process SOFAST Temperature Experiment Data
+==========================================
+
+.. currentmodule:: example.sofast_fringe.sofast_temperature_analysis
+
+.. automodule:: example.sofast_fringe.sofast_temperature_analysis
    :members:
    :show-inheritance:
