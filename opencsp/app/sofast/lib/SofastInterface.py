@@ -273,7 +273,7 @@ class SofastInterface:
 
         # Plot optic
         lt.debug(f"{timestamp():s} Plotting Sofast Fringe data")
-        output_dir = join(self.paths.dir_save_fringe, self.file_timestamp)
+        output_dir = os.path.join(self.paths.dir_save_fringe, self.file_timestamp)
         os.makedirs(output_dir, exist_ok=True)
         self.plotting.optic_measured = mirror
         self.plotting.options_file_output.output_dir = output_dir
@@ -320,7 +320,7 @@ class SofastInterface:
 
         # Plot optic
         lt.debug(f"{timestamp():s} Plotting Sofast Fixed data")
-        output_dir = join(self.paths.dir_save_fringe, self.file_timestamp)
+        output_dir = os.path.join(self.paths.dir_save_fringe, self.file_timestamp)
         os.makedirs(output_dir, exist_ok=True)
         self.plotting.optic_measured = mirror
         self.plotting.options_file_output.output_dir = output_dir
@@ -359,7 +359,7 @@ class SofastInterface:
     def func_load_last_sofast_fringe_image_cal(self) -> None:
         """Loads last ImageCalibration object"""
         # Find file
-        files = glob.glob(join(self.paths.dir_save_fringe_calibration, "image_calibration_scaling*.h5"))
+        files = glob.glob(os.path.join(self.paths.dir_save_fringe_calibration, "image_calibration_scaling*.h5"))
         files.sort()
 
         if len(files) == 0:
@@ -374,7 +374,7 @@ class SofastInterface:
 
     def func_gray_levels_cal(self) -> None:
         """Runs gray level calibration sequence"""
-        file = join(self.paths.dir_save_fringe_calibration, f"image_calibration_scaling_{timestamp():s}.h5")
+        file = os.path.join(self.paths.dir_save_fringe_calibration, f"image_calibration_scaling_{timestamp():s}.h5")
         self.system_fringe.run_gray_levels_cal(
             ImageCalibrationScaling,
             file,
