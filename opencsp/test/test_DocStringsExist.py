@@ -189,7 +189,7 @@ class test_Docstrings(unittest.TestCase):
 
     example_list = [
         example.sofast_fringe.sofast_temperature_analysis,
-        example.sofast_fringe.sofast_command_line_tool
+        example.sofast_fringe.sofast_command_line_tool,
         example.sofast_fringe.example_process_in_debug_mode,
         example.sofast_fringe.sofast_temperature_analysis,
         example.sofast_fringe.example_make_rectangular_screen_definition,
