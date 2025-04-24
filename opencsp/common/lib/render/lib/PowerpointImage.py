@@ -502,6 +502,7 @@ class PowerpointImage(pps.PowerpointShape):
             str
                 The directory name and extension pattern for saving images.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if slide_idx == None:
             ret = "%d_%d.png"
         else:
@@ -518,6 +519,7 @@ class PowerpointImage(pps.PowerpointShape):
         Args:
             save_path (str): The new directory path where the image should be saved.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if self.is_saved_to_file():
             to_rename = [self.get_saved_path(), self.get_text_file_path()]
             for path_name_ext in to_rename:
@@ -535,6 +537,7 @@ class PowerpointImage(pps.PowerpointShape):
             str | None
                 The path to the serialized instance. Returns None if saving failed.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         # import inspect
         # frame = inspect.currentframe().f_back
         # to_print = []
@@ -602,6 +605,7 @@ class PowerpointImage(pps.PowerpointShape):
 
         This method deletes the saved image file and its associated metadata file.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.is_saved_to_file():
             return
         path_name_ext = self.get_saved_path()
@@ -621,6 +625,7 @@ class PowerpointImage(pps.PowerpointShape):
         Args:
             append_dir (str): The directory to append to the temporary save path.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         self._tmp_save_path = os.path.join(self._tmp_save_path, append_dir)
 
     @classmethod
@@ -629,6 +634,7 @@ class PowerpointImage(pps.PowerpointShape):
 
         This method deletes all PNG files and their associated metadata files in the temporary save directory.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if ft.directory_exists(cls._tmp_save_path, error_if_exists_as_file=False):
             ft.delete_files_in_directory(cls._tmp_save_path, "*.png", error_on_dir_not_exists=False)
             ft.delete_files_in_directory(cls._tmp_save_path, "*.png.txt", error_on_dir_not_exists=False)
@@ -640,4 +646,5 @@ class PowerpointImage(pps.PowerpointShape):
         Args:
             append_dir (str): The directory to append to the temporary save path for all instances of PowerpointImage.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         cls._tmp_save_path = os.path.join(cls._tmp_save_path, append_dir)
