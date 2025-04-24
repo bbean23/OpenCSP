@@ -13,6 +13,7 @@ import os
 import os.path
 import shutil
 import tempfile
+import time
 from typing import Optional
 
 # try to import as few other opencsp libraries as possible
@@ -715,7 +716,7 @@ def default_output_path(file_path_name_ext: Optional[str] = None) -> str:
     return _output_paths[file_path_name_ext]
 
 
-def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check_only=False):
+def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check_only=False, retries=20, delay=2):
     """Move a file from input to output.
 
     Verifies that input is a file, and that the output doesn't exist. We check
@@ -770,14 +771,25 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
                 + str(os.path.dirname(output_dir_body_ext)),
             )
     # Rename the file.
-    os.rename(input_dir_body_ext, output_dir_body_ext)
-    # Verify the rename
-    if not is_file_check_only:
-        if not os.path.exists(output_dir_body_ext):
-            lt.error_and_raise(
-                FileNotFoundError,
-                f"Error: In rename_file(), failed to find output file after rename: '{input_dir_body_ext}' --> '{output_dir_body_ext}'",
-            )
+    osError = None
+
+    for attempt in range(retries):
+        try:
+            os.rename(input_dir_body_ext, output_dir_body_ext)
+            # Verify the rename
+            if not is_file_check_only:
+                if not os.path.exists(output_dir_body_ext):
+                    lt.error_and_raise(
+                        FileNotFoundError,
+                        f"Error: In rename_file(), failed to find output file after rename: '{input_dir_body_ext}' --> '{output_dir_body_ext}'",
+                    )
+            return
+        except OSError as e:
+            print(f"Attempt {attempt + 1}: {e}")
+            time.sleep(retry_delay)
+            osError = e
+
+    raise osError
 
 
 def copy_and_delete_file(input_dir_body_ext: str, output_dir_body_ext: str):
