@@ -274,7 +274,9 @@ class PowerpointImage(pps.PowerpointShape):
             pil_val.save(path_name_ext)
 
         elif isinstance(self._val, str):
-            ft.copy_file(self._val, path_name_ext)
+            basename = os.path.basename(path_name_ext)
+            path = os.path.dirname(path_name_ext)
+            ft.copy_file(self._val, path, basename)
 
         else:
             lt.error_and_raise(
