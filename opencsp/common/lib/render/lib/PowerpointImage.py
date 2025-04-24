@@ -383,21 +383,9 @@ class PowerpointImage(pps.PowerpointShape):
             pil_val.save(path_name_ext)
 
         elif isinstance(self._val, rcfr.RenderControlFigureRecord):
-            # Figure records add extra stuffs to the image names, save them to
-            # a temporary file and then move to our desired location.
-            rec_val: rcfr.RenderControlFigureRecord = self._val
-            format = ext.lstrip(".")
-            _, tmp_path_name_ext = ft.get_temporary_file(suffix=ext, text=False)
-            tmp_path, tmp_name, tmp_ext = ft.path_components(tmp_path_name_ext)
-            tmp_path_name_ext_rcfr, _ = rec_val.save(tmp_path, tmp_name, format)
-            try:
-                self._move_file(tmp_path_name_ext_rcfr, path_name_ext)
-            except PermissionError:
-                if ft.file_exists(path_name_ext):
-                    raise
-                # probably just need to wait for matplotlib to release its stranglehold...
-                time.sleep(1)
-                self._move_file(tmp_path_name_ext_rcfr, path_name_ext)
+            basename = os.path.basename(path_name_ext)
+            path = os.path.dirname(path_name_ext)
+            self._val.save(path, basename)
 
         elif isinstance(self._val, np.ndarray):
             pil_val = Image.fromarray(self._val)
