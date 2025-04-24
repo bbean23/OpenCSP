@@ -38,6 +38,24 @@ Generating Standard Mirror Output Plots
    :show-inheritance:
 
 
+Running SOFAST in Debug Mode
+============================
+
+.. currentmodule:: example.sofast_fringe.example_process_in_debug_mode
+
+.. automodule:: example.sofast_fringe.example_process_in_debug_mode
+
+
+Generate Rectangular Screen Definition
+======================================
+
+.. currentmodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+
+.. automodule:: example.sofast_fringe.example_make_rectangular_screen_definition
+   :members:
+   :show-inheritance:
+
+
 Process SOFAST Temperature Experiment Data
 ==========================================
 

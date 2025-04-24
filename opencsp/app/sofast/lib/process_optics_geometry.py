@@ -159,9 +159,13 @@ def process_singlefacet_geometry(
         plt.title("Expected Optic Corners")
 
     # Refine locations of optic corners with mask
-    prs = [params.perimeter_refine_axial_search_dist, params.perimeter_refine_perpendicular_search_dist]
-    loop_facet_image_refine = ip.refine_mask_perimeter(loop_optic_image_exp, v_edges_image, *prs)
-    data_image_processing_facet.loop_facet_image_refine = loop_facet_image_refine
+    try:
+        prs = [params.perimeter_refine_axial_search_dist, params.perimeter_refine_perpendicular_search_dist]
+        loop_facet_image_refine = ip.refine_mask_perimeter(loop_optic_image_exp, v_edges_image, *prs)
+        data_image_processing_facet.loop_facet_image_refine = loop_facet_image_refine
+    except ValueError as er:
+        lt.critical(repr(er))
+        lt.error_and_raise(ValueError, "SOFAST failed to find the corners of the optic.")
 
     # Plot refined optic corners
     if debug.debug_active:
@@ -516,12 +520,16 @@ def process_multifacet_geometry(
         plt.title("Expected Perimeter Points")
 
     # Refine perimeter points
-    args = [
-        params_geometry.perimeter_refine_axial_search_dist,
-        params_geometry.perimeter_refine_perpendicular_search_dist,
-    ]
-    loop_ensemble_image_refine = ip.refine_mask_perimeter(loop_ensemble_exp, v_edges_image, *args)
-    data_image_processing_general.loop_optic_image_refine = loop_ensemble_image_refine
+    try:
+        args = [
+            params_geometry.perimeter_refine_axial_search_dist,
+            params_geometry.perimeter_refine_perpendicular_search_dist,
+        ]
+        loop_ensemble_image_refine = ip.refine_mask_perimeter(loop_ensemble_exp, v_edges_image, *args)
+        data_image_processing_general.loop_optic_image_refine = loop_ensemble_image_refine
+    except ValueError as er:
+        lt.critical(repr(er))
+        lt.error_and_raise(ValueError, "SOFAST failed to find the corners of the optic.")
 
     # Plot refined perimeter points
     if debug.debug_active:
@@ -558,9 +566,15 @@ def process_multifacet_geometry(
     ]
     loops_facets_refined: list[LoopXY] = []
     for idx in range(num_facets):
-        loop = ip.refine_facet_corners(v_facet_corners_image_exp[idx], v_uv_facet_cent_exp[idx], v_edges_image, *args)
-        loops_facets_refined.append(loop)
-        data_image_processing_facet[idx].loop_facet_image_refine = loop
+        try:
+            loop = ip.refine_facet_corners(
+                v_facet_corners_image_exp[idx], v_uv_facet_cent_exp[idx], v_edges_image, *args
+            )
+            loops_facets_refined.append(loop)
+            data_image_processing_facet[idx].loop_facet_image_refine = loop
+        except ValueError as er:
+            lt.critical(repr(er))
+            lt.error_and_raise(ValueError, "SOFAST failed to find the corners of the optic.")
 
         # Plot refined perimeter points
         if debug.debug_active:
