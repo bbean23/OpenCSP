@@ -102,25 +102,25 @@ class SaveToFileImageProcessor(AbstractSpotAnalysisImageProcessor):
         other_path_name_exts: list[str] = []
 
         if self.save_primary is not None:
-            save_dir = self.get_save_dir(self.save_primary)
+            save_dir = self.get_save_dir("primary")
             primary_path_name_ext = self.save_image(save_dir, operable.primary_image, operable)
 
         if self.save_supporting is not None:
-            save_dir = self.get_save_dir(self.save_supporting)
+            save_dir = self.get_save_dir("supporting")
             images: list[CacheableImage] = []
             for image in operable.supporting_images:
                 images.append(image)
             other_path_name_exts += self.save_images(save_dir, images, operable)
 
         if self.save_algorithms is not None:
-            save_dir = self.get_save_dir(self.save_algorithms)
+            save_dir = self.get_save_dir("algorithms")
             images: list[CacheableImage] = []
             for processor in operable.algorithm_images:
                 images += operable.algorithm_images[processor]
             other_path_name_exts += self.save_images(save_dir, images, operable)
 
         if self.save_visualizations is not None:
-            save_dir = self.get_save_dir(self.save_visualizations)
+            save_dir = self.get_save_dir("visualizations")
             images: list[CacheableImage] = []
             for processor in operable.visualization_images:
                 images += operable.visualization_images[processor]

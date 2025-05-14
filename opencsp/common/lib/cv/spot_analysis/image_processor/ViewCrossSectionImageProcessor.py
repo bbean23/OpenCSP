@@ -5,7 +5,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
-from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelOfInterest
+from contrib.common.lib.cv.spot_analysis.PixelOfInterest import PixelOfInterest
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.cv.image_reshapers as ir
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
