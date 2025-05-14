@@ -668,6 +668,8 @@ def convert_string_to_file_body(txt):
     output_file_body = output_file_body.replace('=', '_eq_')
     output_file_body = output_file_body.replace('(', '_')
     output_file_body = output_file_body.replace(')', '_')
+    output_file_body = output_file_body.replace('>', '_')
+    output_file_body = output_file_body.replace('<', '_')
     # Replace blanks with underscores.
     output_file_body = output_file_body.replace(' ', '_')
     # Eliminate double underscores.

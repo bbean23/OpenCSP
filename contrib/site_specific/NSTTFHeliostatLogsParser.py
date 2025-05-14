@@ -22,13 +22,14 @@ class NSTTFHeliostatLogsParser:
     """Parser for NSTTF style log output from the heliostat control software."""
 
     def __init__(
-        self, name: str, dtype: dict[str, any], date_column_formats: dict[str, str], heliostat_name_column: str
+        self, name: str, dtype: dict[str, any], date_column_formats: dict[str, str], heliostat_name_column: str, delimiter = "\t"
     ):
         # register inputs
         self.name = name
         self.dtype = dtype
         self.date_column_formats = date_column_formats
         self.heliostat_name_column = heliostat_name_column
+        self.delimiter = delimiter
 
         # internal values
         self.filename_datetime_replacement: tuple[re.Pattern, str] = None
@@ -40,7 +41,47 @@ class NSTTFHeliostatLogsParser:
         self.parent_parser: NSTTFHeliostatLogsParser = None
 
     @classmethod
-    def NsttfLogsParser(cls):
+    def NsttfLogsParser2025(cls):
+        dtype = {
+            "ID": str,
+            "Status": str,
+            "x targ": float,
+            "y targ": float,
+            "z targ": float,
+            "AZ Current": float,
+            "AZ Target": float,
+            "EL Current": float,
+            "EL Target": float,
+            "AtTarget": bool,
+            "AZ Counts": float,
+            "EL Counts": float,
+            "AZ Amps": float,
+            "EL Amps": float,
+            "Az Speed": float,
+            "EL Speed": float,
+            "Az Offset": float,
+            "EL Offset": float,
+            "InTrack": bool,
+            "Time Stamp": str,
+            "Drive Fault 1": bool,
+            "Drive Fault 2": bool,
+            "Sleeping": bool,
+            "FailSafe Enabled": bool,
+            "COM": bool,
+            "ACTIVE": bool,
+            "Time Reference": bool,
+            "Reserved": float
+        }
+        # date format for "1/31/2025 12:59:59 AM" style timestamp
+        # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
+        date_column_formats = {"Time Stamp": r"%m/%d/%Y %H:%M:%S %p"}
+        heliostat_name_column = "ID"
+        delimiter = ","
+
+        return cls('NsttfLogsParser', dtype, date_column_formats, heliostat_name_column, delimiter=delimiter)
+
+    @classmethod
+    def NsttfLogsParserOld(cls):
         dtype = {
             # "Main T": ,
             "Time": str,
@@ -76,8 +117,9 @@ class NSTTFHeliostatLogsParser:
         # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
         date_column_formats = {"Time ": r"%H:%M:%S.%f"}
         heliostat_name_column = "Helio"
+        delimiter = "\t"
 
-        return cls('NsttfLogsParser', dtype, date_column_formats, heliostat_name_column)
+        return cls('NsttfLogsParser', dtype, date_column_formats, heliostat_name_column, delimiter=delimiter)
 
     @property
     def column_names(self) -> list[str]:
@@ -131,7 +173,7 @@ class NSTTFHeliostatLogsParser:
 
             data = pandas.read_csv(
                 log_path_name_ext,
-                delimiter="\t",
+                delimiter=self.delimiter,
                 header='infer',
                 # parse_dates=self.parse_dates,
                 dtype=self.dtype,
@@ -139,6 +181,8 @@ class NSTTFHeliostatLogsParser:
                 # date_format=self.date_format,
                 usecols=usecols,
                 nrows=nrows,
+                true_values=["True", "Yes", "true", "TRUE"], 
+                false_values=["False", "No", "false", "FALSE"]
             )
             data_list.append(data)
         self.data = pandas.concat(data_list)
@@ -230,7 +274,7 @@ class NSTTFHeliostatLogsParser:
 
     def check_for_missing_heliostats(self, expected_heliostat_names: list[str]) -> tuple[list[str], list[str]]:
         extra_hnames, missing_hnames = [], copy.copy(expected_heliostat_names)
-        hnames = set(self.data["Helio"])
+        hnames = set(self.data[self.heliostat_name_column])
         for hname in hnames:
             if hname in missing_hnames:
                 missing_hnames.remove(hname)
