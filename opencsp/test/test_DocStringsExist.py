@@ -1,9 +1,16 @@
 import inspect
 import unittest
 
-# Assume opencsp is in PYHTONPATH
+# Assume opencsp is in PYTHONPATH
 import opencsp as opencsp
-import example as example
+import example.sofast_fringe.example_process_in_debug_mode
+import example.sofast_calibration.example_calibration_screen_shape
+
+# Examples
+import example.sofast_fringe.example_make_rectangular_screen_definition
+import example.sofast_fringe.sofast_temperature_analysis
+import example.sofast_fringe.sofast_command_line_tool
+
 
 # TODO: why aren't these imported from import opencsp as opencsp above
 from opencsp.app.camera_calibration import CameraCalibration
@@ -14,9 +21,6 @@ from opencsp.app.select_image_points import SelectImagePoints
 import opencsp.common.lib.cv.SpotAnalysis
 
 
-import opencsp.app.target.target_color.target_color as target_color
-
-import opencsp.common.lib.camera.CameraTransform as CameraTransform
 import opencsp.common.lib.camera.ImageAcquisition_DCAM_color
 import opencsp.common.lib.camera.ImageAcquisition_MSMF
 import opencsp.common.lib.camera.UCamera
@@ -26,9 +30,6 @@ import opencsp.common.lib.deflectometry.ParamsSlopeSolver
 import opencsp.common.lib.deflectometry.ParamsSlopeSolverAbstract
 import opencsp.common.lib.deflectometry.ParamsSlopeSolverParaboloid
 import opencsp.common.lib.deflectometry.ParamsSlopeSolverPlano
-import opencsp.common.lib.geometry.ReferenceFrame
-import opencsp.common.lib.geometry.TranslationXYZ
-import opencsp.common.lib.geometry.matrix_geometry_3d
 import opencsp.common.lib.opencsp_path.optical_analysis_data_path
 import opencsp.common.lib.process.ServerSynchronizer
 import opencsp.common.lib.process.parallel_video_tools
@@ -44,6 +45,7 @@ import opencsp.common.lib.render_control.RenderControlEvaluateHeliostats3d
 import opencsp.common.lib.render_control.RenderControlFramesNoDuplicates
 import opencsp.common.lib.render_control.RenderControlHeliostatTracks
 import opencsp.common.lib.render_control.RenderControlHeliostats3d
+import opencsp.common.lib.render_control.RenderControlIntersection
 import opencsp.common.lib.render_control.RenderControlKeyCorners
 import opencsp.common.lib.render_control.RenderControlKeyFramesGivenManual
 import opencsp.common.lib.render_control.RenderControlKeyTracks
@@ -51,6 +53,9 @@ import opencsp.common.lib.render_control.RenderControlPowerpointPresentation
 import opencsp.common.lib.render_control.RenderControlTrajectoryAnalysis
 import opencsp.common.lib.render_control.RenderControlVideoTracks
 import opencsp.common.lib.tool.dict_tools
+import opencsp.common.lib.uas.Scan
+import opencsp.common.lib.uas.ScanPass
+import opencsp.common.lib.uas.WayPoint
 
 
 class test_Docstrings(unittest.TestCase):
@@ -110,7 +115,7 @@ class test_Docstrings(unittest.TestCase):
         opencsp.app.sofast.lib.spatial_processing,
     ]
 
-    target_class_list = [target_color, opencsp.app.target.target_color.lib.ImageColor]
+    target_class_list = [opencsp.app.target.target_color.lib.ImageColor]
 
     camera_calibration_class_list = [
         opencsp.app.camera_calibration.lib.calibration_camera,
@@ -165,9 +170,10 @@ class test_Docstrings(unittest.TestCase):
         opencsp.app.sofast.lib.process_optics_geometry,
         opencsp.app.sofast.lib.sofast_common_functions,
         opencsp.app.sofast.lib.spatial_processing,
+        opencsp.app.sofast.lib.SofastInterface,
     ]
 
-    target_class_list = [target_color, opencsp.app.target.target_color.lib.ImageColor]
+    target_class_list = [opencsp.app.target.target_color.lib.ImageColor]
 
     # TODO: example_camera_calibration_list
     # TODO: example_csp_list
@@ -180,6 +186,15 @@ class test_Docstrings(unittest.TestCase):
     # TODO: example_sofast_calibration_list
     # TODO: example_sofast_fringe_list
     # TODO: example_targetcolor_list
+
+    example_list = [
+        example.sofast_fringe.sofast_temperature_analysis,
+        example.sofast_fringe.sofast_command_line_tool,
+        example.sofast_fringe.example_process_in_debug_mode,
+        example.sofast_fringe.sofast_temperature_analysis,
+        example.sofast_fringe.example_make_rectangular_screen_definition,
+        example.sofast_calibration.example_calibration_screen_shape,
+    ]
 
     app_class_list = (
         camera_calibration_class_list
@@ -225,7 +240,6 @@ class test_Docstrings(unittest.TestCase):
     ]
     camera_class_list = [
         opencsp.common.lib.camera.Camera.Camera,
-        CameraTransform,
         opencsp.common.lib.camera.ImageAcquisitionAbstract.ImageAcquisitionAbstract,
         opencsp.common.lib.camera.ImageAcquisition_DCAM_color.ImageAcquisition,
         opencsp.common.lib.camera.ImageAcquisition_DCAM_mono.ImageAcquisition,
@@ -301,19 +315,13 @@ class test_Docstrings(unittest.TestCase):
         opencsp.common.lib.geometry.LoopXY,
         opencsp.common.lib.geometry.Pxy,
         opencsp.common.lib.geometry.Pxyz,
-        opencsp.common.lib.geometry.ReferenceFrame,
         opencsp.common.lib.geometry.RegionXY,
         opencsp.common.lib.geometry.TransformXYZ,
-        opencsp.common.lib.geometry.TranslationXYZ,
         opencsp.common.lib.geometry.Uxy,
         opencsp.common.lib.geometry.Uxyz,
         opencsp.common.lib.geometry.Vxy,
         opencsp.common.lib.geometry.Vxyz,
         opencsp.common.lib.geometry.angle,
-        opencsp.common.lib.geometry.geometry_2d,
-        opencsp.common.lib.geometry.geometry_3d,
-        opencsp.common.lib.geometry.matrix_geometry_3d,
-        opencsp.common.lib.geometry.transform_3d,
     ]
 
     opencsp_path_class_list = [
@@ -427,24 +435,25 @@ class test_Docstrings(unittest.TestCase):
         cv_class_list
         + camera_class_list
         + csp_class_list
-        # + cv_class_list
-        # + deflectometry_class_list
-        # + file_class_list
-        # + geo_class_list
-        # + geometry_class_list
-        # + opencsp_path_class_list
-        # + photogrammetry_class_list
-        # + process_class_list
-        # + render_class_list
-        # + render_control_class_list
-        # + common_target_class_list
-        # + tool_class_list
-        # + uas_class_list
+        + cv_class_list
+        + deflectometry_class_list
+        + file_class_list
+        + geo_class_list
+        + geometry_class_list
+        + opencsp_path_class_list
+        + photogrammetry_class_list
+        + process_class_list
+        + render_class_list
+        + render_control_class_list
+        + common_target_class_list
+        + tool_class_list
+        + uas_class_list
     )
 
     class_list = app_class_list + common_class_list
 
     def test_docstrings_exist_for_methods(self):
+        n_docstrings = 0
         for class_module in self.class_list:
             print(class_module)
             method_list = []
@@ -478,6 +487,8 @@ class test_Docstrings(unittest.TestCase):
                 print(f"doc_exists({method_name}): " f"{doc_exists}")
                 if not doc_exists:
                     undocumented_methods.append(method)
+                else:
+                    n_docstrings += 1
 
             if len((undocumented_methods)) != 0:
                 print(f"Found undocumented methods in {class_module}:")
@@ -485,6 +496,8 @@ class test_Docstrings(unittest.TestCase):
                     print(f"\t{name}")
             assert len((undocumented_methods)) == 0
 
+        print(f"n_docstrings: {n_docstrings}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

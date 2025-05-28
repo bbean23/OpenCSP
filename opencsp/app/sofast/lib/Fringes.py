@@ -1,7 +1,13 @@
+"""Representation sinusoidal pattern (Fringe) used in a Sofast measurement."""
+
 import numpy as np
 
 
 class Fringes:
+    """Class that handles calculating the sinusoidal fringes used in a SOFAST
+    calculation. A fringe is an image whos intensity varies in either x or y
+    according to a sinusoid."""
+
     def __init__(self, periods_x: list, periods_y: list):
         """
         Representation of projected fringe images.
@@ -26,7 +32,7 @@ class Fringes:
         self.num_images = self.num_y_images + self.num_x_images
 
     @classmethod
-    def from_num_periods(cls, fringe_periods_x=4, fringe_periods_y=4) -> 'Fringes':
+    def from_num_periods(cls, fringe_periods_x=4, fringe_periods_y=4) -> "Fringes":
         """Creates fringes to be displayed during run_measurement().
 
         The fringes are displayed as sinusoidal grayscale images. A value of 1 means that only a single large sinusoidal

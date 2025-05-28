@@ -18,21 +18,26 @@ class Vxyz:
     3D vector class to represent 3D points/vectors. Contains N 3D vectors where len == N.
 
     The values for the contained vectors can be retrieved with
-    :py:meth:`data`(), or individual vectors can be retrieved with the indexing
+    :py:meth:`data`, or individual vectors can be retrieved with the indexing
     or x/y/z methods. For example, the following can both be used to get the first contained vector::
+
+    .. code-block:: python
 
         vec = v3.Vxyz([[0, 1, 2], [3, 4, 5], [6, 7, 8]])
         v0 = Vxyz([vec.x()[0], vec.y()[0], vec.z()[0]])
         # v0 == Vxyz([0, 3, 6])
         v0 = vec[0]
         # v0 == Vxyz([0, 3, 6])
+
     """
 
     def __init__(
-        self, data: Union[np.ndarray, tuple[float, float, float], tuple[list, list, list], Vxy, "Vxyz"], dtype=float
+        self, data_in: Union[np.ndarray, tuple[float, float, float], tuple[list, list, list], Vxy, "Vxyz"], dtype=float
     ):
         """
-        To represent a single vector::
+        To represent a single vector:
+
+        .. code-block:: python
 
             x = 1
             y = 2
@@ -42,7 +47,9 @@ class Vxyz:
             print(vec.y) # [2.]
             print(vec.z) # [3.]
 
-        To represent a set of vectors::
+        To represent a set of vectors:
+
+        .. code-block:: python
 
             vec1 = [1, 2, 3]
             vec2 = [4, 5, 6]
@@ -61,7 +68,7 @@ class Vxyz:
 
         Parameters
         ----------
-        data : array-like
+        data_in : array-like
             The 3d point data: 3xN array, length 3 tuple, length 3 list. If a Vxy, then the data will be padded with 0s
             for 'z'.
         dtype : data type, optional
@@ -69,21 +76,22 @@ class Vxyz:
 
         """
         # Check input shape
-        if isinstance(data, np.ndarray):
-            data = data.squeeze()
-            if np.ndim(data) not in [1, 2]:
-                raise ValueError('Input data must have 1 or 2 dimensions if ndarray.')
-            elif np.ndim(data) == 2 and data.shape[0] != 3:
-                raise ValueError('First dimension of 2-dimensional data must be length 3 if ndarray.')
-        elif isinstance(data, Vxy):
-            data = np.pad(data.data, ((0, 1), (0, 0)))
-        elif isinstance(data, Vxyz):
-            data = data.data
-        elif len(data) != 3:
-            raise ValueError('Input data must have length 3.')
+        data_tmp = data_in
+        if isinstance(data_in, np.ndarray):
+            data_tmp = data_in.squeeze()
+            if np.ndim(data_tmp) not in [1, 2]:
+                raise ValueError("Input data must have 1 or 2 dimensions if ndarray.")
+            elif np.ndim(data_tmp) == 2 and data_tmp.shape[0] != 3:
+                raise ValueError("First dimension of 2-dimensional data must be length 3 if ndarray.")
+        elif isinstance(data_in, Vxy):
+            data_tmp = np.pad(data_in.data, ((0, 1), (0, 0)))
+        elif isinstance(data_in, Vxyz):
+            data_tmp = data_in.data
+        elif len(data_in) != 3:
+            raise ValueError("Input data must have length 3.")
 
         # Save and format data
-        self._data = np.array(data, dtype=dtype).reshape((3, -1))
+        self._data = np.array(data_tmp, dtype=dtype).reshape((3, -1))
 
     @property
     def data(self) -> np.ndarray:
@@ -98,14 +106,17 @@ class Vxyz:
 
     @property
     def x(self) -> np.ndarray:
+        """The x-coordinates of the vectors."""
         return self._data[0, :]
 
     @property
     def y(self) -> np.ndarray:
+        """The y-coordinates of the vectors."""
         return self._data[1, :]
 
     @property
     def z(self) -> np.ndarray:
+        """The z-coordinates of the vectors."""
         return self._data[2, :]
 
     def as_Vxyz(self) -> "Vxyz":
@@ -153,7 +164,7 @@ class Vxyz:
             If the input v_in is not a Vxyz type object.
         """
         if not isinstance(v_in, Vxyz):
-            raise TypeError(f'Input operand must be {Vxyz}, not {type(v_in)}')
+            raise TypeError(f"Input operand must be {Vxyz}, not {type(v_in)}")
 
     def __add__(self, v_in):
         """
@@ -180,17 +191,17 @@ class Vxyz:
         elif type(data_in) is np.ndarray:
             return self._from_data(self._data * data_in)
         else:
-            raise TypeError(f'Vxyz cannot be multipled by type, {type(data_in)}.')
+            raise TypeError(f"Vxyz cannot be multipled by type, {type(data_in)}.")
 
-    def __getitem__(self, key) -> 'Vxyz':
+    def __getitem__(self, key) -> "Vxyz":
         # Check that only one dimension is being indexed
         if np.size(key) > 1 and any(isinstance(x, slice) for x in key):
-            raise ValueError('Can only index over one dimension.')
+            raise ValueError("Can only index over one dimension.")
 
         return self._from_data(self._data[:, key], dtype=self.dtype)
 
     def __repr__(self):
-        return '3D Vector:\n' + self._data.__repr__()
+        return "3D Vector:\n" + self._data.__repr__()
 
     def __len__(self):
         return self._data.shape[1]
@@ -215,7 +226,7 @@ class Vxyz:
         mag = self.magnitude()
 
         if np.any(mag == 0):
-            raise ValueError('Vector contains zero vector, cannot normalize.')
+            raise ValueError("Vector contains zero vector, cannot normalize.")
 
         return mag
 
@@ -270,7 +281,7 @@ class Vxyz:
         """
         # Check inputs
         if not isinstance(R, Rotation):
-            raise TypeError(f'Rotation must be type {Rotation}, not {type(R)}')
+            raise TypeError(f"Rotation must be type {Rotation}, not {type(R)}")
 
         V_out = self._from_data(self._data.copy())
         V_out.rotate_in_place(R)
@@ -298,7 +309,7 @@ class Vxyz:
         """
         # Check inputs
         if not isinstance(R, Rotation):
-            raise TypeError(f'Rotaion must be type {Rotation}, not {type(R)}')
+            raise TypeError(f"Rotaion must be type {Rotation}, not {type(R)}")
         self._check_is_Vxyz(V_pivot)
 
         V_out = self._from_data(self._data.copy())
@@ -323,7 +334,7 @@ class Vxyz:
         """
         # Check inputs
         if not isinstance(R, Rotation):
-            raise TypeError(f'Rotation must be type {Rotation}, not {type(R)}')
+            raise TypeError(f"Rotation must be type {Rotation}, not {type(R)}")
 
         self._data = R.apply(self._data.T).T
 
@@ -349,7 +360,7 @@ class Vxyz:
         """
         # Check inputs
         if not isinstance(R, Rotation):
-            raise TypeError(f'Rotaion must be type {Rotation}, not {type(R)}')
+            raise TypeError(f"Rotaion must be type {Rotation}, not {type(R)}")
         self._check_is_Vxyz(V_pivot)
 
         # Center pivot to origin
@@ -404,7 +415,7 @@ class Vxyz:
         # Check inputs
         self._check_is_Vxyz(V)
         if not (len(self) == 1 or len(V) == 1 or len(self) == len(V)):
-            raise ValueError('Operands must be same same length, or at least one must have length 1.')
+            raise ValueError("Operands must be same same length, or at least one must have length 1.")
 
         # Calculate
         return self._from_data(np.cross(self._data.T, V.data.T).T)
@@ -439,7 +450,7 @@ class Vxyz:
         # Check inputs
         self._check_is_Vxyz(V)
         if len(self) != 1 or len(V) != 1:
-            raise ValueError('Can only align vectors with length 1.')
+            raise ValueError("Can only align vectors with length 1.")
 
         # Normlize
         A = self.normalize()
@@ -453,7 +464,7 @@ class Vxyz:
         Rmat = np.eye(3) + Vx + np.matmul(Vx, Vx) * C
         return Rotation.from_matrix(Rmat)
 
-    def concatenate(self, V: 'Vxyz') -> 'Vxyz':
+    def concatenate(self, V: "Vxyz") -> "Vxyz":
         """
         Concatenates Vxyz to the end of current vector. Returns a copy as the
         new vector.
@@ -474,7 +485,7 @@ class Vxyz:
         z = np.concatenate((self.z, V.z))
         return Vxyz(np.array([x, y, z]))
 
-    def copy(self) -> 'Vxyz':
+    def copy(self) -> "Vxyz":
         """Returns copy of vector"""
         return Vxyz(self.data.copy())
 
@@ -491,7 +502,7 @@ class Vxyz:
         return Vxy([self.x.copy(), self.y.copy()])
 
     @classmethod
-    def from_lifted_points(cls, v: Vxy, func: Callable) -> 'Vxyz':
+    def from_lifted_points(cls, v: Vxy, func: Callable) -> "Vxyz":
         """Returns Vxyz from a Vxy and a function of form: z = func(x, y).
 
         Parameters
@@ -532,7 +543,7 @@ class Vxyz:
         return np.isnan(self.data).any()
 
     @classmethod
-    def merge(cls, V_list: list['Vxyz']):
+    def merge(cls, V_list: list["Vxyz"]):
         """Merges list of multiple Vxyz objects into one Vxyz.
 
         Parameters
@@ -568,20 +579,20 @@ class Vxyz:
 
         Parameters
         ----------
-        figure : rcfr.RenderControlFigureRecord | v3d.View3d
+        figure : rcfr.RenderControlFigureRecord or v3d.View3d
             The figure to draw to.
         close : bool, optional
             True to add the first point again at the end of the plot, thereby
             drawing this set of points as a closed polygon. None or False to not
-            add another point at the end (draw_xyz_list's default)
+            add another point at the end (draw_xyz_list default)
         style : rcps.RenderControlPointSeq, optional
             The style to use for the points and lines, or None for
-            :py:method:`RenderControlPointSequence.default`().
+            :py:meth:`RenderControlPointSequence.default`.
         label : str, optional
             A string used to label this plot in the legend, or None for no label.
         """
         kwargs = dict()
-        for key, val in [('close', close), ('style', style), ('label', label)]:
+        for key, val in [("close", close), ("style", style), ("label", label)]:
             if val is not None:
                 kwargs[key] = val
 
@@ -606,10 +617,10 @@ class Vxyz:
         close : bool, optional
             True to add the first point again at the end of the plot, thereby
             drawing this set of points as a closed polygon. None or False to not
-            add another point at the end (draw_xyz_list's default).
+            add another point at the end (draw_xyz_list default).
         style : rcps.RenderControlPointSeq, optional
             The style to use for the points and lines, or None for
-            :py:method:`RenderControlPointSequence.default`().
+            :py:meth:`RenderControlPointSequence.default`.
         label : str, optional
             A string used to label this plot in the legend, or None for no label.
         """

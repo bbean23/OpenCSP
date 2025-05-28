@@ -1,6 +1,5 @@
 import copy
 import csv
-from typing import Iterable
 import numpy as np
 
 from scipy.spatial.transform import Rotation
@@ -10,13 +9,9 @@ from opencsp.common.lib.csp.FacetEnsemble import FacetEnsemble
 from opencsp.common.lib.csp.HeliostatAbstract import HeliostatAbstract
 from opencsp.common.lib.csp.HeliostatConfiguration import HeliostatConfiguration
 from opencsp.common.lib.csp.MirrorAbstract import MirrorAbstract
-import opencsp.common.lib.csp.sun_track as st
-from opencsp.common.lib.geometry.FunctionXYContinuous import FunctionXYContinuous
 from opencsp.common.lib.geometry.Pxyz import Pxyz
 from opencsp.common.lib.geometry.TransformXYZ import TransformXYZ
 from opencsp.common.lib.geometry.Vxyz import Vxyz
-from opencsp.common.lib.tool.typing_tools import strict_types
-import pandas as pd
 
 EAST = Vxyz([1, 0, 0])
 WEST = -EAST
@@ -81,7 +76,7 @@ class HeliostatAzEl(HeliostatAbstract):
         name: str = None,
         facet_names: list[str] = None,
         pivot: float = 0,
-    ) -> 'HeliostatAzEl':
+    ) -> "HeliostatAzEl":
         """
         Creates a Heliostat of identical mirrors as given by the facet_template.
         Positions the facets as given by the attributes
@@ -108,7 +103,7 @@ class HeliostatAzEl(HeliostatAbstract):
         heliostat_attributes_csv: str,
         facet_attributes_csv: str,
         mirror_template: MirrorAbstract,
-    ) -> tuple['HeliostatAzEl', Pxyz]:
+    ) -> tuple["HeliostatAzEl", Pxyz]:
         """returns the heliostat that is requested based on the given information
 
         Paramters
@@ -190,7 +185,7 @@ class HeliostatAzEl(HeliostatAbstract):
         nu = np.arctan2(n_y, n_x)
         az = (np.pi / 2) - nu  # Measured cw from the y axis.
 
-        return HeliostatConfiguration('az-el', az, el)
+        return HeliostatConfiguration("az-el", az, el)
 
     # override from HelistatAbstract
     def movement_transform(self, config: HeliostatConfiguration):
@@ -200,7 +195,7 @@ class HeliostatAzEl(HeliostatAbstract):
     # override from HelistatAbstract
     @property
     def current_configuration(self) -> HeliostatConfiguration:
-        return HeliostatConfiguration('az-el', az=self._az, el=self._el)
+        return HeliostatConfiguration("az-el", az=self._az, el=self._el)
 
     # override from HelistatAbstract
     @current_configuration.setter
@@ -219,10 +214,10 @@ class HeliostatAzEl(HeliostatAbstract):
         # rotation_about_z = -az_angle
         # rotation_about_x = -el_angle
 
-        el_rotation = Rotation.from_euler('x', rotation_about_x, degrees=False)
+        el_rotation = Rotation.from_euler("x", rotation_about_x, degrees=False)
         transform_el = TransformXYZ.from_R(el_rotation)
 
-        az_rotation = Rotation.from_euler('z', rotation_about_z, degrees=False)
+        az_rotation = Rotation.from_euler("z", rotation_about_z, degrees=False)
         transform_az = TransformXYZ.from_R(az_rotation)
 
         # el_rotation_axis: np.ndarray = UP.rotate(az_rotation).data.T[0]
@@ -243,7 +238,7 @@ class HeliostatAzEl(HeliostatAbstract):
         self._el = el_angle
         transform = self.transform_from_az_el(az_angle, el_angle)
         self.facet_ensemble._self_to_parent_transform = transform
-        config = HeliostatConfiguration('az-el', az=az_angle, el=el_angle)
+        config = HeliostatConfiguration("az-el", az=az_angle, el=el_angle)
         self.set_orientation(config)
 
     pass  # end of HeliostatAzEl
