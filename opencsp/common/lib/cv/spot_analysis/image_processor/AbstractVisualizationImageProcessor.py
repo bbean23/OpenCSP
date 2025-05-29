@@ -308,9 +308,10 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         Notes
         -----
         - The figure size is determined based on the pixel dimensions of the
-        primary image.
+           primary image.
         - The method assumes that the `primary_image` attribute of the operable
-        contains a valid NumPy array representation of the image.
+          contains a valid NumPy array representation of the image.
+
         """
         # ChatGPT 4o-mini assisted with generating this docstring
         (height_px, width_px), nchannel = it.dims_and_nchannels(operable.primary_image.nparray)
