@@ -5,7 +5,7 @@ import matplotlib.axes
 import matplotlib.backend_bases
 import numpy as np
 
-from contrib.common.lib.cv.spot_analysis.PixelLocation import PixelOfInterest
+from contrib.common.lib.cv.spot_analysis.PixelOfInterest import PixelOfInterest
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 import opencsp.common.lib.cv.image_reshapers as ir
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
@@ -87,13 +87,8 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.plot_title = plot_title
 
         # initialize certain visualization values
-<<<<<<< HEAD
-        self.horizontal_style = rcps.RenderControlPointSeq(color="red", marker="None")
-        self.vertical_style = rcps.RenderControlPointSeq(color="blue", marker="None")
-=======
         self.horizontal_style = rcps.RenderControlPointSeq(color=color.magenta(), linewidth=2, marker='None')
         self.vertical_style = rcps.RenderControlPointSeq(color=color.plot_colors["brown"], linewidth=2, marker='None')
->>>>>>> 7d32f592 (update most spot analysis image processors in common/lib/cv/spot_analysis/image_processor)
 
         # declare future values
         self.view_specs: list[dict]
@@ -113,6 +108,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     def init_figure_records(
         self, render_control_figure: rcfg.RenderControlFigure
     ) -> list[rcfr.RenderControlFigureRecord]:
+        
         self.view_specs = []
         self.rc_axises = []
         self.fig_records = []
@@ -137,23 +133,10 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             plot_titles = ["Image", "Horizontal CS: ", "Vertical CS: "]
 
         for plot_title in plot_titles:
-<<<<<<< HEAD
-            if self.single_plot:
-                rc_axis = rca.RenderControlAxis(x_label="index", y_label="value")
-                name_suffix = ""
-            else:
-                if "Horizontal" in plot_title:
-                    rc_axis = rca.RenderControlAxis(x_label="x", y_label="value")
-                    name_suffix = " (Horizontal)"
-                else:
-                    rc_axis = rca.RenderControlAxis(x_label="y", y_label="value")
-                    name_suffix = " (Vertical)"
-=======
             if plot_title == "Image":
                 rc_axis = rca.RenderControlAxis()
                 view_spec = vs.view_spec_pq()
                 fig_record = setup_figure(rc_axis, view_spec, "Cross Sections")
->>>>>>> 7d32f592 (update most spot analysis image processors in common/lib/cv/spot_analysis/image_processor)
 
             else:
                 if self.single_plot:

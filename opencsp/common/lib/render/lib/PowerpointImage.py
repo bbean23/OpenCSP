@@ -332,7 +332,7 @@ class PowerpointImage(pps.PowerpointShape):
             self.save()
 
         # get the width and height
-        image_width, image_height = self.shape
+        image_width, image_height = self.get_size()
 
         # check if the size is reasonable (within reduced_image_size_scale% of the target size)
         reasonable = reduced_image_size_scale
@@ -551,11 +551,15 @@ class PowerpointImage(pps.PowerpointShape):
         return ft.join(cls._tmp_save_path, ret)
 
     def update_save_path(self, save_path: str):
+        """Set the path where the image and its associated serialized text will be saved.
+
+        If the image has already been saved, it will move the existing image
+        and text files to the new save path.
+
+        Args:
+            save_path (str): The new directory path where the image should be saved.
         """
-        Updates the path of the saved image data and associated serialized text
-        file to the given save_path, moving any saved files from the old path to
-        the new path.
-        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if self.is_saved_to_file():
             to_rename = [self.get_saved_path(), self.get_text_file_path()]
             for path_name_ext in to_rename:
