@@ -54,7 +54,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         """
         Parameters
         ----------
-        cross_section_location : Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelLocation
+        cross_section_location : Callable[[SpotAnalysisOperable], tuple[int, int]] | tuple[int, int] | str | PixelOfInterest
             The (x, y) pixel location to take cross sections through.
         single_plot : bool, optional
             If True, then draw both the horizational and vertical cross section
