@@ -790,6 +790,7 @@ def rename_file(input_dir_body_ext: str, output_dir_body_ext: str, is_file_check
                 f"Error: In rename_file(), failed to find output file after rename: '{input_dir_body_ext}' --> '{output_dir_body_ext}'",
             )
 
+
 def rename_directory(input_dir: str, output_dir: str):
     """Move a directory from input to output.
 

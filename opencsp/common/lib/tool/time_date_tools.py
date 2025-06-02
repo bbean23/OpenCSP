@@ -130,6 +130,7 @@ def current_date_time_string_forfile() -> str:
     now = datetime.now()
     return date_time_string_forfile(now)
 
+
 def current_time() -> float:
     """
     Get the current time in seconds since the epoch.
