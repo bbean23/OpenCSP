@@ -108,7 +108,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     def init_figure_records(
         self, render_control_figure: rcfg.RenderControlFigure
     ) -> list[rcfr.RenderControlFigureRecord]:
-        
+
         self.view_specs = []
         self.rc_axises = []
         self.fig_records = []
