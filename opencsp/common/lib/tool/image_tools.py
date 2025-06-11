@@ -376,7 +376,7 @@ def set_exif_value(data_dir: str, image_path_name_ext: str, exif_val: str, exif_
     handling code is currently commented out and requires implementation).
 
     Parameters:
-    ----------
+    -----------
     data_dir : str
         The directory where the image file is located.
 
@@ -390,12 +390,12 @@ def set_exif_value(data_dir: str, image_path_name_ext: str, exif_val: str, exif_
         The name of the EXIF tag to set (default is "EXIF:ISO").
 
     Raises:
-    ------
+    -------
     exiftool.exceptions.ExifToolExecuteError
         If the ExifTool encounters an error while attempting to set the EXIF tag.
 
     Notes:
-    -----
+    ------
     The function currently contains commented-out code for handling poorly
     formatted images by rewriting them using the Pillow library. This
     functionality is intended to be implemented in the future.
