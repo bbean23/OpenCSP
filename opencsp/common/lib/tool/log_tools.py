@@ -348,74 +348,7 @@ def error_and_raise(exception_class: Exception.__class__, msg: str, base_excepti
         lt.logger(home_dir() + 'current.log')
         lt.error_and_raise(ValueError, 'In my_function(), non-positive value x=' + str(x) + ' encountered.')
 
-    See https://docs.python.org/3/library/exceptions.html for a list of built-in exceptions::
-
-        BaseException
-        ├── BaseExceptionGroup
-        ├── GeneratorExit
-        ├── KeyboardInterrupt
-        ├── SystemExit
-        └── Exception
-            ├── ArithmeticError
-            │    ├── FloatingPointError
-            │    ├── OverflowError
-            │    └── ZeroDivisionError
-            ├── AssertionError
-            ├── AttributeError
-            ├── BufferError
-            ├── EOFError
-            ├── ImportError
-            │    └── ModuleNotFoundError
-            ├── LookupError
-            │    ├── IndexError
-            │    └── KeyError
-            ├── MemoryError
-            ├── NameError
-            │    └── UnboundLocalError
-            ├── OSError
-            │    ├── BlockingIOError
-            │    ├── ChildProcessError
-            │    ├── ConnectionError
-            │    │    ├── BrokenPipeError
-            │    │    ├── ConnectionAbortedError
-            │    │    ├── ConnectionRefusedError
-            │    │    └── ConnectionResetError
-            │    ├── FileExistsError
-            │    ├── FileNotFoundError
-            │    ├── InterruptedError
-            │    ├── IsADirectoryError
-            │    ├── NotADirectoryError
-            │    ├── PermissionError
-            │    ├── ProcessLookupError
-            │    └── TimeoutError
-            ├── ReferenceError
-            ├── RuntimeError
-            │    ├── NotImplementedError
-            │    └── RecursionError
-            ├── StopAsyncIteration
-            ├── StopIteration
-            ├── SyntaxError
-            │    └── IndentationError
-            │         └── TabError
-            ├── SystemError
-            ├── TypeError
-            ├── ValueError
-            │    └── UnicodeError
-            │         ├── UnicodeDecodeError
-            │         ├── UnicodeEncodeError
-            │         └── UnicodeTranslateError
-            └── Warning
-                ├── BytesWarning
-                ├── DeprecationWarning
-                ├── EncodingWarning
-                ├── FutureWarning
-                ├── ImportWarning
-                ├── PendingDeprecationWarning
-                ├── ResourceWarning
-                ├── RuntimeWarning
-                ├── SyntaxWarning
-                ├── UnicodeWarning
-                └── UserWarning
+    See https://docs.python.org/3/library/exceptions.html for a list of built-in exceptions.
     """
     msg = str(msg)  # Ensure that message is a string, to enable concatenation.
     error(msg)
@@ -485,22 +418,22 @@ def log_progress(
 
     Parameters
     ----------
-    percentage : int | float
-        The current progress. If an integer, than the range is clipped to 0-100.
+    percentage : int or float
+        The current progress. If an integer, then the range is clipped to 0-100.
         If a float, then the range is clipped to 0-1, unless >1 then it is cast
         to an integer.
-    carriage_return : bool | 'auto', optional
-        If True, then a carriage return '\r' is printed instead of a newline, which will cause the next line printed to overwrite this line.
-        This can be used to "draw" the progress interactively in the terminal.
-        If 'auto', then this will be True when percentage != 100.
-        By default 'auto'.
+
+    carriage_return : bool or 'auto', optional
+        If True, then a carriage return is printed instead of a newline, which will cause the next line printed to overwrite this line. This can be used to "draw" the progress interactively in the terminal. If 'auto', then this will be True when percentage != 100. By default 'auto'.
+
     prev_percentage: int, optional
         If not None, then this is compared to the given percentage. If they are the same then nothing is printed.
 
     Returns
     -------
-    percentage: int
+    percentage : int
         The value printed, in the range 0-100. Can be passed into the next call as prev_percentage.
+
     """
     if isinstance(percentage, int):
         percentage = int(np.clip(percentage, 0, 100))
