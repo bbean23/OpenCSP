@@ -300,6 +300,24 @@ def getsizeof_approx(img: Image) -> int:
 
     return object_size + image_data_size
 
+
+def _import_exiftool():
+    # TODO should exiftool be added to requirements.txt?
+    # This also requires the installation of Phil Harvey's ExifTool.
+    # https://pypi.org/project/PyExifTool/
+    # https://exiftool.org/
+    try:
+        import exiftool
+    except ImportError:
+        lt.error_and_raise(
+            ImportError,
+            "Error in image_tools._import_exiftool(): "
+            + "exiftool is not currently installed as a standard part of OpenCSP."
+            + " To use exif information with OpenCSP, please follow the installation instructions at "
+            + "https://pypi.org/project/PyExifTool/#getting-pyexiftool.",
+        )
+
+
 def get_exif_value(
     data_dir: str, image_path_name_exts: str | list[str], exif_val: str = "EXIF:ISO", parser: Callable[[str], T] = int
 ) -> T | list[T]:
