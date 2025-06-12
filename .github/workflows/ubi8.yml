@@ -40,5 +40,5 @@ jobs:
         run: |
           python3 -m pip install -r ../requirements.txt
           export PYTHONPATH=$PWD/../
-          cat /__w/OpenCSP/OpenCSP/OpenCSP/opencsp/common/lib/render/test/data/output/ImageAttributeParser/nonexistant_image_test_with_attrfile.txt
+          find / -name "nonexistant_image_test_with_attrfile.txt" -exec cat {} \;
           pytest --color=yes -rs -vv --cov=. --cov-report term --cov-config=.coveragerc
