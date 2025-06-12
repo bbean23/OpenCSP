@@ -48,4 +48,5 @@ jobs:
           set PYTHONPATH="$PWD\.."
           echo "$PYTHONPATH"
           $env:PYTHONPATH="$PWD\.."
+          Get-ChildItem -Path "$PWD\.." -Filter "nonexistant_image_test_with_attrfile.txt" -Recurse | Get-Content
           pytest --color=yes -rs -vv --cov=. --cov-report term --cov-config=.coveragerc
