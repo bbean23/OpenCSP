@@ -40,5 +40,4 @@ jobs:
         run: |
           python3 -m pip install -r ../requirements.txt
           export PYTHONPATH=$PWD/../
-          find / -name "nonexistant_image_test_with_attrfile.txt" -exec sh -c 'echo "File: {}"; cat "{}"' \;
           pytest --color=yes -rs -vv --cov=. --cov-report term --cov-config=.coveragerc

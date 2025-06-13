@@ -48,5 +48,4 @@ jobs:
           set PYTHONPATH="$PWD\.."
           echo "$PYTHONPATH"
           $env:PYTHONPATH="$PWD\.."
-          Get-ChildItem -Path "$PWD\.." -Filter "nonexistant_image_test_with_attrfile.txt" -Recurse | ForEach-Object { Write-Host "File: $($_.FullName)"; Get-Content $_.FullName }
           pytest --color=yes -rs -vv --cov=. --cov-report term --cov-config=.coveragerc
