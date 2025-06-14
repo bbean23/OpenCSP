@@ -2476,6 +2476,30 @@ class TestMotionBasedCanting(to.TestOutput):
                 row.append('')
             row.append(azimuth)
             row.append(elevation)
+            if facet < len(sun_ray_x):
+                row.append(str(sun_ray_x[facet]).strip("[]"))
+            else:
+                row.append('')
+            if facet < len(sun_ray_y):
+                row.append(str(sun_ray_y[facet]).strip("[]"))
+            else:
+                row.append('')
+            if facet < len(sun_ray_z):
+                row.append(str(sun_ray_z[facet]).strip("[]"))
+            else:
+                row.append('')
+            if facet < len(reflected_ray_x):
+                row.append(str(reflected_ray_x[facet]).strip("[]"))
+            else:
+                row.append('')
+            if facet < len(reflected_ray_y):
+                row.append(str(reflected_ray_y[facet]).strip("[]"))
+            else:
+                row.append('')
+            if facet < len(reflected_ray_z):
+                row.append(str(reflected_ray_z[facet]).strip("[]"))
+            else:
+                row.append('')
             if facet < len(tracking_f_origin_x):
                 row.append(str(tracking_f_origin_x[facet]).strip("[]"))
             else:
@@ -2578,6 +2602,12 @@ class TestMotionBasedCanting(to.TestOutput):
                     'Face Up Surface Normal Z',
                     'Tracking Az (rad)',
                     'Tracking El (rad)',
+                    'Sun Ray X',
+                    'Sun Ray Y',
+                    'Sun Ray Z',
+                    'Reflected Ray X',
+                    'Reflected Ray Y',
+                    'Reflected Ray Z',
                     'Tracking Facet Origin X (m)',
                     'Tracking Facet Origin Y (m)',
                     'Tracking Facet Origin Z (m)',
