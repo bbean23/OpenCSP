@@ -87,6 +87,19 @@ class RenderControlFacet:
         self.mirror_styles = mirror_styles
 
     def style(self, imput_name: str):
+        """
+        Gets the style for the given name. Always returns self for the current implement.
+
+        Parameters
+        ----------
+        imput_name : str
+            The name to get the style for. Ignored in the current implementation.
+
+        Returns
+        -------
+        style : RenderControlFacet
+            The style associated with the name.
+        """
         return self
 
 

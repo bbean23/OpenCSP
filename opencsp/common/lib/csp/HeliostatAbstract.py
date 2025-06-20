@@ -181,9 +181,11 @@ class HeliostatAbstract(RayTraceable, OpticOrientationAbstract, ABC):
     # MODIFICATION
 
     def set_facet_positions(self, positions: Pxyz):
+        """See :py:meth:`FacetEnsemble.set_facet_positions`"""
         self.facet_ensemble.set_facet_positions(positions)
 
     def set_facet_cantings(self, canting_rotations: list[Rotation]):
+        """See :py:meth:`FacetEnsemble.set_facet_cantings`"""
         self.facet_ensemble.set_facet_cantings(canting_rotations)
 
     # TODO TJL:make this work and make it faster
