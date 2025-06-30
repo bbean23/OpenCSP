@@ -45,7 +45,7 @@ class AbstractAttributeParser(ABC):
         pass
 
     @abstractmethod
-    def set_defaults(self, other: 'AbstractAttributeParser'):
+    def set_defaults(self, other: "AbstractAttributeParser"):
         """Replaces this instance's None-valued contents with non-None-valued
         contents from the given other of the same parser type."""
         raise NotImplementedError()
@@ -200,6 +200,10 @@ class AbstractAttributeParser(ABC):
 
     @classmethod
     def RegisterClass(cls):
+        """
+        Registers this AbstractAttributeParser subclass with the AttributesManager,
+        allowing it to be used for parsing and saving attributes files.
+        """
         import opencsp.common.lib.file.AttributesManager as am
 
         am.AttributesManager._register_parser_class(cls)

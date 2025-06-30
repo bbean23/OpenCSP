@@ -22,8 +22,10 @@ import opencsp.common.lib.tool.time_date_tools as tdt
 
 class TargetColor(TargetAbstract):
     """
-    Target implementation # ?? SCAFFOLDING RCB -- FILL-IN
+    Target implementation for managing color patterns on a canvas.
     """
+
+    # "ChatGPT 4o" assisted with generating this docstring.
 
     # CONSTRUCTION
     def __init__(
@@ -33,6 +35,21 @@ class TargetColor(TargetAbstract):
         dpm: float,  # dots per meter
         initial_color: cl.Color,  # Color to fill canvas before adding patterns.
     ) -> None:
+        """
+        Initializes the TargetColor instance with specified dimensions and initial color.
+
+        Parameters
+        ----------
+        image_width : float
+            The width of the image in meters.
+        image_height : float
+            The height of the image in meters.
+        dpm : float
+            Dots per meter for the image resolution.
+        initial_color : cl.Color
+            The color to fill the canvas before adding patterns.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         super().__init__(image_width, image_height, dpm)  # initalizes the attributes universal to all mirrors
         # Set initial pattern.
         self.initial_color = initial_color
@@ -56,23 +73,61 @@ class TargetColor(TargetAbstract):
     def rows_cols(
         self,
     ):  # ?? SCAFFOLDING RCB -- MODIFY TO USE BASE CLASS ROWS_COLS_BANDS() ACCESSOR, AND THEN APPLY COLOR-SPECIFIC TEST.
+        """
+        Returns the number of rows and columns in the image.
+
+        Returns
+        -------
+        tuple
+            A tuple containing the number of rows and columns in the image.
+
+        Raises
+        ------
+        AssertionError
+            If the number of image bands is not equal to 3.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows = self.image.shape[0]
         n_cols = self.image.shape[1]
         n_bands = self.image.shape[2]
         if n_bands != 3:
-            print('ERROR: In TargetAbstract.row_cols(), number of input image bands is not 3.')
+            print("ERROR: In TargetAbstract.row_cols(), number of input image bands is not 3.")
             assert False  # ?? SCAFFOLDING RCB -- CONVERT TO EXCEPTION
         return n_rows, n_cols
 
     # MODIFICATION
 
     def set_pattern_description(self, description: str) -> None:
+        """
+        Sets the pattern description for the target color.
+
+        Parameters
+        ----------
+        description : str
+            The description of the color pattern.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         self.pattern_description = description
 
     # Linear color bar, x direction
     def set_image_to_linear_color_bar_x(
         self, color_below_min: cl, color_bar, color_above_max: cl, discrete_or_continuous: str
     ) -> None:
+        """
+        Sets the image to a linear color bar in the x direction.
+
+        Parameters
+        ----------
+        color_below_min : cl
+            The color to use for values below the minimum.
+        color_bar :
+            The color bar to use for mapping values.
+        color_above_max : cl
+            The color to use for values above the maximum.
+        discrete_or_continuous : str
+            Specifies whether the color bar is discrete or continuous.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         for row in range(0, n_rows):
             for col in range(0, n_cols):
@@ -99,7 +154,7 @@ class TargetColor(TargetAbstract):
         color_above_max: cl,
         discrete_or_continuous: str,
         # Defines scheme for modulating saturation from left to right.  Values: None, 'saturated_to_white' or 'light_to_saturated'
-        lateral_gradient_type: str = 'saturated_to_white',
+        lateral_gradient_type: str = "saturated_to_white",
         # Dimensionless.  Applies if lateral_gradient_type == 'saturated_to_white'.
         saturated_to_white_exponent: float = 1.5,
         # Dimensionless.  Applies if lateral_gradient_type == 'light_to_saturated'.
@@ -107,6 +162,30 @@ class TargetColor(TargetAbstract):
         # Dimensionless.  Applies if lateral_gradient_type == 'light_to_saturated'.
         light_to_saturated_max: float = 1.0,
     ) -> None:
+        """
+        Sets the image to a linear color bar in the y direction.
+
+        Parameters
+        ----------
+        color_below_min : cl
+            The color to use for values below the minimum.
+        color_bar :
+            The color bar to use for mapping values.
+        color_above_max : cl
+            The color to use for values above the maximum.
+        discrete_or_continuous : str
+            Specifies whether the color bar is discrete or continuous.
+        lateral_gradient_type : str, optional
+            Defines the scheme for modulating saturation from left to right.
+            Values: None, 'saturated_to_white', or 'light_to_saturated'.
+        saturated_to_white_exponent : float, optional
+            Dimensionless exponent applied if lateral_gradient_type is 'saturated_to_white'.
+        light_to_saturated_min : float, optional
+            Dimensionless minimum value applied if lateral_gradient_type is 'light_to_saturated'.
+        light_to_saturated_max : float, optional
+            Dimensionless maximum value applied if lateral_gradient_type is 'light_to_saturated'.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         for row in range(0, n_rows):
             for col in range(0, n_cols):
@@ -172,7 +251,7 @@ class TargetColor(TargetAbstract):
                         this_blue = 255
                 else:
                     print(
-                        'ERROR: In TargetColor.set_image_to_linear_color_bar_y(), encountered unexpected lateral_gradient_type = '
+                        "ERROR: In TargetColor.set_image_to_linear_color_bar_y(), encountered unexpected lateral_gradient_type = "
                         + str(lateral_gradient_type)
                     )
                     assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
@@ -191,12 +270,12 @@ class TargetColor(TargetAbstract):
         color_bar=tcc.O_color_bar(),
         color_above_max: cl = cl.white(),  # Color to use for values of max limit of color bar.
         # 'discrete' or 'continuous'  # ?? SCAFFOLDING RCB -- RENAME TO "color_interpolation_type" ?
-        discrete_or_continuous: str = 'continuous',
+        discrete_or_continuous: str = "continuous",
         # Modulating saturation with radius.
         # Defines range for saturation modulation as a function of radius.  Values: 'circle' or 'image_boundary'
-        pattern_boundary: str = 'image_boundary',
+        pattern_boundary: str = "image_boundary",
         # Defines scheme for modulating saturation as a function of radius.  Values: 'saturated_center_to_white' or 'light_center_to_saturated'
-        radial_gradient_type: str = 'saturated_center_to_white',
+        radial_gradient_type: str = "saturated_center_to_white",
         # Dimensionless.  Applies if radial_gradient_type == 'saturated_center_to_white'.
         saturated_center_to_white_exponent: float = 1.5,
         # Dimensionless.  Applies if radial_gradient_type == 'light_center_to_saturated'.
@@ -214,6 +293,59 @@ class TargetColor(TargetAbstract):
         tick_width_pix=3,  # Pixels.    Width to draw edge tick marks; should be odd number.
         tick_color: cl = cl.black(),  # Color.     Color of edge tick marks.
     ) -> None:
+        """
+        Sets the image to a polar color bar based on angular values.
+
+        This method generates a polar color bar where the color is controlled by the angle,
+        and the saturation is modulated by the radius from the center of the image.
+
+        Parameters
+        ----------
+        color_below_min : cl, optional
+            The color to use for values below the minimum limit of the color bar. Default is black.
+        color_bar :
+            The color bar for angular values in the range [0, 2π). Default is a predefined color bar.
+        color_above_max : cl, optional
+            The color to use for values above the maximum limit of the color bar. Default is white.
+        discrete_or_continuous : str, optional
+            Specifies whether the color interpolation is 'discrete' or 'continuous'. Default is 'continuous'.
+        pattern_boundary : str, optional
+            Defines the range for saturation modulation as a function of radius.
+            Values can be 'circle' or 'image_boundary'. Default is 'image_boundary'.
+        radial_gradient_type : str, optional
+            Defines the scheme for modulating saturation as a function of radius.
+            Values can be 'saturated_center_to_white' or 'light_center_to_saturated'. Default is 'saturated_center_to_white'.
+        saturated_center_to_white_exponent : float, optional
+            Dimensionless exponent applied if radial_gradient_type is 'saturated_center_to_white'. Default is 1.5.
+        light_center_to_saturated_saturation_min : float, optional
+            Dimensionless minimum saturation value applied if radial_gradient_type is 'light_center_to_saturated'. Default is 0.2.
+        light_center_to_saturated_saturation_max : float, optional
+            Dimensionless maximum saturation value applied if radial_gradient_type is 'light_center_to_saturated'. Default is 1.0.
+        draw_center_fiducial : bool, optional
+            Whether to draw a mark at the target center. Default is True.
+        center_fiducial_width_pix : int, optional
+            Width of the center fiducial in pixels; should be an odd number. Default is 3.
+        center_fiducial_color : cl, optional
+            Color of the center fiducial. Default is black.
+        draw_edge_fiducials : bool, optional
+            Whether to draw fiducial tick marks along the target edges. Default is True.
+        n_ticks_x : int, optional
+            Number of tick marks to draw along the top and bottom horizontal target edges. Default is 7.
+        n_ticks_y : int, optional
+            Number of tick marks to draw along the left and right vertical target edges. Default is 7.
+        tick_length : float, optional
+            Length to draw edge tick marks in meters. Default is 0.025.
+        tick_width_pix : int, optional
+            Width to draw edge tick marks in pixels; should be an odd number. Default is 3.
+        tick_color : cl, optional
+            Color of edge tick marks. Default is black.
+
+        Raises
+        ------
+        AssertionError
+            If an unexpected value is encountered for pattern_boundary or radial_gradient_type.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         center_row = n_rows / 2.0
         center_col = n_cols / 2.0
@@ -239,10 +371,10 @@ class TargetColor(TargetAbstract):
                 )
                 # Compute saturation adjustment.
                 # Determine the radius to use for scaling the saturation.
-                if pattern_boundary == 'circle':
+                if pattern_boundary == "circle":
                     # Circle
                     radius_for_this_angle = radius
-                elif pattern_boundary == 'image_boundary':
+                elif pattern_boundary == "image_boundary":
                     # Rectangle
                     if math.sin(this_angle) == 0:
                         radius_for_this_angle = abs(half_width / math.cos(this_angle))
@@ -316,7 +448,7 @@ class TargetColor(TargetAbstract):
                         this_blue = 255
                 else:
                     print(
-                        'ERROR: In TargetColor.set_image_to_polar_color_bar(), encountered unexpected radial_gradient_type = '
+                        "ERROR: In TargetColor.set_image_to_polar_color_bar(), encountered unexpected radial_gradient_type = "
                         + str(radial_gradient_type)
                     )
                     assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
@@ -338,6 +470,17 @@ class TargetColor(TargetAbstract):
 
     # Fiducial tick marks.
     def set_center_fiducial(self, center_fiducial_width_pix, center_fiducial_color):
+        """
+        Draws a center fiducial mark on the image.
+
+        Parameters
+        ----------
+        center_fiducial_width_pix : int
+            The width of the center fiducial in pixels; should be an odd number.
+        center_fiducial_color : cl
+            The color of the center fiducial.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         width = n_cols
         height = n_rows
@@ -362,12 +505,27 @@ class TargetColor(TargetAbstract):
                         self.set_fiducial_pixel(this_row, this_col, center_fiducial_color)
         else:
             print(
-                'ERROR: In TargetColor.set_center_fiducial(), unexpected negative center_fiducial_half_margin_pix = '
+                "ERROR: In TargetColor.set_center_fiducial(), unexpected negative center_fiducial_half_margin_pix = "
                 + str(center_fiducial_half_margin_pix)
             )
             assert False  # ?? SCAFFOLDING RCB -- CONVERT TO EXCEPTION.
 
     def set_ticks_along_top_and_bottom_edges(self, n_ticks_x, tick_length, tick_width_pix, tick_color):
+        """
+        Draws tick marks along the top and bottom edges of the image.
+
+        Parameters
+        ----------
+        n_ticks_x : int
+            Number of tick marks to draw along the top and bottom horizontal target edges.
+        tick_length : float
+            Length to draw edge tick marks in meters.
+        tick_width_pix : int
+            Width to draw edge tick marks in pixels; should be an odd number.
+        tick_color : cl
+            Color of edge tick marks.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         width = n_cols
         dx_tick = width / (n_ticks_x - 1)
@@ -395,12 +553,27 @@ class TargetColor(TargetAbstract):
                             self.set_fiducial_pixel(this_row_from_bottom, this_col, tick_color)
                 else:
                     print(
-                        'ERROR: In TargetColor.set_ticks_along_top_and_bottom_edges(), unexpected negative tick_half_margin_pix = '
+                        "ERROR: In TargetColor.set_ticks_along_top_and_bottom_edges(), unexpected negative tick_half_margin_pix = "
                         + str(tick_half_margin_pix)
                     )
                     assert False  # ?? SCAFFOLDING RCB -- CONVERT TO EXCEPTION.
 
     def set_ticks_along_left_and_right_edges(self, n_ticks_y, tick_length, tick_width_pix, tick_color):
+        """
+        Draws tick marks along the left and right edges of the image.
+
+        Parameters
+        ----------
+        n_ticks_y : int
+            Number of tick marks to draw along the left and right vertical target edges.
+        tick_length : float
+            Length to draw edge tick marks in meters.
+        tick_width_pix : int
+            Width to draw edge tick marks in pixels; should be an odd number.
+        tick_color : cl
+            Color of edge tick marks.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         height = n_rows
         dy_tick = height / (n_ticks_y - 1)
@@ -428,12 +601,25 @@ class TargetColor(TargetAbstract):
                             self.set_fiducial_pixel(this_row, this_col_from_right, tick_color)
                 else:
                     print(
-                        'ERROR: In TargetColor.set_ticks_along_left_and_right_edges(), unexpected negative tick_half_margin_pix = '
+                        "ERROR: In TargetColor.set_ticks_along_left_and_right_edges(), unexpected negative tick_half_margin_pix = "
                         + str(tick_half_margin_pix)
                     )
                     assert False  # ?? SCAFFOLDING RCB -- CONVERT TO EXCEPTION.
 
     def set_fiducial_pixel(self, this_row: int, this_col: int, color: cl) -> None:
+        """
+        Sets a pixel in the image to the specified color.
+
+        Parameters
+        ----------
+        this_row : int
+            The row index of the pixel to set.
+        this_col : int
+            The column index of the pixel to set.
+        color : cl
+            The color to set the pixel to.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         if (this_row >= 0) and (this_row < n_rows):
             if (this_col >= 0) and (this_col < n_cols):
@@ -443,17 +629,51 @@ class TargetColor(TargetAbstract):
 
     # Blue underlying red cross green.
     def set_image_to_blue_under_red_cross_green(self):
+        """
+        Sets the image to a blue color under a red cross on a green background.
+
+        This method modifies the image to display a blue color beneath a red cross
+        on a green background, effectively creating a specific color pattern.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         self.image = tc2r.construct_blue_under_red_cross_green(n_cols, n_rows)
 
     # Square inscribed in the [R,G,B] space basis vector hexagon.
     def set_image_to_rgb_cube_inscribed_square(self, project_to_cube):
+        """
+        Sets the image to a square inscribed in the RGB color cube.
+
+        Parameters
+        ----------
+        project_to_cube : bool
+            If True, the square will be projected onto the RGB cube; otherwise, it will be unprojected.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         n_rows, n_cols = self.rows_cols()
         self.image = tc2r.construct_rgb_cube_inscribed_square_image(n_cols, n_rows, project_to_cube)
 
     # Compute color saturation adjustment.
     # ?? SCAFFOLDING RCB -- ADD TYPE TIPS.
     def adjust_rgb_color_saturation(self, rgb, saturation_fraction, max_rgb):
+        """
+        Adjusts the saturation of a given RGB color.
+
+        Parameters
+        ----------
+        rgb : tuple
+            A tuple containing the RGB values of the color (red, green, blue).
+        saturation_fraction : float
+            The fraction by which to adjust the saturation (0.0 to 1.0).
+        max_rgb : int
+            The maximum RGB value (typically 255).
+
+        Returns
+        -------
+        tuple
+            A tuple containing the adjusted RGB values.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         # Lookup color.
         original_red = rgb[0]
         original_green = rgb[1]
@@ -469,10 +689,18 @@ class TargetColor(TargetAbstract):
     # Adjust color saturation.
     def adjust_color_saturation(self, saturation_fraction: float) -> None:
         """
-        Adjust each pixel so that its vector from the origin in [R,G,B] space has length (saturation_fraction*max_length),
-        where max_length is the distance from the origin to the bounding cube in [R,G,B] space defined by the maximum
-        pixel value.
+        Adjusts the color saturation of each pixel in the image.
+
+        Each pixel's vector from the origin in RGB space is adjusted to have a length
+        equal to (saturation_fraction * max_length), where max_length is the distance
+        from the origin to the bounding cube in RGB space defined by the maximum pixel value.
+
+        Parameters
+        ----------
+        saturation_fraction : float
+            The fraction to adjust the saturation by (0.0 to 1.0).
         """
+        # "ChatGPT 4o" assisted with generating this docstring.
         # Modify image content.
         n_rows, n_cols = self.rows_cols()
         for row in range(0, n_rows):
@@ -517,14 +745,52 @@ def construct_target_linear_color_bar(
     light_to_saturated_min: float = 0.2,  # Dimensionless.  Applies if lateral_gradient_type == 'light_to_saturated'.
     light_to_saturated_max: float = 1.0,  # Dimensionless.  Applies if lateral_gradient_type == 'light_to_saturated'.
 ) -> TargetColor:
+    """
+    Constructs a linear color bar target.
+
+    Parameters
+    ----------
+    image_width : float
+        The width of the image in meters.
+    image_height : float
+        The height of the image in meters.
+    dpm : float
+        Dots per meter for the image resolution.
+    color_below_min : cl
+        The color to use for values below the minimum of the color bar.
+    color_bar :
+        The color bar mapping values to colors.
+    color_bar_name : str
+        The name of the color bar for output purposes.
+    color_above_max : cl
+        The color to use for values above the maximum of the color bar.
+    x_or_y : str
+        The direction of color variation ('x' or 'y').
+    discrete_or_continuous : str
+        Specifies whether the color interpolation is 'discrete' or 'continuous'.
+    lateral_gradient_type : str, optional
+        Defines the scheme for modulating saturation from left to right. Values: None, 'saturated_to_white', or 'light_to_saturated'.
+    saturated_to_white_exponent : float, optional
+        Dimensionless exponent applied if lateral_gradient_type is 'saturated_to_white'.
+    light_to_saturated_min : float, optional
+        Dimensionless minimum saturation value applied if lateral_gradient_type is 'light_to_saturated'.
+    light_to_saturated_max : float, optional
+        Dimensionless maximum saturation value applied if lateral_gradient_type is 'light_to_saturated'.
+
+    Returns
+    -------
+    TargetColor
+        An instance of TargetColor configured with the specified linear color bar.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Blank target.
     target = tc.TargetColor(image_width, image_height, dpm, color_below_min)
     # Set colors.
-    if x_or_y == 'x':
+    if x_or_y == "x":
         target.set_image_to_linear_color_bar_x(
             color_below_min, color_bar, color_above_max, discrete_or_continuous
         )  # ?? SCAFFOLDING RCB -- UPDATE COLOR BAR X TO MATCH Y.
-    elif x_or_y == 'y':
+    elif x_or_y == "y":
         target.set_image_to_linear_color_bar_y(
             color_below_min,
             color_bar,
@@ -543,11 +809,11 @@ def construct_target_linear_color_bar(
     include_above_below_in_pattern_name = True
     if include_above_below_in_pattern_name:
         color_pattern_name = (
-            color_below_min.short_name + '.' + color_bar_name + '_linear.' + color_above_max.short_name
+            color_below_min.short_name + "." + color_bar_name + "_linear." + color_above_max.short_name
         )  # ?? SCAFFOLDING RCB -- REPLACE "color_bar_name" WITH CLASS FETCH
     else:
         color_pattern_name = color_bar_name  # ?? SCAFFOLDING RCB -- REPLACE "color_bar_name" WITH CLASS FETCH
-    target.set_pattern_description(color_pattern_name + '_' + x_or_y + '_' + discrete_or_continuous)
+    target.set_pattern_description(color_pattern_name + "_" + x_or_y + "_" + discrete_or_continuous)
     # Return.
     return target
 
@@ -559,16 +825,16 @@ def construct_target_polar_color_bar(  # Target dimensions.
     # Control color by angle.
     color_below_min: cl = cl.black(),  # Color to use for values below min limit of color bar.
     color_bar=tcc.O_color_bar(),  # Color bar for angular values in [0,2pi).  # ?? SCAFFOLDING RCB -- TYPE TIP NEEDED.
-    color_bar_name: str = 'O',  # Terse name of color bar, for output filename.  # ?? SCAFFOLDING RCB -- REPLACE "color_bar_name" WITH CLASS FETCH
+    color_bar_name: str = "O",  # Terse name of color bar, for output filename.  # ?? SCAFFOLDING RCB -- REPLACE "color_bar_name" WITH CLASS FETCH
     color_above_max: cl = cl.white(),  # Color to use for values of max limit of color bar.
     # Indicates whether to interpolate colors between segments. Values 'discrete' or 'continuous'  # ?? SCAFFOLDING RCB -- RENAME TO "color_interpolation_type" ?
-    discrete_or_continuous: str = 'continuous',
+    discrete_or_continuous: str = "continuous",
     # Modulating saturation with radius.
     # Defines range for saturation modulation as a function of radius. Values 'circle' or 'image_boundary'
-    pattern_boundary: str = 'image_boundary',
+    pattern_boundary: str = "image_boundary",
     # Defines scheme for modulatiing saturation as a function of radius. Values 'saturated_center_to_white' or 'light_center_to_saturated'
-    radial_gradient_type: str = 'saturated_center_to_white',
-    radial_gradient_name: str = 's2w',  # Terse name of radial intensity function, for output filename. Values 's2w' or 'l2s'
+    radial_gradient_type: str = "saturated_center_to_white",
+    radial_gradient_name: str = "s2w",  # Terse name of radial intensity function, for output filename. Values 's2w' or 'l2s'
     # Dimensionless.  Applies if radial_gradient_type == 'saturated_center_to_white'.
     saturated_center_to_white_exponent: float = 1.5,
     # Dimensionless.  Applies if radial_gradient_type == 'light_center_to_saturated'.
@@ -586,6 +852,64 @@ def construct_target_polar_color_bar(  # Target dimensions.
     tick_width_pix=3,  # Pixels.    Width to draw edge tick marks; should be odd number.
     tick_color: cl = cl.black(),  # Color.     Color of edge tick marks.
 ) -> TargetColor:
+    """
+    Constructs a polar color bar target.
+
+    Parameters
+    ----------
+    image_width : float
+        The width of the image in meters.
+    image_height : float
+        The height of the image in meters.
+    dpm : float
+        Dots per meter for the image resolution.
+    color_below_min : cl, optional
+        The color to use for values below the minimum limit of the color bar. Default is black.
+    color_bar :
+        The color bar for angular values in the range [0, 2π).
+    color_bar_name : str, optional
+        A terse name of the color bar for output filename. Default is 'O'.
+    color_above_max : cl, optional
+        The color to use for values above the maximum limit of the color bar. Default is white.
+    discrete_or_continuous : str, optional
+        Indicates whether to interpolate colors between segments. Values: 'discrete' or 'continuous'. Default is 'continuous'.
+    pattern_boundary : str, optional
+        Defines the range for saturation modulation as a function of radius. Values: 'circle' or 'image_boundary'. Default is 'image_boundary'.
+    radial_gradient_type : str, optional
+        Defines the scheme for modulating saturation as a function of radius. Values: 'saturated_center_to_white' or 'light_center_to_saturated'. Default is 'saturated_center_to_white'.
+    radial_gradient_name : str, optional
+        A terse name of the radial intensity function for output filename. Default is 's2w'.
+    saturated_center_to_white_exponent : float, optional
+        Dimensionless exponent applied if radial_gradient_type is 'saturated_center_to_white'. Default is 1.5.
+    light_center_to_saturated_saturation_min : float, optional
+        Dimensionless minimum saturation value applied if radial_gradient_type is 'light_center_to_saturated'. Default is 0.2.
+    light_center_to_saturated_saturation_max : float, optional
+        Dimensionless maximum saturation value applied if radial_gradient_type is 'light_center_to_saturated'. Default is 1.0.
+    draw_center_fiducial : bool, optional
+        Whether to draw a mark at the target center. Default is True.
+    center_fiducial_width_pix : int, optional
+        Width of the center fiducial in pixels; should be an odd number. Default is 3.
+    center_fiducial_color : cl, optional
+        Color of the center fiducial. Default is white.
+    draw_edge_fiducials : bool, optional
+        Whether to draw fiducial tick marks along the target edges. Default is True.
+    n_ticks_x : int, optional
+        Number of tick marks to draw along the top and bottom horizontal target edges. Default is 7.
+    n_ticks_y : int, optional
+        Number of tick marks to draw along the left and right vertical target edges. Default is 7.
+    tick_length : float, optional
+        Length to draw edge tick marks in meters. Default is 0.010.
+    tick_width_pix : int, optional
+        Width to draw edge tick marks in pixels; should be an odd number. Default is 3.
+    tick_color : cl, optional
+        Color of edge tick marks. Default is black.
+
+    Returns
+    -------
+    TargetColor
+        An instance of TargetColor configured with the specified polar color bar.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Blank target.
     target = tc.TargetColor(image_width, image_height, dpm, color_below_min)
     # Set colors.
@@ -613,52 +937,52 @@ def construct_target_polar_color_bar(  # Target dimensions.
     )
     # Set pattern description.
     # Color bar.
-    pattern_description = color_below_min.short_name + '.' + color_bar_name + '.' + color_above_max.short_name
+    pattern_description = color_below_min.short_name + "." + color_bar_name + "." + color_above_max.short_name
     # Linear vs. polar.
-    pattern_description += '_polar_' + radial_gradient_name
+    pattern_description += "_polar_" + radial_gradient_name
     # Color interpolation.
-    if discrete_or_continuous == 'discrete':
-        pattern_description += '_disc'
-    elif discrete_or_continuous == 'continuous':
-        pattern_description += '_cont'
+    if discrete_or_continuous == "discrete":
+        pattern_description += "_disc"
+    elif discrete_or_continuous == "continuous":
+        pattern_description += "_cont"
     else:
         print(
-            'ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected discrete_or_continuous = '
+            "ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected discrete_or_continuous = "
             + str(discrete_or_continuous)
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     # Radial gradient.
     if radial_gradient_type == "saturated_center_to_white":
-        pattern_description += '_exp' + '{0:.2f}'.format(saturated_center_to_white_exponent)
+        pattern_description += "_exp" + "{0:.2f}".format(saturated_center_to_white_exponent)
     elif radial_gradient_type == "light_center_to_saturated":
         pattern_description += (
-            '_sat'
-            + '{0:.2f}'.format(light_center_to_saturated_saturation_min)
-            + 'to'
-            + '{0:.2f}'.format(light_center_to_saturated_saturation_max)
+            "_sat"
+            + "{0:.2f}".format(light_center_to_saturated_saturation_min)
+            + "to"
+            + "{0:.2f}".format(light_center_to_saturated_saturation_max)
         )
     else:
         print(
-            'ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected radial_gradient_type = '
+            "ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected radial_gradient_type = "
             + str(radial_gradient_type)
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     # Radial boundary.
     if pattern_boundary == "circle":
-        pattern_description += '_circ'
+        pattern_description += "_circ"
     elif pattern_boundary == "image_boundary":
-        pattern_description += '_box'
+        pattern_description += "_box"
     else:
         print(
-            'ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected pattern_boundary = '
+            "ERROR: In TargetColor.construct_target_polar_color_bar(), encountered unexpected pattern_boundary = "
             + str(pattern_boundary)
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     # Fiducials.
     if draw_center_fiducial:
-        pattern_description += '_cf.' + center_fiducial_color.short_name
+        pattern_description += "_cf." + center_fiducial_color.short_name
     if draw_edge_fiducials:
-        pattern_description += '_ef.' + tick_color.short_name
+        pattern_description += "_ef." + tick_color.short_name
     # Set result.
     target.set_pattern_description(pattern_description)
 
@@ -669,6 +993,24 @@ def construct_target_polar_color_bar(  # Target dimensions.
 def construct_target_blue_under_red_cross_green(
     image_width: float, image_height: float, dpm: float  # Meter  # Meter  # Dots per meter
 ) -> TargetColor:
+    """
+    Constructs a target with a blue color under a red cross on a green background.
+
+    Parameters
+    ----------
+    image_width : float
+        The width of the image in meters.
+    image_height : float
+        The height of the image in meters.
+    dpm : float
+        Dots per meter for the image resolution.
+
+    Returns
+    -------
+    TargetColor
+        An instance of TargetColor configured with the specified blue under red cross green pattern.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Blank target.
     target = tc.TargetColor(
         image_width, image_height, dpm, cl.black()
@@ -677,7 +1019,7 @@ def construct_target_blue_under_red_cross_green(
     target.set_image_to_blue_under_red_cross_green()
     # Set pattern description.
     color_pattern_name_root = (
-        'blue_under_red_cross_green'  # ?? SCAFFOLDING RCB -- REPLACE "color_pattern_name_root" WITH CLASS FETCH?
+        "blue_under_red_cross_green"  # ?? SCAFFOLDING RCB -- REPLACE "color_pattern_name_root" WITH CLASS FETCH?
     )
     color_pattern_name = color_pattern_name_root
     target.set_pattern_description(color_pattern_name)
@@ -688,6 +1030,26 @@ def construct_target_blue_under_red_cross_green(
 def construct_target_rgb_cube_inscribed_square(
     image_width: float, image_height: float, dpm: float, project_to_cube: bool  # Meter  # Meter  # Dots per meter
 ) -> TargetColor:
+    """
+    Constructs a target with a square inscribed in the RGB color cube.
+
+    Parameters
+    ----------
+    image_width : float
+        The width of the image in meters.
+    image_height : float
+        The height of the image in meters.
+    dpm : float
+        Dots per meter for the image resolution.
+    project_to_cube : bool
+        If True, the square will be projected onto the RGB cube; otherwise, it will be unprojected.
+
+    Returns
+    -------
+    TargetColor
+        An instance of TargetColor configured with the specified RGB cube inscribed square pattern.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Blank target.
     target = tc.TargetColor(
         image_width, image_height, dpm, cl.black()
@@ -696,12 +1058,12 @@ def construct_target_rgb_cube_inscribed_square(
     target.set_image_to_rgb_cube_inscribed_square(project_to_cube)
     # Set pattern description.
     color_pattern_name_root = (
-        'rgb_cube_inscribed_square'  # ?? SCAFFOLDING RCB -- REPLACE "color_pattern_name_root" WITH CLASS FETCH?
+        "rgb_cube_inscribed_square"  # ?? SCAFFOLDING RCB -- REPLACE "color_pattern_name_root" WITH CLASS FETCH?
     )
     if project_to_cube:
-        color_pattern_name_root += '_projected'
+        color_pattern_name_root += "_projected"
     else:
-        color_pattern_name_root += '_unprojected'
+        color_pattern_name_root += "_unprojected"
     color_pattern_name = color_pattern_name_root
     target.set_pattern_description(color_pattern_name)
     # Return.
@@ -726,8 +1088,30 @@ def extend_target_left(
     new_target_name: str = None,  # If none, new target name will extend input target name.
 ) -> TargetColor:
     """
-    Given an input target, construct a new target with additional pixels on the left side.
+    Constructs a new target by extending the input target with additional pixels on the left side.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    new_pixels : int
+        The number of additional pixels to extend on the left side.
+    new_color : cl.Color
+        The color to fill the new pixels.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input target.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension on the left side.
+
+    Raises
+    ------
+    AssertionError
+        If the new target dimensions do not match the expected dimensions after extension.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     n_rows, n_cols, n_bands = target.rows_cols_bands()
     dpm = (
@@ -784,7 +1168,7 @@ def extend_target_left(
     # Set description.
     if new_target_name == None:
         new_target.set_pattern_description(
-            'l' + str(new_pixels) + new_color.short_name + 'px_' + target.pattern_description
+            "l" + str(new_pixels) + new_color.short_name + "px_" + target.pattern_description
         )
     else:
         new_target.set_pattern_description(new_target_name)
@@ -800,8 +1184,30 @@ def extend_target_right(
     new_target_name: str = None,  # If none, new target name will extend input target name.
 ) -> TargetColor:
     """
-    Given an input target, construct a new target with additional pixels on the right side.
+    Constructs a new target by extending the input target with additional pixels on the right side.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    new_pixels : int
+        The number of additional pixels to extend on the right side.
+    new_color : cl.Color
+        The color to fill the new pixels.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input target.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension on the right side.
+
+    Raises
+    ------
+    AssertionError
+        If the new target dimensions do not match the expected dimensions after extension.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     n_rows, n_cols, n_bands = target.rows_cols_bands()
     dpm = (
@@ -858,7 +1264,7 @@ def extend_target_right(
     # Set description.
     if new_target_name == None:
         new_target.set_pattern_description(
-            target.pattern_description + '_r' + str(new_pixels) + new_color.short_name + 'px'
+            target.pattern_description + "_r" + str(new_pixels) + new_color.short_name + "px"
         )
     else:
         new_target.set_pattern_description(new_target_name)
@@ -881,8 +1287,30 @@ def extend_target_top(
     new_target_name: str = None,  # If none, new target name will extend input target name.
 ) -> TargetColor:
     """
-    Given an input target, construct a new target with additional pixels on the top side.
+    Constructs a new target by extending the input target with additional pixels on the top side.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    new_pixels : int
+        The number of additional pixels to extend on the top side.
+    new_color : cl.Color
+        The color to fill the new pixels.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input target.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension on the top side.
+
+    Raises
+    ------
+    AssertionError
+        If the new target dimensions do not match the expected dimensions after extension.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     n_rows, n_cols, n_bands = target.rows_cols_bands()
     dpm = (
@@ -939,7 +1367,7 @@ def extend_target_top(
     # Set description.
     if new_target_name == None:
         new_target.set_pattern_description(
-            't' + str(new_pixels) + new_color.short_name + 'px_' + target.pattern_description
+            "t" + str(new_pixels) + new_color.short_name + "px_" + target.pattern_description
         )
     else:
         new_target.set_pattern_description(new_target_name)
@@ -962,8 +1390,30 @@ def extend_target_bottom(
     new_target_name: str = None,  # If none, new target name will extend input target name.
 ) -> TargetColor:
     """
-    Given an input target, construct a new target with additional pixels on the bottom side.
+    Constructs a new target by extending the input target with additional pixels on the bottom side.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    new_pixels : int
+        The number of additional pixels to extend on the bottom side.
+    new_color : cl.Color
+        The color to fill the new pixels.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input target.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension on the bottom side.
+
+    Raises
+    ------
+    AssertionError
+        If the new target dimensions do not match the expected dimensions after extension.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     n_rows, n_cols, n_bands = target.rows_cols_bands()
     dpm = (
@@ -1019,7 +1469,7 @@ def extend_target_bottom(
     # Set description.
     if new_target_name == None:
         new_target.set_pattern_description(
-            target.pattern_description + '_b' + str(new_pixels) + new_color.short_name + 'px'
+            target.pattern_description + "_b" + str(new_pixels) + new_color.short_name + "px"
         )
     else:
         new_target.set_pattern_description(new_target_name)
@@ -1042,8 +1492,25 @@ def extend_target_all(
     new_target_name: str = None,  # If none, new target name will extend input target name.
 ) -> TargetColor:
     """
-    Given an input target, construct a new target with additional pixels on all sides.
+    Constructs a new target by extending the input target with additional pixels on all sides.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    new_pixels : int
+        The number of additional pixels to extend on all sides.
+    new_color : cl.Color
+        The color to fill the new pixels.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input target.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension on all sides.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Extend.
     extended_target_l = tc.extend_target_left(target, new_pixels, new_color)
     extended_target_lr = tc.extend_target_right(extended_target_l, new_pixels, new_color)
@@ -1055,7 +1522,7 @@ def extend_target_all(
     if new_target_name == None:
         # Add to target pattern_description to discard per-side description changes.
         new_target.set_pattern_description(
-            'bord' + str(new_pixels) + new_color.short_name + 'px_' + target.pattern_description
+            "bord" + str(new_pixels) + new_color.short_name + "px_" + target.pattern_description
         )
     else:
         new_target.set_pattern_description(new_target_name)
@@ -1074,18 +1541,46 @@ def extend_target_all(
 def extend_target_for_splice_left_right(
     target: TargetColor, n_extend: int, fill_color: cl.Color, auto_expand: str
 ) -> TargetColor:
+    """
+    Extends the input target by adding pixels either above or below based on the specified auto-expand option.
+
+    Parameters
+    ----------
+    target : TargetColor
+        The target to extend.
+    n_extend : int
+        The number of additional pixels to add.
+    fill_color : cl.Color
+        The color to fill the new pixels.
+    auto_expand : str
+        Specifies how to expand the target if the heights differ. Options are:
+        - 'fill_top': Extend the top.
+        - 'fill_bottom': Extend the bottom.
+        - 'fill_even': Extend both top and bottom evenly.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the specified extension.
+
+    Raises
+    ------
+    AssertionError
+        If the auto-expand option is invalid or if both n_extend_top and n_extend_bottom are zero.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     if auto_expand == 'fill_top':
         new_target = extend_target_top(target, n_extend, fill_color, new_target_name=target.pattern_description)
         return new_target
-    elif auto_expand == 'fill_bottom':
+    elif auto_expand == "fill_bottom":
         new_target = extend_target_bottom(target, n_extend, fill_color, new_target_name=target.pattern_description)
         return new_target
-    elif auto_expand == 'fill_even':
+    elif auto_expand == "fill_even":
         n_extend_top = int(n_extend / 2)
         n_extend_bottom = n_extend - n_extend_top
         if (n_extend_top == 0) and (n_extend_bottom == 0):
             print(
-                'ERROR: In extend_target_for_splice_left_right(), encountered unexpected situation where n_extend_top and n_extend_bottom are both zero.'
+                "ERROR: In extend_target_for_splice_left_right(), encountered unexpected situation where n_extend_top and n_extend_bottom are both zero."
             )
             assert False  # ?? SCAFFOLDING -- CONVERT TO EXCEPTION.
         if n_extend_top > 0:
@@ -1124,15 +1619,43 @@ def splice_targets_left_right(
     right_target: TargetColor,  # Target to place at right of new target.
     gap: int,  # Pixels.  Gap to leave between targets.
     initial_color: cl.Color,  # Color to fill canvas before adding patterns.
-    auto_expand: str = 'fill_even',  # Whether to expand smaller target if sizes don't match.
+    auto_expand: str = "fill_even",  # Whether to expand smaller target if sizes don't match.
     # Values: None, 'fill_top', 'fill_bottom', 'fill_even'.
     new_target_name: str = None,  # If none, new target name will combine left/right names.
 ) -> TargetColor:
     """
-    Take two input targets, and construct a new target with one left of the other.
+    Constructs a new target by placing one target to the left of another with a specified gap.
 
-    Targets must have the same image height.  # ?? SCAFFOLDING RCB -- EXTEND TO HANDLE TARGETS OF DIFFERENT HEIGHT?
+    Parameters
+    ----------
+    left_target : TargetColor
+        The target to place on the left side of the new target.
+    right_target : TargetColor
+        The target to place on the right side of the new target.
+    gap : int
+        The number of pixels to leave as a gap between the two targets.
+    initial_color : cl.Color
+        The color to fill the canvas before adding patterns.
+    auto_expand : str, optional
+        Specifies how to expand the smaller target if sizes don't match. Options are:
+        - None: No expansion.
+        - 'fill_top': Extend the top of the smaller target.
+        - 'fill_bottom': Extend the bottom of the smaller target.
+        - 'fill_even': Extend both top and bottom evenly. Default is 'fill_even'.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input targets.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the left and right targets spliced together.
+
+    Raises
+    ------
+    AssertionError
+        If the targets have different heights or bands, or if the auto-expand option is invalid.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     left_n_rows, left_n_cols, left_n_bands = left_target.rows_cols_bands()
     right_n_rows, right_n_cols, right_n_bands = right_target.rows_cols_bands()
@@ -1154,7 +1677,7 @@ def splice_targets_left_right(
             right_target = extend_target_for_splice_left_right(right_target, n_extend, initial_color, auto_expand)
             right_n_rows, right_n_cols, right_n_bands = right_target.rows_cols_bands()
         else:
-            print('ERROR: In splice_targets_left_right(), unexpected situation encountered.')
+            print("ERROR: In splice_targets_left_right(), unexpected situation encountered.")
             assert False  # ?? SCAFFOLDING -- CONVERT TO EXCEPTION.
 
     # Check input.
@@ -1268,10 +1791,32 @@ def splice_targets_above_below(
     new_target_name: str = None,  # If none, new target name will combine above/below names.
 ) -> TargetColor:
     """
-    Take two input targets, and construct a new target with one above the other.
+    Constructs a new target by placing one target above another with a specified gap.
 
-    Targets must have the same image width.  # ?? SCAFFOLDING RCB -- EXTEND TO HANDLE TARGETS OF DIFFERENT WIDTH?
+    Parameters
+    ----------
+    above_target : TargetColor
+        The target to place on the top side of the new target.
+    below_target : TargetColor
+        The target to place on the bottom side of the new target.
+    gap : int
+        The number of pixels to leave as a gap between the two targets.
+    initial_color : cl.Color
+        The color to fill the canvas before adding patterns.
+    new_target_name : str, optional
+        If provided, this will be the name of the new target; otherwise, the name will be derived from the input targets.
+
+    Returns
+    -------
+    TargetColor
+        A new instance of TargetColor with the above and below targets spliced together.
+
+    Raises
+    ------
+    AssertionError
+        If the targets have different widths or bands.
     """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Fetch sizes.
     above_n_rows, above_n_cols, above_n_bands = above_target.rows_cols_bands()
     below_n_rows, below_n_cols, below_n_bands = below_target.rows_cols_bands()
@@ -1393,29 +1938,70 @@ def construct_stacked_linear_color_bar(
     saturation_spec_list,  # ?? SCAFFOLDING RCB -- DOCUMENT THIS.
     gap_color,
 ) -> tc.TargetColor:
+    """
+    Constructs a stacked linear color bar composed of multiple stacked color bars.
+
+    Parameters
+    ----------
+    n_stack : int
+        The number of color bars to stack vertically or horizontally.
+    color_bar_width : float
+        The width of each stacked color bar in meters.
+    color_total_height : float
+        The total height of the stacked color bars in meters.
+    composite_dpm : float
+        The dots per meter for the image resolution.
+    color_below_min : cl.Color
+        The color to use below the minimum end of the color bar.
+    color_bar : list
+        A list of colors representing the color sequence for the color bar.
+    color_bar_name : str
+        A terse descriptive name of the color sequence for output purposes.
+    color_above_max : cl.Color
+        The color to use above the maximum end of the color bar.
+    x_or_y : str
+        The direction of the color bar stacking ('x' for horizontal, 'y' for vertical).
+    discrete_or_continuous_list : list
+        A list of strings indicating whether to interpolate colors for each stack entry ('discrete' or 'continuous').
+    saturation_spec_list : list
+        A list of specifications for saturation adjustments for each stack entry.
+    gap_color : cl.Color
+        The color to fill the gaps between stacked color bars.
+
+    Returns
+    -------
+    tc.TargetColor
+        A new instance of TargetColor representing the stacked linear color bar.
+
+    Raises
+    ------
+    AssertionError
+        If the number of stacks is less than 1 or if the lengths of the lists do not match the number of stacks.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Check input.
     if n_stack < 1:
-        print('ERROR: In stack_linear_color_bar(), encountered non-positive n_stack = ' + str(n_stack))
+        print("ERROR: In stack_linear_color_bar(), encountered non-positive n_stack = " + str(n_stack))
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     if n_stack != len(discrete_or_continuous_list):
         print(
-            'ERROR: In stack_linear_color_bar(), encountered mismatched n_stack='
+            "ERROR: In stack_linear_color_bar(), encountered mismatched n_stack="
             + str(n_stack)
-            + ' and len(discrete_or_continuous_list)='
+            + " and len(discrete_or_continuous_list)="
             + len(discrete_or_continuous_list)
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     if n_stack != len(saturation_spec_list):
         print(
-            'ERROR: In stack_linear_color_bar(), encountered mismatched n_stack='
+            "ERROR: In stack_linear_color_bar(), encountered mismatched n_stack="
             + str(n_stack)
-            + ' and len(saturation_spec_list)='
+            + " and len(saturation_spec_list)="
             + len(saturation_spec_list)
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
 
     # Construct final color bar name.
-    target_name = color_bar_name + '_' + str(n_stack) + 'x'
+    target_name = color_bar_name + "_" + str(n_stack) + "x"
 
     # First saturation spec.
     first_saturation_spec = saturation_spec_list[0]
@@ -1434,7 +2020,7 @@ def construct_stacked_linear_color_bar(
         color_bar_name,
         color_above_max,
         x_or_y,
-        'discrete',
+        "discrete",
         lateral_gradient_type=first_lateral_gradient_type,
         saturated_to_white_exponent=first_saturated_to_white_exponent,
         light_to_saturated_min=first_light_to_saturated_min,
@@ -1450,7 +2036,7 @@ def construct_stacked_linear_color_bar(
         color_bar_name,
         color_above_max,
         x_or_y,
-        'continuous',
+        "continuous",
         lateral_gradient_type=first_lateral_gradient_type,
         saturated_to_white_exponent=first_saturated_to_white_exponent,
         light_to_saturated_min=first_light_to_saturated_min,
@@ -1458,9 +2044,9 @@ def construct_stacked_linear_color_bar(
     )
 
     # Initial target.
-    if discrete_or_continuous_list[0] == 'discrete':
+    if discrete_or_continuous_list[0] == "discrete":
         single_bar_target = single_bar_target_discrete
-    elif discrete_or_continuous_list[0] == 'continuous':
+    elif discrete_or_continuous_list[0] == "continuous":
         single_bar_target = single_bar_target_continuous
     else:
         print(
@@ -1484,7 +2070,7 @@ def construct_stacked_linear_color_bar(
             this_saturated_to_white_exponent = this_saturation_spec[1]
             this_light_to_saturated_min = this_saturation_spec[2]
             this_light_to_saturated_max = this_saturation_spec[3]
-            if discrete_or_continuous_list[idx] == 'discrete':
+            if discrete_or_continuous_list[idx] == "discrete":
                 this_bar_target_discrete = tc.construct_target_linear_color_bar(
                     color_bar_width,
                     color_total_height / n_stack,
@@ -1494,7 +2080,7 @@ def construct_stacked_linear_color_bar(
                     color_bar_name,
                     color_above_max,
                     x_or_y,
-                    'discrete',
+                    "discrete",
                     lateral_gradient_type=this_lateral_gradient_type,
                     saturated_to_white_exponent=this_saturated_to_white_exponent,
                     light_to_saturated_min=this_light_to_saturated_min,
@@ -1503,7 +2089,7 @@ def construct_stacked_linear_color_bar(
                 stacked_target = tc.splice_targets_above_below(
                     this_bar_target_discrete, stacked_target, gap, initial_color=gap_color, new_target_name=target_name
                 )
-            elif discrete_or_continuous_list[idx] == 'continuous':
+            elif discrete_or_continuous_list[idx] == "continuous":
                 this_bar_target_continuous = tc.construct_target_linear_color_bar(
                     color_bar_width,
                     color_total_height / n_stack,
@@ -1513,7 +2099,7 @@ def construct_stacked_linear_color_bar(
                     color_bar_name,
                     color_above_max,
                     x_or_y,
-                    'continuous',
+                    "continuous",
                     lateral_gradient_type=this_lateral_gradient_type,
                     saturated_to_white_exponent=this_saturated_to_white_exponent,
                     light_to_saturated_min=this_light_to_saturated_min,
@@ -1528,7 +2114,7 @@ def construct_stacked_linear_color_bar(
                 )
             else:
                 print(
-                    'ERROR: In construct_stacked_linear_color_bar(2), encountered unexpected discrete_or_continuous_list['
+                    "ERROR: In construct_stacked_linear_color_bar(2), encountered unexpected discrete_or_continuous_list["
                     + str(idx)
                     + '] = "'
                     + str(discrete_or_continuous_list[idx])
@@ -1539,6 +2125,22 @@ def construct_stacked_linear_color_bar(
 
 
 def stacked_color_bar_name(n_stack: int, color_bar_name: str) -> str:
+    """
+    Constructs a name for a stacked color bar based on the number of stacks and the base color bar name.
+
+    Parameters
+    ----------
+    n_stack : int
+        The number of stacked color bars.
+    color_bar_name : str
+        The base name of the color bar.
+
+    Returns
+    -------
+    str
+        The constructed name for the stacked color bar.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     return color_bar_name + '_stacked' + str(n_stack) + 'x'
 
 
@@ -1574,24 +2176,81 @@ def construct_linear_color_bar_cascade(  # Dimensions.
     # Color for both gap between color bar stacks, and also spacing required at end of stack if needed.
     gap_color=cl.white(),
 ) -> tc.TargetColor:
+    """
+    Constructs a cascade of linear color bars, including reference and main color bars.
+
+    Parameters
+    ----------
+    color_bar_width : float
+        The width of each stacked color bar in meters.
+    color_total_height : float
+        The total height of the stacked color bars in meters.
+    composite_dpm : float
+        The dots per meter for the image resolution.
+    color_below_min : cl.Color
+        The color to use below the minimum end of the color bar.
+    color_bar : list
+        A list of colors representing the color sequence for the color bar.
+    color_bar_name : str
+        A terse descriptive name of the color sequence for output purposes.
+    color_above_max : cl.Color
+        The color to use above the maximum end of the color bar.
+    ref_color_below_min : cl.Color
+        The color to use below the minimum end of the reference color bar.
+    ref_color_bar : list
+        A list of colors representing the color sequence for the reference color bar.
+    ref_color_bar_name : str
+        A terse descriptive name of the reference color sequence for output purposes.
+    ref_color_above_max : cl.Color
+        The color to use above the maximum end of the reference color bar.
+    x_or_y : str
+        The direction of the color bar stacking ('x' for horizontal, 'y' for vertical).
+    stack_sequence : list
+        A list of stack heights desired for the main color bars.
+    list_of_discrete_or_continuous_lists : list
+        A list of lists of strings indicating whether to interpolate colors for each stack entry ('discrete' or 'continuous').
+    list_of_saturation_spec_lists : list
+        A list of specifications for saturation adjustments for each stack entry.
+    include_grey_neighbors : bool
+        Whether to include a discrete grey scale for disambiguation on either side of each stack.
+    grey_bar_width : float
+        The width of grey context bars in meters, if included.
+    gap_between_bars_pix : int, optional
+        The number of pixels to leave as a gap between color bar stacks. Default is 10.
+    ref_gap_pix : int, optional
+        The number of pixels to leave as a gap for the reference color bar. Default is 10.
+    gap_color : cl.Color, optional
+        The color to fill the gaps between color bar stacks. Default is white.
+
+    Returns
+    -------
+    tc.TargetColor
+        A new instance of TargetColor representing the cascade of linear color bars.
+
+    Raises
+    ------
+    AssertionError
+        If the stack sequence is empty or if the lengths of the lists do not match the number of stacks.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
     # Check input.
     if len(stack_sequence) == 0:
-        print('ERROR: In construct_linear_color_bar_cascade(), encountered len(stack_sequence) == 0.')
+        print("ERROR: In construct_linear_color_bar_cascade(), encountered len(stack_sequence) == 0.")
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
     if len(list_of_discrete_or_continuous_lists) != len(stack_sequence):
         print(
-            'ERROR: In construct_linear_color_bar_cascade(), mismatched len(stack_sequence)='
+            "ERROR: In construct_linear_color_bar_cascade(), mismatched len(stack_sequence)="
             + str(len(stack_sequence))
-            + ' and len(list_of_discrete_or_continuous_lists)='
+            + " and len(list_of_discrete_or_continuous_lists)="
             + str(len(list_of_discrete_or_continuous_lists))
         )
         assert False  # ?? SCAFFOLDING RCB -- USE EXCEPTION
 
     # Construct target name.
-    cascade_target_name = color_bar_name + '_cascade'
+    cascade_target_name = color_bar_name + "_cascade"
 
     # Reference linear color bar.
-    print('In construct_linear_color_bar_cascade(), generating reference linear bar...')
+    print("In construct_linear_color_bar_cascade(), generating reference linear bar...")
     ref_target = tc.construct_target_linear_color_bar(
         color_bar_width,
         color_total_height,
@@ -1601,7 +2260,7 @@ def construct_linear_color_bar_cascade(  # Dimensions.
         ref_color_bar_name,
         ref_color_above_max,
         x_or_y,
-        'discrete',
+        "discrete",
     )
     cascade_target = ref_target
     cascade_target.set_pattern_description = tc.stacked_color_bar_name(1, cascade_target_name)
@@ -1617,7 +2276,7 @@ def construct_linear_color_bar_cascade(  # Dimensions.
         color_bar_name,
         color_above_max,
         x_or_y,
-        'discrete',
+        "discrete",
     )
     cascade_target = tc.splice_targets_left_right(
         cascade_target, main_color_target, gap=ref_gap_pix, initial_color=gap_color, new_target_name=cascade_target_name
@@ -1628,7 +2287,7 @@ def construct_linear_color_bar_cascade(  # Dimensions.
         stack_sequence, list_of_discrete_or_continuous_lists, list_of_saturation_spec_lists
     ):
         # Status update.
-        print('In construct_linear_color_bar_cascade(), generating stacked bar ' + str(n_bars_in_stack) + '...')
+        print("In construct_linear_color_bar_cascade(), generating stacked bar " + str(n_bars_in_stack) + "...")
 
         # Generate color bar stack and its neighbors.
         stacked_color_target = tc.construct_stacked_linear_color_bar(
@@ -1658,7 +2317,7 @@ def construct_linear_color_bar_cascade(  # Dimensions.
             ]  # ?? SCAFFOLDING RCB -- IF COLOR_BAR BECOMES A CLASS, UPDATE THIS.
             grey_below_min = cl.black()
             grey_above_max = cl.white()
-            grey_bar_name = 'grey_' + str(len(grey_scale_list))
+            grey_bar_name = "grey_" + str(len(grey_scale_list))
             grey_target = tc.construct_target_linear_color_bar(
                 grey_bar_width,
                 color_total_height,
@@ -1668,7 +2327,7 @@ def construct_linear_color_bar_cascade(  # Dimensions.
                 grey_bar_name,
                 grey_above_max,
                 x_or_y,
-                'discrete',
+                "discrete",
             )  # Always discrete.
             stacked_target = tc.splice_targets_left_right(
                 grey_target, stacked_color_target, gap=0, initial_color=gap_color, new_target_name=cascade_target_name

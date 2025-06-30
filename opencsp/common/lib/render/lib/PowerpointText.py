@@ -7,6 +7,24 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 class PowerpointText(pps.PowerpointShape):
+    """
+    A class representing text elements in a PowerPoint presentation.
+
+    This class allows for the creation, manipulation, and storage of text elements
+    that can be added to PowerPoint slides. It supports saving to and loading from
+    text files for persistence.
+
+    Attributes
+    ----------
+    dims : tuple[float, float, float, float]
+        The dimensions of the text element in the PowerPoint slide.
+    is_title : bool
+        A flag indicating whether this text element is a title.
+    parent_slide : PowerpointSlide
+        The parent slide to which this text element belongs.
+    """
+
+    # "ChatGPT 4o" assisted with generating this docstring.
     _tmp_save_path = os.path.join(orp.opencsp_temporary_dir(), "PowerpointTexts", "texts", "tmp")
 
     def __init__(
@@ -17,6 +35,23 @@ class PowerpointText(pps.PowerpointShape):
         is_title=False,
         parent_slide=None,
     ):
+        """
+        Initializes the PowerpointText instance.
+
+        Parameters
+        ----------
+        val : str, optional
+            The text value of the PowerPoint text element. Defaults to None.
+        dims : tuple[float, float, float, float], optional
+            The dimensions of the text element (left, top, width, height). Defaults to None.
+        cell_dims : tuple[float, float, float, float], optional
+            The dimensions of the cell containing the text. Defaults to None.
+        is_title : bool, optional
+            A flag indicating whether this text element is a title. Defaults to False.
+        parent_slide : PowerpointSlide, optional
+            The parent slide to which this text element belongs. Defaults to None.
+        """
+        # "ChatGPT 4o" assisted with generating this docstring.
         super().__init__(cell_dims)
         self._val = val
         self.dims = dims
@@ -30,16 +65,48 @@ class PowerpointText(pps.PowerpointShape):
         self.parent_slide: pps.PowerpointSlide = parent_slide
 
     def has_val(self):
+        """
+        Checks if the text element has a value.
+
+        Returns
+        -------
+        has_value : bool
+            True if the text element has a value, False otherwise.
+        """
         return self._val != None
 
     def get_val(self) -> str | None:
+        """
+        Gets the value of the text element.
+
+        Returns
+        -------
+        val : str | None
+            The value of the text element, or None if it has no value.
+        """
         return self._val
 
     def set_val(self, val: str):
+        """
+        Sets the value of the text element.
+
+        Parameters
+        ----------
+        val : str
+            The new value of the text element.
+        """
         self._val = val
         self._saved_name_ext = None
 
     def has_dims(self):
+        """
+        Checks if the text element has dimensions (top, left, width, height).
+
+        Returns
+        -------
+        has_dims : bool
+            True if the text element has dimensions, False otherwise.
+        """
         return self.dims is not None
 
     def dims_pptx(self):
@@ -68,9 +135,25 @@ class PowerpointText(pps.PowerpointShape):
         self.dims = x, y, w, h
 
     def is_saved_to_file(self):
+        """
+        Checks if the text element has been serialized and saved to a file.
+
+        Returns
+        -------
+        is_saved : bool
+            True if the text element is saved to a file, False otherwise.
+        """
         return self._saved_name_ext != None
 
     def get_text_file_path(self) -> str:
+        """
+        Gets the file path of the saved text element.
+
+        Returns
+        -------
+        path : str
+            The file path of the saved text element, or None if it is not saved.
+        """
         if not self.is_saved_to_file():
             return None
         return os.path.join(self._tmp_save_path, self._saved_name_ext)
@@ -113,13 +196,22 @@ class PowerpointText(pps.PowerpointShape):
             )
         dims = cls._str_to_dims(None, slines[2])
         cell_dims = cls._str_to_dims(None, slines[3])
-        is_title = slines[4] == 'True'
-        has_val = slines[5] == 'True'
+        is_title = slines[4] == "True"
+        has_val = slines[5] == "True"
         val = None if not has_val else "\n".join(lines[6:])
 
         return cls(val, dims, cell_dims, is_title)
 
     def update_save_path(self, save_path: str):
+        """
+        Updates the save file path of the text element. Moves the existing
+        save file if there is one.
+
+        Parameters
+        ----------
+        save_path : str
+            The new save path of the text element.
+        """
         if self.is_saved_to_file():
             to_rename = [self.get_text_file_path()]
             for path_name_ext in to_rename:
@@ -167,11 +259,17 @@ class PowerpointText(pps.PowerpointShape):
         return self.get_text_file_path()
 
     def clear_tmp_save(self):
+        """
+        Clears the temporary save of the text element.
+        """
         if self._saved_name_ext != None:
             ft.delete_file(self._saved_name_ext, error_on_not_exists=False)
             self._saved_name_ext = None
 
     @classmethod
     def clear_tmp_save_all(cls):
+        """
+        Clears all temporary saves of text elements.
+        """
         if ft.directory_exists(cls._tmp_save_path, error_if_exists_as_file=False):
             ft.delete_files_in_directory(cls._tmp_save_path, "*.txt")

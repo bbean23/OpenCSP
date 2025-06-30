@@ -6,10 +6,13 @@ from opencsp.app.sofast.lib.MeasurementSofastFringe import MeasurementSofastFrin
 
 
 class ImageCalibrationScaling(ImageCalibrationAbstract):
+    """Class that handles performing a pixel-wise calibration that 'scales' each pixel
+    in a Sofast image according to a camera-projector-response calibration curve."""
+
     @staticmethod
     def get_calibration_name() -> str:
         """The name of this calibration class type"""
-        return 'ImageCalibrationScaling'
+        return "ImageCalibrationScaling"
 
     def apply_to_images(self, measurement: Measurement) -> ndarray:
         """

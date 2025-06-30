@@ -1,14 +1,14 @@
-from typing import Callable, Iterable
-from matplotlib import colors
-import sympy
+from typing import Iterable
+
+import numpy as np
+
 from opencsp.common.lib.geometry.FunctionXYAbstract import FunctionXYAbstract
 from opencsp.common.lib.render.View3d import View3d
 import opencsp.common.lib.render_control.RenderControlFunctionXY as rcfxy
-import numpy as np
-import matplotlib.pyplot as plt
+import opencsp.common.lib.render.lib.Drawable as dw
 
 
-class FunctionXYGrid(FunctionXYAbstract):
+class FunctionXYGrid(FunctionXYAbstract, dw.Drawable):
     """Discrete Fuction defined by a grid.
     This object uses x:column and y:row.
     When accessing, this looks like column major.
@@ -44,13 +44,6 @@ class FunctionXYGrid(FunctionXYAbstract):
         self.x0, self.x1, self.y0, self.y1 = limits
         self.x_step = (self.x1 - self.x0) / (self.x_count - 1)
         self.y_step = (self.y1 - self.y0) / (self.y_count - 1)
-
-    # def __add__(self, f2:'FunctionXYDiscrete') -> "FunctionXYDiscrete":
-    #     sum = self.values + f2.values
-    #     return FunctionXYDiscrete(sum)
-
-    # def interpolate() -> FunctionXYAnalytic:
-    #     ...
 
     # override
     def value_at(self, x: float | Iterable[float], y: float | Iterable[float]) -> float | np.ndarray[float]:
@@ -89,6 +82,22 @@ class FunctionXYGrid(FunctionXYAbstract):
         raise NotImplementedError("__setstate__ has not been implemented for FunctionXYGrid")
 
     def to_index_values(self, x: float, y: float) -> tuple[int, int]:
+        """
+        Convert x and y coordinates to grid indices.
+
+        Parameters
+        ----------
+        x : float
+            The x-coordinate to convert.
+        y : float
+            The y-coordinate to convert.
+
+        Returns
+        -------
+        tuple[int, int] | bool
+            A tuple of the x and y indices if the coordinates are on a grid point,
+            or False if the coordinates don't match the grid step size and translation.
+        """
         x_index = (x - self.x0) / self.x_step
         y_index = (y - self.y0) / self.y_step
         if int(x_index) != x_index or int(y_index) != y_index:

@@ -76,7 +76,7 @@ def numpy_to_image(arr: np.ndarray, rescale_or_clip='rescale', rescale_max=-1):
 
     # rescale down to 8-bit if bitdepth is too large
     if np.iinfo(int_type).max > 255:
-        if rescale_or_clip == 'rescale':
+        if rescale_or_clip == "rescale":
             if rescale_max < 0:
                 rescale_max = np.max(arr)
             scale = 255 / rescale_max

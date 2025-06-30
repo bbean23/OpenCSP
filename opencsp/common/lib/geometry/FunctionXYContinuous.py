@@ -8,9 +8,10 @@ from opencsp.common.lib.geometry.FunctionXYAbstract import FunctionXYAbstract
 from opencsp.common.lib.geometry.Pxy import Pxy
 from opencsp.common.lib.geometry.RegionXY import RegionXY
 from opencsp.common.lib.render.View3d import View3d
+import opencsp.common.lib.render.lib.Drawable as dw
 
 
-class FunctionXYContinuous(FunctionXYAbstract):
+class FunctionXYContinuous(FunctionXYAbstract, dw.Drawable):
     """Wrapper for function that can be pickled. \n
     Extends the FunctionXYAbstract class.
 
@@ -64,8 +65,8 @@ class FunctionXYContinuous(FunctionXYAbstract):
     def in_domain(self, x: float, y: float) -> bool:
         raise NotImplementedError
 
-    def draw(self, view: View3d, functionXY_style):
-        if view.view_spec['type'] == 'image':
+    def draw(self, view: View3d):
+        if view.view_spec["type"] == "image":
             # X, Y = np.meshgrid(self.x_domain, self.y_domain)
             arr = np.zeros((len(self.y_domain), len(self.x_domain)))
             for ix, x in enumerate(sorted(self.x_domain)):
@@ -74,7 +75,7 @@ class FunctionXYContinuous(FunctionXYAbstract):
             # A = self.as_callable()(X,Y)
             extent = [min(self.x_domain), max(self.x_domain), min(self.y_domain), max(self.y_domain)]
             # view.pcolormesh(list(self.x_domain), list(self.y_domain), arr, colorbar=True, cmap='jet', )
-            view.imshow(arr, colorbar=True, cmap='jet')
+            view.imshow(arr, colorbar=True, cmap="jet")
 
     @classmethod
     def from_array(cls, x_domain: np.ndarray, y_domain: np.ndarray, values: np.ndarray):

@@ -64,6 +64,7 @@ class PowerpointImage(pps.PowerpointShape):
             The slide containing this image. Used for fitting within the slide
             format. If None then the default format will be used. Default None.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         super().__init__(cell_dims)
         self._val: str | np.ndarray | Image.Image | rcfr.RenderControlFigureRecord | None = None
         """ The image data for this instance, or the "path/name.ext" to the
@@ -104,14 +105,27 @@ class PowerpointImage(pps.PowerpointShape):
         """
         Get the image assigned to this instance. What you probably actually want
         is :py:meth:`get_saved_path`. Returns None if :py:meth:`has_val` is False.
+
+        Returns
+        -------
+        None | str | np.ndarray | Image.Image | rcfr.RenderControlFigureRecord
+            The image value assigned to this instance. Returns None if no image is assigned
+            (:py:meth:`has_val` is False), returns None.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         return self._val
 
     def set_val(self, image: str | np.ndarray | Image.Image | rcfr.RenderControlFigureRecord):
         """
         Assigns an image to this instance. If this instance already has an image
         assigned then the old value is overwritten without any checking.
+
+        Parameters
+        ----------
+        image: (str | np.ndarray | Image.Image | rcfr.RenderControlFigureRecord)
+            The image to set. Can be a file path, NumPy array, PIL Image, or RenderControlFigureRecord.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         self._val = image
         self.width = -1
         self.height = -1
@@ -130,8 +144,16 @@ class PowerpointImage(pps.PowerpointShape):
                 )
 
     def _test_saved_path(self):
-        """Verification check that I (BGB) haven't goofed up how images are
-        saved to temporary files. This method is called after saving."""
+        """
+        Verification check that I (BGB) haven't goofed up how images are
+        saved to temporary files. This method is called after saving.
+
+        Raises
+        ------
+        Warning
+            If the image value and saved path are the same or if 'tmp' is found in the image value.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if isinstance(self._val, str) and (
             ft.path_to_cmd_line(self.get_saved_path()) == ft.path_to_cmd_line(self._val)
         ):
@@ -149,9 +171,11 @@ class PowerpointImage(pps.PowerpointShape):
                 pass  # lt.info(f"Reference style image has a different save path than its reference path.")
 
     def replace_with_save(self):
-        """Replace this instance's image with its save file path.
+        """Replace this instance's image with its saved file path.
 
-        We do this mainly to save on memory by releasing images."""
+        This method is used to save memory by releasing images.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.has_val():
             return
         if not self.is_saved_to_file():
@@ -160,15 +184,23 @@ class PowerpointImage(pps.PowerpointShape):
         self._val = self.get_saved_path()
         self._test_saved_path()
 
-    @property
-    def shape(self) -> tuple[int, int] | tuple[None, None]:
-        """
-        Returns the (width, height) of the assigned image in pixels, or (None, None) if no
-        image is assigned.
+    def get_size(self, force_reload=False):
+        """Get the width and height of this image in pixels.
 
-        Calls save() in the case that the assigned image is a string or
-        RenderControlFigureRecord.
+        Calls save() as necessary to ensure the image is saved (as in the
+        case that the assigned image is a string or RenderControlFigureRecord).
+
+        Parameters
+        ----------
+        force_reload : bool, optional
+            If True, forces a reload of the image size even if cached values are available. Defaults to False.
+
+        Returns
+        -------
+        tuple[int, int]
+            A tuple containing the width and height of the image in pixels. Returns (None, None) if no image is set.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.has_val():
             return None, None
         if self.width >= 0 and self.height >= 0:
@@ -191,17 +223,45 @@ class PowerpointImage(pps.PowerpointShape):
         return self.width, self.height
 
     def has_dims(self):
+        """Check if dimensions are set for this image.
+
+        Returns
+        -------
+        bool
+            True if dimensions are set, False otherwise.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         return self.dims is not None
 
     def dims_pptx(self):
-        """Returns the powerpoint-style inches to place this image at (left, top, width, height)."""
+        """Returns the PowerPoint-style dimensions (left, top, width, height) for this image.
+
+        Returns
+        -------
+        tuple[float, float, float, float]
+            The dimensions of the image in inches.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         return self._pptx_inches(self.dims)
 
     @staticmethod
     def _image_dims_relative_to_cell(
         cell_dims: tuple[float, float, float, float], image_width: int, image_height: int, stretch=False
     ):
-        """Returns the x, y, width, and height of an image fitted to the dimensions of the given cell."""
+        """Calculate the dimensions of an image relative to a given cell.
+
+        Args:
+            cell_dims (tuple[float, float, float, float]): The dimensions of the cell (left, top, width, height).
+            image_width (int): The width of the image in pixels.
+            image_height (int): The height of the image in pixels.
+            stretch (bool): If True, the image will be stretched to fit the cell dimensions.
+
+        Returns
+        -------
+        tuple[float, float, float, float]
+            The calculated x, y, width, and height of the image fitted to the cell dimensions.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         cell_x, cell_y, cell_width, cell_height = cell_dims
 
         # compute image area for individual images with the given aspect ratio
@@ -228,19 +288,36 @@ class PowerpointImage(pps.PowerpointShape):
         return x, y, w, h
 
     def fit_to_cell_dimensions(self, cell_dims: tuple[float, float, float, float]):
-        width, height = self.shape
+        """Fit the image to the specified cell dimensions.
+
+        Args:
+            cell_dims (tuple[float, float, float, float]): The dimensions of the cell (left, top, width, height).
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
+        width, height = self.get_size()
         self.cell_dims = cell_dims
         self.dims = self._image_dims_relative_to_cell(self.cell_dims, width, height, self.stretch)
 
     def stretch_to_cell_dimensions(self, cell_dims: tuple[float, float, float, float]):
-        width, height = self.shape
+        """Stretch the image to fit the specified cell dimensions.
+
+        Args:
+            cell_dims (tuple[float, float, float, float]): The dimensions of the cell (left, top, width, height).
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
+        width, height = self.get_size()
         self.cell_dims = cell_dims
         self.dims = self._image_dims_relative_to_cell(self.cell_dims, width, height, stretch=True)
 
     def reduce_size(self, reduced_image_size_scale: float = -1):
-        """If the given image is significantly bigger than its rendered size,
-        then resize the image to take up less disk space.
-        This will save the image to disk first if necessary."""
+        """Reduce the size of the image if it is significantly larger than its rendered size.
+
+        This will save the image to disk first if necessary.
+
+        Args:
+            reduced_image_size_scale (float): The scale factor to reduce the image size. If negative, no resizing occurs.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if reduced_image_size_scale < 0:
             return
 
@@ -268,38 +345,81 @@ class PowerpointImage(pps.PowerpointShape):
         pil_image.save(self.get_saved_path())
 
     def get_saved_path(self) -> str:
+        """Get the pathname.ext to the original or temporary file version of the image content.
+
+        Calls save() as necessary to ensure the image is saved.
+
+        Returns
+        -------
+        str
+            The full path to the saved image file.
         """
-        Get the path/name.ext to the temporary file for the assigned image.
-        Calls :py:meth:`save` if not yet saved to the temporary directory.
-        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.is_saved_to_file():
             self.save()
         return ft.join(self._tmp_save_path, self._saved_name_ext)
 
     def get_text_file_path(self) -> str:
-        """Get the path to the PowerpointImage metadata for the image at get_saved_path().
+        """Get the path to the metadata text file for the image.
 
-        See also:"""
+        Returns
+        -------
+        str
+            The path to the text file containing metadata for the saved image.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         return self.get_saved_path() + ".txt"
 
     def is_saved_to_file(self):
+        """Check if the image has been saved to a file.
+
+        Returns
+        -------
+        bool
+            True if the image has been saved to a file, False otherwise.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.has_val():
             return False
         return self._saved_name_ext != None
 
     def _move_file(self, from_dir_name_ext: str, to_dir_name_ext: str):
+        """Move a file from one location to another.
+
+        Parameters
+        ----------
+        from_dir_name_ext: str
+            The source file path.
+        to_dir_name_ext: str
+            The destination file path.
+
+        Raises
+        ------
+        OSError
+            If the file cannot be moved.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         try:
             ft.rename_file(from_dir_name_ext, to_dir_name_ext)
         except OSError:
             ft.copy_and_delete_file(from_dir_name_ext, to_dir_name_ext)
 
     def _save(self, path_name_ext: str):
-        """Saves this image value to the given path+name+ext.
+        """Save the image value to the specified path.
+
+        Parameters
+        ----------
+        path_name_ext: str
+            The full path where the image should be saved.
 
         Returns
         -------
-            path (str): The directory of the saved file.
-            body_ext (str): The body+ext of the saved file."""
+        path: str
+            The directory of the saved file.
+        body_ext: str
+            The body+ext of the saved file.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         path, _, ext = ft.path_components(path_name_ext)
         ft.create_directories_if_necessary(path)
 
@@ -308,7 +428,7 @@ class PowerpointImage(pps.PowerpointShape):
             pil_val.save(path_name_ext)
 
         elif isinstance(self._val, rcfr.RenderControlFigureRecord):
-            # Figure records add extra stuffs to the image names, save them to
+            # Figure records add extra stuffs to the image names. Save them to
             # a temporary file and then move to our desired location.
             rec_val: rcfr.RenderControlFigureRecord = self._val
             format = ext.lstrip(".")
@@ -336,7 +456,7 @@ class PowerpointImage(pps.PowerpointShape):
             lt.error_and_raise(
                 ValueError,
                 f"Error: in PowerpointImage.save: unrecognized type for image "
-                + f"(type \"{self._val.__class__.__name__}\")",
+                + f'(type "{self._val.__class__.__name__}")',
             )
 
         return path, ft.body_ext_given_file_dir_body_ext(path_name_ext)
@@ -366,7 +486,22 @@ class PowerpointImage(pps.PowerpointShape):
 
     @classmethod
     def from_txt_file(cls, path_name_ext: str):
-        """Given the text file from get_text_file_path(), this reconstructs a PowerpointImage instance."""
+        """Reconstruct a PowerpointImage instance from a text file.
+
+        Args:
+            path_name_ext (str): The path to the text file containing the serialized data.
+
+        Returns
+        -------
+        PowerpointImage
+            A new instance of PowerpointImage reconstructed from the text file.
+
+        Raises
+        ------
+        RuntimeError
+            If the file type or version is incorrect.
+        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         path, _, _ = ft.path_components(path_name_ext)
 
         with open(path_name_ext, "r") as fin:
@@ -385,14 +520,14 @@ class PowerpointImage(pps.PowerpointShape):
                 RuntimeError,
                 f"Error: in PowerpointImage.from_txt_file(), bad version {version} in {path_name_ext}, expected version v1",
             )
-        has_val = slines[2] == 'True'
+        has_val = slines[2] == "True"
         image_name_ext = slines[3]
         dims = cls._str_to_dims(None, slines[4])
         cell_dims = cls._str_to_dims(None, slines[5])
-        caption_is_above = slines[6] == 'True'
+        caption_is_above = slines[6] == "True"
         caption = slines[7]
-        caption_is_none = slines[8] == 'True'
-        stretch = slines[9] == 'True'
+        caption_is_none = slines[8] == "True"
+        stretch = slines[9] == "True"
 
         image_path_name_ext = None if not has_val else ft.join(path, slines[3])
         caption = None if caption_is_none else caption
@@ -430,11 +565,17 @@ class PowerpointImage(pps.PowerpointShape):
         return ft.join(cls._tmp_save_path, ret)
 
     def update_save_path(self, save_path: str):
+        """Set the path where the image and its associated serialized text will be saved.
+
+        If the image has already been saved, it will move the existing image
+        and associated text files to the new save path.
+
+        Parameters
+        ----------
+        save_path (str):
+            The new directory path where the image should be saved.
         """
-        Updates the path of the saved image data and associated serialized text
-        file to the given save_path, moving any saved files from the old path to
-        the new path.
-        """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if self.is_saved_to_file():
             to_rename = [self.get_saved_path(), self.get_text_file_path()]
             for path_name_ext in to_rename:
@@ -460,6 +601,7 @@ class PowerpointImage(pps.PowerpointShape):
         ppi_path_name_ext: str | None
             The path to the serialized instance. None if no image is assigned or saving failed.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         # import inspect
         # frame = inspect.currentframe().f_back
         # to_print = []
@@ -511,8 +653,8 @@ class PowerpointImage(pps.PowerpointShape):
             lt.error_and_raise(
                 RuntimeError,
                 f"Error: in PowerpointImage.save(): programmer error, "
-                + f"should have saved the temporary image to \"{self._tmp_save_path}\""
-                + f"but instead saved it to \"{saved_path}\"!",
+                + f'should have saved the temporary image to "{self._tmp_save_path}"'
+                + f'but instead saved it to "{saved_path}"!',
             )
         self._saved_name_ext = body_ext
         self._test_saved_path()
@@ -525,8 +667,9 @@ class PowerpointImage(pps.PowerpointShape):
     def clear_tmp_save(self):
         """
         Reloads the image for this instance from the temporary save file, then
-        deletes the temporary save file.
+        deletes the temporary save file and its associated metadata file.
         """
+        # ChatGPT 4o-mini assisted with generating this doc string
         if not self.is_saved_to_file():
             return
         path_name_ext = self.get_saved_path()

@@ -18,6 +18,13 @@ import opencsp.common.lib.tool.log_tools as lt
 
 
 class VideoHandler:
+    """Handle video creation, frame extraction, and video transcoding. The format for generated videos and
+    frames is controlled by the video_control and frame_control render controllers.
+
+    Not all of these arguments are required for every use case of this class. The generator methods
+    VideoCreator(), VideoTransformer(), and VideoExtractor() can be used to simplify the required
+    parameters down to the most common use cases."""
+
     _video_extensions = [
         "mp4",
         "avi",
@@ -90,6 +97,23 @@ class VideoHandler:
 
     @classmethod
     def VideoInspector(cls, src_video_dir_name_ext: str):
+        """
+        Create a VideoHandler for inspecting a video.
+
+        Video inspectors can be useful for retrieving properties of a video,
+        such as with the methods :py:func:`get_width_height`,
+        :py:func:`get_duration`, or :py:func:`get_num_frames`.
+
+        Parameters
+        ----------
+        src_video_dir_name_ext : str
+            Path to the video file to inspect.
+
+        Returns
+        -------
+        VideoHandler
+            A VideoHandler instance for inspecting the video.
+        """
         return cls(src_video_dir_name_ext=src_video_dir_name_ext)
 
     @classmethod
@@ -100,6 +124,25 @@ class VideoHandler:
         video_control: rcv.RenderControlVideo,
         frame_control: rcvf.RenderControlVideoFrames,
     ):
+        """
+        Create a VideoHandler for creating a video from frames.
+
+        Parameters
+        ----------
+        src_frames_dir : str
+            Directory containing the frames to use for creating the video.
+        dst_video_dir_name_ext : str
+            Path to the output video file.
+        video_control : rcv.RenderControlVideo
+            Video control settings.
+        frame_control : rcvf.RenderControlVideoFrames
+            Frame control settings.
+
+        Returns
+        -------
+        VideoHandler
+            A VideoHandler instance for creating the video.
+        """
         return cls(
             dst_video_dir_name_ext=dst_video_dir_name_ext,
             src_frames_dir=src_frames_dir,
@@ -109,6 +152,23 @@ class VideoHandler:
 
     @classmethod
     def VideoMerger(cls, src_videos_path, src_videos_ext, dst_video_dir_name_ext):
+        """
+        Create a VideoHandler for merging (concatenating) videos.
+
+        Parameters
+        ----------
+        src_videos_path : str
+            Path to the directory containing the videos to merge.
+        src_videos_ext : str
+            File extension of the videos to merge.
+        dst_video_dir_name_ext : str
+            Path to the output video file.
+
+        Returns
+        -------
+        VideoHandler
+            A VideoHandler instance for merging the videos.
+        """
         return cls(
             src_video_dir_name_ext=os.path.join(src_videos_path, f"NA.{src_videos_ext}"),
             dst_video_dir_name_ext=dst_video_dir_name_ext,
@@ -118,6 +178,24 @@ class VideoHandler:
     def VideoTransformer(
         cls, src_video_dir_name_ext: str, dst_video_dir_name_ext: str, video_control: rcv.RenderControlVideo
     ):
+        """
+        Create a VideoHandler for transforming a video, such as changing the
+        resolution or the encoding method.
+
+        Parameters
+        ----------
+        src_video_dir_name_ext : str
+            Path to the input video file.
+        dst_video_dir_name_ext : str
+            Path to the output video file.
+        video_control : rcv.RenderControlVideo
+            Video control settings.
+
+        Returns
+        -------
+        VideoHandler
+            A VideoHandler instance for transforming the video.
+        """
         return cls(
             src_video_dir_name_ext=src_video_dir_name_ext,
             dst_video_dir_name_ext=dst_video_dir_name_ext,
@@ -132,6 +210,25 @@ class VideoHandler:
         dst_example_frames_dir: str,
         frame_control: rcvf.RenderControlVideoFrames,
     ):
+        """
+        Create a VideoHandler for extracting frames from a video.
+
+        Parameters
+        ----------
+        src_video_dir_name_ext : str
+            Path to the input video file.
+        dst_frames_dir : str
+            Directory to store the extracted frames in.
+        dst_example_frames_dir : str
+            Directory to store example frames in.
+        frame_control : rcvf.RenderControlVideoFrames
+            Frame control settings.
+
+        Returns
+        -------
+        VideoHandler
+            A VideoHandler instance for extracting frames from the video.
+        """
         return cls(
             src_video_dir_name_ext=src_video_dir_name_ext,
             dst_frames_dir=dst_frames_dir,
@@ -246,7 +343,7 @@ class VideoHandler:
             cmd = self._build_ffmpeg_cmd(f"{time_arg}-i %INFILE% {ffmpeg_args}", paths)
 
             # Execute the ffmpeg command and create the frames.
-            lt.debug('In ConstructExtractedFrames.extract_frames()')
+            lt.debug("In ConstructExtractedFrames.extract_frames()")
             subt.run(cmd)
 
             # Count the number of extracted frames.
@@ -389,13 +486,13 @@ class VideoHandler:
             self.src_frames_dir, previous_frame_file
         )  # Already includes the extension.
         this_dir_body_ext = os.path.join(self.src_frames_dir, this_frame_file)  # Already includes the extension.
-        lt.debug('\nIn frames_are_identical(), loading image:', previous_dir_body_ext)
+        lt.debug("\nIn frames_are_identical(), loading image:", previous_dir_body_ext)
         previous_img = cv.imread(previous_dir_body_ext)
-        lt.debug('In frames_are_identical(), loading image:', this_dir_body_ext)
+        lt.debug("In frames_are_identical(), loading image:", this_dir_body_ext)
         this_img = cv.imread(this_dir_body_ext)
-        lt.debug('In frames_are_identical(), comparing images...')
+        lt.debug("In frames_are_identical(), comparing images...")
         identical = it.images_are_identical(previous_img, this_img, tolerance_image_pixel)
-        lt.debug('In frames_are_identical(), Done.  identical =', identical)
+        lt.debug("In frames_are_identical(), Done.  identical =", identical)
         # Return.
         return identical
 
@@ -428,9 +525,9 @@ class VideoHandler:
             str: The name of the temporary file.
         """
         fd, path_name_ext = ft.get_temporary_file(suffix=".txt", dir=tmp_dir)
-        with open(fd, 'w') as fout:
+        with open(fd, "w") as fout:
             fout.writelines(s + "\n" for s in str_vals)
-        with open(path_name_ext, 'r') as fin:
+        with open(path_name_ext, "r") as fin:
             lt.info("Temp file contents: " + fin.read())
         return path_name_ext
 
@@ -512,7 +609,7 @@ class VideoHandler:
                 lt.error_and_raise(RuntimeError, f"Could not find the frames directory '{self.src_frames_dir}'!")
             if len(frame_names) == 0:
                 return None
-            frame_names_msg = f" from frames [\"{frame_names[0]}\", ...]"
+            frame_names_msg = f' from frames ["{frame_names[0]}", ...]'
 
             # get the example image for determining width/height
             img0_dir_path_ext = os.path.join(self.src_frames_dir, frame_names[0])
@@ -525,7 +622,7 @@ class VideoHandler:
             return self.dst_video_dir_name_ext
         except Exception:
             lt.error(
-                f"Error: in VideoHandler.frames_to_video: failed to create video \"{self.dst_video_dir_name_ext}\"{frame_names_msg}"
+                f'Error: in VideoHandler.frames_to_video: failed to create video "{self.dst_video_dir_name_ext}"{frame_names_msg}'
             )
             raise
 

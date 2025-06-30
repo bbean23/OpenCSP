@@ -26,10 +26,15 @@ class AbstractPlotHandler(ABC):
         self._free_plots()
 
     def close(self):
+        """
+        Closes all registered plots.
+
+        This method frees up system resources associated with the plots.
+        """
         self._free_plots()
 
     def _on_plot_closed(self, event: matplotlib.backend_bases.CloseEvent):
-        """Stop tracking plots that are still open when the plots get closed."""
+        # Stop tracking plots that are still open when the plots get closed.
         to_remove = None
         for fig in self._open_plots:
             if fig.canvas == event.canvas:
@@ -39,9 +44,9 @@ class AbstractPlotHandler(ABC):
             self._open_plots.remove(to_remove)
 
     def _register_plot(self, fig: matplotlib.figure.Figure):
-        """Registers the given figure, to be closed when this instance is closed or destructed."""
+        # Registers the given figure, to be closed when this instance is closed or destructed.
         self._open_plots.append(fig)
-        fig.canvas.mpl_connect('close_event', self._on_plot_closed)
+        fig.canvas.mpl_connect("close_event", self._on_plot_closed)
 
     def _free_plots(self):
         for fig in copy.copy(self._open_plots):

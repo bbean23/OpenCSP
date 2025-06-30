@@ -21,13 +21,13 @@ class test_ImageProjection(unittest.TestCase):
 
         # Load display data
         self.file_image_projection_input = os.path.join(
-            opencsp_code_dir(), 'test/data/sofast_common/image_projection_test.h5'
+            opencsp_code_dir(), "test/data/sofast_common/image_projection_test.h5"
         )
         self.image_projection_data = ip.ImageProjectionData.load_from_hdf(self.file_image_projection_input)
 
         # Load display data
         self.file_image_projection_input = os.path.join(
-            opencsp_code_dir(), 'test/data/sofast_common/image_projection_test.h5'
+            opencsp_code_dir(), "test/data/sofast_common/image_projection_test.h5"
         )
         self.image_projection_data = ip.ImageProjectionData.load_from_hdf(self.file_image_projection_input)
 
@@ -48,6 +48,22 @@ class test_ImageProjection(unittest.TestCase):
         # Test un-setting the image_projection object
         image_projection.close()
         self.assertIsNone(ip.ImageProjection.instance())
+
+    def test_marker_images(self):
+        """Tests showing the cal marker images"""
+        # Load from HDF
+        image_projection = ip.ImageProjection.in_new_window(self.image_projection_data)
+        image_projection.show_calibration_marker_image()
+        image_projection.root.after(500, image_projection.close)
+        image_projection.run()
+
+    def test_fiducial_images(self):
+        """Tests showing the fiducial image"""
+        # Load from HDF
+        image_projection = ip.ImageProjection.in_new_window(self.image_projection_data)
+        image_projection.show_calibration_fiducial_image()
+        image_projection.root.after(500, image_projection.close)
+        image_projection.run()
 
     def test_on_close(self):
         """Tests closing callback"""
@@ -117,5 +133,5 @@ class test_ImageProjection(unittest.TestCase):
         image_projection.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

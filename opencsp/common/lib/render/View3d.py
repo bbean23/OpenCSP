@@ -83,7 +83,8 @@ class View3d(aph.AbstractPlotHandler):
     # ACCESS
 
     def is_3d(self) -> bool:
-        return self.view_spec['type'] == '3d'
+        """True if the view spec type is '3d'."""
+        return self.view_spec["type"] == "3d"
 
     # RENDER
 
@@ -96,7 +97,7 @@ class View3d(aph.AbstractPlotHandler):
         grid=None,  # Whether to include a grid on the plot axes.
         crop_to_image_frame=True,  # Set axis limits to image frame boundaries (camera views only).
         draw_image_frame=True,  # Draw the image frame boundaries (camera views only).
-        image_frame_style=rcps.outline(color='r'),  # Image frame boundary style.
+        image_frame_style=rcps.outline(color="r"),  # Image frame boundary style.
         image_frame_legend=False,  # Include image frame as a legend entry.
         legend=False,  # Draw the plot legend.
         block=False,
@@ -136,31 +137,31 @@ class View3d(aph.AbstractPlotHandler):
             self.z_limits = None
         # Axes aspect ratio.
         if equal:
-            if self.view_spec['type'] == '3d':
+            if self.view_spec["type"] == "3d":
                 ax3d.set_3d_axes_equal(self.axis)  # , set_zmin_zero=True, box_aspect=None)
             elif (
-                (self.view_spec['type'] == 'xy')
-                or (self.view_spec['type'] == 'xz')
-                or (self.view_spec['type'] == 'yz')
-                or (self.view_spec['type'] == 'image')
-                or (self.view_spec['type'] == 'vplane')
-                or (self.view_spec['type'] == 'camera')
+                (self.view_spec["type"] == "xy")
+                or (self.view_spec["type"] == "xz")
+                or (self.view_spec["type"] == "yz")
+                or (self.view_spec["type"] == "image")
+                or (self.view_spec["type"] == "vplane")
+                or (self.view_spec["type"] == "camera")
             ):
                 if (x_limits != None) or (y_limits != None):
                     lt.warn(
-                        'WARNING: In View3d.show(), setting equal axes while also setting axis limits can prevent axis limits from taking effect.'
+                        "WARNING: In View3d.show(), setting equal axes while also setting axis limits can prevent axis limits from taking effect."
                     )
-                self.axis.axis('equal')
+                self.axis.axis("equal")
             else:
                 lt.error(
                     "ERROR: In View3d.show(), unrecognized view_spec['type'] = '"
-                    + str(self.view_spec['type'])
+                    + str(self.view_spec["type"])
                     + "' encountered."
                 )
                 assert False
         # Crop.
-        if (self.view_spec['type'] == 'camera') and crop_to_image_frame:
-            frame_box = self.view_spec['camera'].frame_box_pq
+        if (self.view_spec["type"] == "camera") and crop_to_image_frame:
+            frame_box = self.view_spec["camera"].frame_box_pq
             pq_min = frame_box[0]
             pq_max = frame_box[1]
             p_min = pq_min[0]
@@ -170,13 +171,13 @@ class View3d(aph.AbstractPlotHandler):
             self.axis.set_xlim([p_min, p_max])
             self.axis.set_ylim([q_min, q_max])
         # Image frame.
-        if (self.view_spec['type'] == 'camera') and draw_image_frame:
+        if (self.view_spec["type"] == "camera") and draw_image_frame:
             # Fetch the image frame corners, and repeat the first corner to produce a closed contour.
-            corner_pq_list = self.view_spec['camera'].image_frame_corners()
+            corner_pq_list = self.view_spec["camera"].image_frame_corners()
             frame_pq_list = corner_pq_list.copy()
             frame_pq_list.append(corner_pq_list[0])
             if image_frame_legend:
-                image_frame_label = 'Image Frame'
+                image_frame_label = "Image Frame"
             else:
                 image_frame_label = None
             self.axis.plot(
@@ -200,10 +201,10 @@ class View3d(aph.AbstractPlotHandler):
             self.axis.set_ylim(y_limits)
             self.y_limits = y_limits
         if z_limits != None:
-            if self.view_spec['type'] == '3d':
+            if self.view_spec["type"] == "3d":
                 self.axis.set_zlim(z_limits)
                 self.z_limits = z_limits
-            elif (self.view_spec['type'] == 'xz') or (self.view_spec['type'] == 'yz'):
+            elif (self.view_spec["type"] == "xz") or (self.view_spec["type"] == "yz"):
                 self.axis.set_ylim(z_limits)
                 self.z_limits = z_limits
         # Grid.
@@ -217,6 +218,21 @@ class View3d(aph.AbstractPlotHandler):
     # INTERACTION
 
     def register_event_handler(self, event_type: str, callback: Callable[[backb.Event], None]):
+        """
+        Register an event handler for a specific event type.
+
+        Parameters
+        ----------
+        event_type : str
+            The type of event to register the handler for. For example "key_release_event".
+        callback : callable
+            The function to call when the event occurs.
+
+        Notes
+        -----
+        If a callback is already registered for the given event type, it will be
+        deregistered before the new callback is registered.
+        """
         # deregister the previous callback
         if event_type in self._callbacks:
             self.view.figure.canvas.mpl_disconnect(self._callbacks[event_type])
@@ -226,7 +242,22 @@ class View3d(aph.AbstractPlotHandler):
         self._callbacks[event_type] = self.view.figure.canvas.mpl_connect(event_type, callback)
 
     def on_key_press(self, event: backb.KeyEvent, draw_func: Callable):
-        if event.key == 'f5':
+        """
+        Handle a key press event.
+
+        Parameters
+        ----------
+        event : backb.KeyEvent
+            The key press event.
+        draw_func : callable
+            The function to call to redraw the view.
+
+        Notes
+        -----
+        If the pressed key is 'f5', the view will be cleared and redrawn using the
+        provided draw function.
+        """
+        if event.key == "f5":
             lt.info(time.time())
             self.clear()
             draw_func()
@@ -275,7 +306,7 @@ class View3d(aph.AbstractPlotHandler):
                     del kwargs[from_kw]
 
             # encapsulate x and y in a list, if not already a list
-            if not hasattr(x[0], 'len'):
+            if not hasattr(x[0], "len"):
                 x = [x]
                 y = [y]
 
@@ -294,7 +325,28 @@ class View3d(aph.AbstractPlotHandler):
 
     # WRITE
 
-    def show_and_save_multi_axis_limits(self, output_dir, output_figure_body, limits_list, grid=True):
+    def show_and_save_multi_axis_limits(self, output_dir, output_figure_body, limits_list: list[tuple], grid=True):
+        """
+        Draw and save the same plot multiple times with different axis limits.
+
+        Parameters
+        ----------
+        output_dir :
+            Directory where the figures will be saved.
+        output_figure_body :
+            Body of the figure to be saved.
+        limits_list :
+            List of axis limits. Each limit is a 4 tuple of (x_min, x_max, y_min, y_max)
+            for 2D plots or a 6 tuple of (x_min, x_max, y_min, y_max, z_min, z_max) for
+            3D plots. If None, the default limits will be used.
+        grid : bool, optional
+            Whether to display grid lines on the plot (default is True).
+
+        Notes
+        -----
+        If limits_list is None, the default limits will be used for all plots.
+        If a limit in limits_list is None, the default limits will be used for that plot.
+        """
         # Draw and save.
         if limits_list != None:
             for limits in limits_list:
@@ -325,10 +377,10 @@ class View3d(aph.AbstractPlotHandler):
         grid=True,  # Whether to include a grid on the plot axes.
         crop_to_image_frame=True,  # Set axis limits to image frame boundaries (camera views only).
         draw_image_frame=True,  # Draw the image frame boundaries (camera views only).
-        image_frame_style=rcps.outline(color='r'),  # Image frame boundary style.
+        image_frame_style=rcps.outline(color="r"),  # Image frame boundary style.
         image_frame_legend=False,  # Include image frame as a legend entry.
         legend=True,  # Whether to draw the plot legend.
-        format='png',  # Format to save the figure.  See matplotlib documentation for options.
+        format="png",  # Format to save the figure.  See matplotlib documentation for options.
         dpi=600,
     ):  # Dots per inch to save the plot.
         """
@@ -356,19 +408,38 @@ class View3d(aph.AbstractPlotHandler):
         # Save all figures, including this one.
         self.save(output_dir, output_figure_body, format=format, dpi=dpi)
 
-    def save(self, output_dir, output_figure_body, format='png', dpi=300) -> str:
+    def save(self, output_dir, output_figure_body, format="png", dpi=300) -> str:
+        """
+        Saves this view to an image file.
+
+        Parameters
+        ----------
+        output_dir : str
+            The directory where the output image will be saved.
+        output_figure_body : str
+            The base name of the output image.
+        format : str, optional
+            The file format to use (default is "png").
+        dpi : int, optional
+            The resolution of the output image, in dots per inch (default is 300).
+
+        Returns
+        -------
+        str
+            The full path to the saved output image file.
+        """
         # Ensure the output destination is available.
         if not (os.path.exists(output_dir)):
             os.makedirs(output_dir)
         # Add the projection choice.
-        output_figure_body += '_' + self.view_spec['type']
+        output_figure_body += "_" + self.view_spec["type"]
         # Add axis limit suffix.
         output_figure_body += self.limit_suffix()
         # Join with output directory.
         output_figure_dir_body = os.path.join(output_dir, output_figure_body)
         # Save the figure.
-        output_figure_dir_body_ext = output_figure_dir_body + '.' + format
-        lt.info('In View3d.save(), saving figure: ' + output_figure_dir_body_ext)
+        output_figure_dir_body_ext = output_figure_dir_body + "." + format
+        lt.info("In View3d.save(), saving figure: " + output_figure_dir_body_ext)
         self.view.set_size_inches(self.view.get_figwidth(), self.view.get_figheight(), forward=True)
         #    it could be that another backend requires the following instead:
         #    self.view.set_figwidth(self.view.get_figwidth() * dpi)
@@ -379,13 +450,24 @@ class View3d(aph.AbstractPlotHandler):
         return output_figure_dir_body_ext
 
     def limit_suffix(self):
-        limit_suffix_str = ''
+        """
+        Generates a suffix string based on the current axis limits.
+
+        For example, if the y-axis is limited to the range 0-100, then
+        the return value will be "_0x100".
+
+        Returns
+        -------
+        str
+            A string representing the axis limits, or an empty string if no limits are set.
+        """
+        limit_suffix_str = ""
         if self.x_limits:
-            limit_suffix_str += '_' + str(self.x_limits[0]) + 'x' + str(self.x_limits[1])
+            limit_suffix_str += "_" + str(self.x_limits[0]) + "x" + str(self.x_limits[1])
         if self.y_limits:
-            limit_suffix_str += '_' + str(self.y_limits[0]) + 'y' + str(self.y_limits[1])
+            limit_suffix_str += "_" + str(self.y_limits[0]) + "y" + str(self.y_limits[1])
         if self.z_limits:
-            limit_suffix_str += '_' + str(self.z_limits[0]) + 'z' + str(self.z_limits[1])
+            limit_suffix_str += "_" + str(self.z_limits[0]) + "z" + str(self.z_limits[1])
         return limit_suffix_str
 
     # Image Plotting
@@ -394,23 +476,23 @@ class View3d(aph.AbstractPlotHandler):
 
         This method is best for drawing an image by itself. For drawing images on
         top of other plots (example on top of 3D data) use draw_image instead."""
-        if self.view_spec['type'] == 'image':
+        if self.view_spec["type"] == "image":
             # load the image, as necessary
             load_as_necessary = lambda img: (img if not isinstance(img, str) else Image.open(img))
-            if 'X' in kwargs:
-                img = kwargs['X']
-                kwargs['X'] = load_as_necessary(img)
+            if "X" in kwargs:
+                img = kwargs["X"]
+                kwargs["X"] = load_as_necessary(img)
             elif len(args) > 0:
                 img = args[0]
                 args = list(args)
                 args[0] = load_as_necessary(img)
 
-            im = self.axis.imshow(*args, interpolation='none', **kwargs)
+            im = self.axis.imshow(*args, interpolation="none", **kwargs)
             if self.equal:
                 # self.axis.set_box_aspect(1)
                 pass
             if colorbar:
-                plt.title('')
+                plt.title("")
                 plt.colorbar(im, shrink=0.9)
 
     def draw_image(
@@ -497,11 +579,11 @@ class View3d(aph.AbstractPlotHandler):
         C: 2d numpy array
             The vaues corresponding to the regtangle made by the x and y lists.
         """
-        if self.view_spec['type'] in ['image']:
+        if self.view_spec["type"] in ["image"]:
             im = self.axis.pcolormesh(*args, **kwargs)
             # self.axis.set_box_aspect(1)
             if colorbar:
-                plt.title('')
+                plt.title("")
                 plt.colorbar(im, shrink=0.9)
 
     def contour(self, *args, colorbar=False, **kwargs) -> None:
@@ -517,32 +599,62 @@ class View3d(aph.AbstractPlotHandler):
            The height values over which the contour is drawn. Color-mapping is controlled by cmap, norm, vmin, and vmax.
 
         """
-        if self.view_spec['type'] == 'image':
+        if self.view_spec["type"] == "image":
             im = self.axis.contour(*args, **kwargs)
             self.axis.set_box_aspect(1)
             if colorbar:
-                plt.title('')
+                plt.title("")
                 plt.colorbar(im, shrink=0.9)
 
     def draw_hist2d(self, h, xedges, yedges, *args, colorbar=False, **kwargs):
-        if self.view_spec['type'] == 'image':
+        """
+        Draw a histogram of the given data.
+
+        Parameters
+        ----------
+        h : array_like
+            The histogram data. (shape 1xN or Nx1?)
+        xedges : array_like
+            The ticks (bins?) of the histogram along the x-axis.
+        yedges : array_like
+            The ticks (scale?) of the histogram along the y-axis.
+        *args
+            Additional arguments passed to `imshow`.
+        colorbar : bool, optional
+            Whether to display a colorbar. Default is False.
+        **kwargs
+            Additional keyword arguments passed to `imshow`.
+        """
+        if self.view_spec["type"] == "image":
             im = self.axis.imshow(h, **kwargs)
             plt.set_xticks(xedges)
             plt.set_yticks(yedges)
             self.axis.set_box_aspect(1)
             if colorbar:
-                plt.title('')
+                plt.title("")
                 plt.colorbar(im, shrink=0.9)
 
     def draw_heatmap_2d(
-        self,
-        heatmap_2d: np.ndarray,
-        x_range: tuple[float, float] = None,
-        y_range: tuple[float, float] = None,
-        scale=100.0,
-        style: rcheat.RenderControlHeatmap = None,
-        colorbar_unimplemented=False,
+        self, heatmap_2d, x_range=None, y_range=None, scale=100.0, style=None, colorbar_unimplemented=False
     ):
+        """
+        Draw a 2D heatmap.
+
+        Parameters
+        ----------
+        heatmap_2d : array_like
+            The heatmap data, shape (Y, X).
+        x_range : tuple of float, optional
+            The range of the x-axis, or None to use shape[1]. Default is None.
+        y_range : tuple of float, optional
+            The range of the y-axis, or None to use shape[0]. Default is None.
+        scale : float, optional
+            The scale of the heatmap. Uses spline zoom for scaling. Default is 100.0.
+        style : RenderControlHeatmap, optional
+            The style of the heatmap, or None for the default style. Default is None.
+        colorbar_unimplemented : bool, optional
+            Whether to display a colorbar (not implemented). Default is False.
+        """
         # validate input
         if heatmap_2d.ndim > 2:
             try:
@@ -586,18 +698,36 @@ class View3d(aph.AbstractPlotHandler):
             # TODO
             pass
 
-    # XYZ <---> PQ CONVERSION
-
     def xyz2pqw(self, xyz):
+        """
+        Convert XYZ coordinates to PQW coordinates for use in a 3d visualization.
+
+        How the values are converted is based on the view_spec for this view instance.
+        """
         return vs.xyz2pqw(xyz, self.view_spec)
 
     def xyz2pq(self, xyz):
+        """
+        Convert XYZ coordinates to PQ coordinates for use in a 2d visualization.
+
+        How the values are converted is based on the view_spec for this view instance.
+        """
         return vs.xyz2pq(xyz, self.view_spec)
 
     def pqw2xyz(self, pqw):
+        """
+        Convert PQW coordinates to XYZ coordinates for use in model coordinate system.
+
+        How the values are converted is based on the view_spec for this view instance.
+        """
         return vs.pqw2xyz(pqw, self.view_spec)
 
     def pq2xyz(self, pq):
+        """
+        Convert PQ coordinates to XYZ coordinates for use in a model coordinate system.
+
+        How the values are converted is based on the view_spec for this view instance.
+        """
         return vs.pq2xyz(pq, self.view_spec)
 
     # XYZ PLOTTING
@@ -617,9 +747,9 @@ class View3d(aph.AbstractPlotHandler):
             The style with which to draw the text, or None for rctxt.default(). By default None
         """
         if len(xyz) != 3:
-            lt.error_and_raise(ValueError, 'ERROR: In draw_xyz_text(), len(xyz)=', len(xyz), ' is not equal to 3.')
+            lt.error_and_raise(ValueError, "ERROR: In draw_xyz_text(), len(xyz)=", len(xyz), " is not equal to 3.")
 
-        if self.view_spec['type'] == '3d':
+        if self.view_spec["type"] == "3d":
             self.axis.text(
                 xyz[0],
                 xyz[1],
@@ -634,19 +764,19 @@ class View3d(aph.AbstractPlotHandler):
                 color=style.color,
                 rotation=np.rad2deg(style.rotation),
             )
-        elif self.view_spec['type'] in ['xy', 'xz', 'yz', 'vplane']:
+        elif self.view_spec["type"] in ["xy", "xz", "yz", "vplane"]:
             coords1, coords2 = None, None
 
-            if self.view_spec['type'] == 'xy':
+            if self.view_spec["type"] == "xy":
                 coords1 = xyz[0]
                 coords2 = xyz[1]
-            elif self.view_spec['type'] == 'xz':
+            elif self.view_spec["type"] == "xz":
                 coords1 = xyz[0]
                 coords2 = xyz[2]
-            elif self.view_spec['type'] == 'yz':
+            elif self.view_spec["type"] == "yz":
                 coords1 = xyz[1]
                 coords2 = xyz[2]
-            elif self.view_spec['type'] == 'vplane':
+            elif self.view_spec["type"] == "vplane":
                 pq = vs.xyz2pq(xyz, self.view_spec)
                 coords1 = pq[0]
                 coords2 = pq[1]
@@ -665,7 +795,7 @@ class View3d(aph.AbstractPlotHandler):
                     rotation=np.rad2deg(style.rotation),
                 )
 
-        elif self.view_spec['type'] == 'camera':
+        elif self.view_spec["type"] == "camera":
             pq = vs.xyz2pq(xyz, self.view_spec)
             if pq:
                 self.axis.text(
@@ -686,7 +816,7 @@ class View3d(aph.AbstractPlotHandler):
             lt.error_and_raise(
                 RuntimeError,
                 "ERROR: In View3d.draw_xyz_text(), unrecognized view_spec['type'] = '"
-                + str(self.view_spec['type'])
+                + str(self.view_spec["type"])
                 + "' encountered.",
             )
 
@@ -784,7 +914,7 @@ class View3d(aph.AbstractPlotHandler):
                 xyz_list = input_xyz_list
 
             # Draw the point list in 3d.
-            if self.view_spec['type'] == '3d':
+            if self.view_spec["type"] == "3d":
                 x_list = [xyz[0] for xyz in xyz_list]
                 y_list = [xyz[1] for xyz in xyz_list]
                 z_list = [xyz[2] for xyz in xyz_list]
@@ -804,17 +934,17 @@ class View3d(aph.AbstractPlotHandler):
                 )
 
             # Draw the point list in 2d.
-            elif self.view_spec['type'] in ['xy', 'yz', 'xz', 'vplane']:
-                if self.view_spec['type'] == 'xy':
+            elif self.view_spec["type"] in ["xy", "yz", "xz", "vplane"]:
+                if self.view_spec["type"] == "xy":
                     coords1 = [xyz[0] for xyz in xyz_list]
                     coords2 = [xyz[1] for xyz in xyz_list]
-                if self.view_spec['type'] == 'xz':
+                if self.view_spec["type"] == "xz":
                     coords1 = [xyz[0] for xyz in xyz_list]
                     coords2 = [xyz[2] for xyz in xyz_list]
-                if self.view_spec['type'] == 'yz':
+                if self.view_spec["type"] == "yz":
                     coords1 = [xyz[1] for xyz in xyz_list]
                     coords2 = [xyz[2] for xyz in xyz_list]
-                if self.view_spec['type'] == 'vplane':
+                if self.view_spec["type"] == "vplane":
                     pq_list = [vs.xyz2pq(xyz, self.view_spec) for xyz in xyz_list]
                     coords1 = [pq[0] for pq in pq_list]
                     coords2 = [pq[1] for pq in pq_list]
@@ -834,7 +964,7 @@ class View3d(aph.AbstractPlotHandler):
                 )
 
             # Draw the point list in the camera's perspective.
-            elif self.view_spec['type'] == 'camera':
+            elif self.view_spec["type"] == "camera":
                 pq_list = [vs.xyz2pq(xyz, self.view_spec) for xyz in xyz_list]
                 # Discard all "None" entries, and split into separate contiguous lists.
                 list_of_pq_lists = []
@@ -867,7 +997,7 @@ class View3d(aph.AbstractPlotHandler):
                 lt.error_and_raise(
                     RuntimeError,
                     "ERROR: In View3d.draw_xyz_list(), unrecognized view_spec['type'] = '"
-                    + str(self.view_spec['type'])
+                    + str(self.view_spec["type"])
                     + "' encountered.",
                 )
 
@@ -880,10 +1010,30 @@ class View3d(aph.AbstractPlotHandler):
         surface_style: RenderControlSurface = None,
         **kwargs,
     ):
+        """
+        Draw a custom-shaped surface in 3D space.
+
+        Parameters
+        ----------
+        x_mesh : np.ndarray
+            The x-coordinates of the surface mesh.
+        y_mesh : np.ndarray
+            The y-coordinates of the surface mesh.
+        z_mesh : np.ndarray
+            The z-coordinates of the surface mesh.
+        surface_style : RenderControlSurface, optional
+            The style of the surface, or None for the default style. By default None.
+        **kwargs
+            Additional keyword arguments passed to :py:func:`Axes3d.plot_surface`.
+
+        Notes
+        -----
+        This method is currently only implemented for view_spec "3d".
+        """
         if surface_style is None:
             surface_style = RenderControlSurface()
 
-        if self.view_spec['type'] == '3d':
+        if self.view_spec["type"] == "3d":
             axis: Axes3D = self.axis
 
             # Draw the surface
@@ -902,7 +1052,7 @@ class View3d(aph.AbstractPlotHandler):
 
             # Draw the contour plots
             if surface_style.contour:
-                for ax, mesh in [('x', x_mesh), ('y', y_mesh), ('z', z_mesh)]:
+                for ax, mesh in [("x", x_mesh), ("y", y_mesh), ("z", z_mesh)]:
                     if surface_style.contours[ax]:
                         mmin, mmax = np.min(mesh), np.max(mesh)
                         height = mmax - mmin
@@ -912,20 +1062,20 @@ class View3d(aph.AbstractPlotHandler):
                         upper_offset = mmax + np.max([height / 3, 1])
                         offset = lower_offset
                         elev, azim = axis.elev, axis.azim  # angle 0-360
-                        if ax == 'z':
+                        if ax == "z":
                             if elev < 0 or elev > 180:
                                 offset = upper_offset
-                        elif ax == 'x':
+                        elif ax == "x":
                             if azim > 90 and azim < 270:
                                 offset = upper_offset
-                        elif ax == 'y':
+                        elif ax == "y":
                             if azim < 0 or azim > 180:
                                 offset = upper_offset
 
                         # axis-specific arguments
                         contourf_kwargs = {}
-                        if ax != 'z':
-                            contourf_kwargs = {'zdir': ax}
+                        if ax != "z":
+                            contourf_kwargs = {"zdir": ax}
 
                         axis.contourf(
                             x_mesh,
@@ -950,8 +1100,28 @@ class View3d(aph.AbstractPlotHandler):
         surface_style: RenderControlSurface = None,
         **kwargs,
     ):
+        """
+        Draw a custom-shaped surface in 3D space.
+
+        Parameters
+        ----------
+        x_mesh : np.ndarray
+            The x-coordinates of the surface mesh.
+        y_mesh : np.ndarray
+            The y-coordinates of the surface mesh.
+        z_mesh : np.ndarray
+            The z-coordinates of the surface mesh.
+        surface_style : RenderControlSurface, optional
+            The style of the surface, or None for the default style. By default None.
+        **kwargs
+            Additional keyword arguments passed to :py:func:`Axes3d.plot_surface`.
+
+        Notes
+        -----
+        This method is currently only implemented for view_spec "3d".
+        """
         draw_callback = lambda: self._draw_xyz_surface_customshape(x_mesh, y_mesh, z_mesh, surface_style, **kwargs)
-        self.register_event_handler('key_release_event', lambda event: self.on_key_press(event, draw_callback))
+        self.register_event_handler("key_release_event", lambda event: self.on_key_press(event, draw_callback))
         draw_callback()
 
     def draw_xyz_surface(self, surface: np.ndarray, surface_style: RenderControlSurface = None, **kwargs):
@@ -1031,13 +1201,27 @@ class View3d(aph.AbstractPlotHandler):
     def draw_xyz_trisurface(
         self, x: np.ndarray, y: np.ndarray, z: np.ndarray, surface_style: RenderControlSurface = None, **kwargs
     ):
+        """
+        Draws a 3D trisurface plot.
+
+        Parameters
+        ----------
+        x : np.ndarray
+            The x-coordinates of the surface points.
+        y : np.ndarray
+            The y-coordinates of the surface points.
+        z : np.ndarray
+            The z-coordinates of the surface points.
+        surface_style : RenderControlSurface, optional
+            The color and alpha style, or None for the default value. Default is None.
+        **kwargs
+            Additional keyword arguments passed to the plot_trisurf function.
+        """
         if surface_style == None:
             surface_style = RenderControlSurface()
-        if self.view_spec['type'] == '3d':
+        if self.view_spec["type"] == "3d":
             self.axis.plot_trisurf(x, y, z, color=surface_style.color, alpha=surface_style.alpha, **kwargs)
 
-    # TODO tjlarki: currently unused
-    # TODO tjlarki: might want to remove, this is a very slow function
     def quiver(
         self,
         X: np.ndarray,
@@ -1048,6 +1232,10 @@ class View3d(aph.AbstractPlotHandler):
         W: np.ndarray,
         length: float = 0,
     ) -> None:
+        """
+        # TODO tjlarki: currently unused
+        # TODO tjlarki: might want to remove, this is a very slow function
+        """
         self.axis.quiver(X, Y, Z, U, V, W, length=0)
 
     # PQ PLOTTING
@@ -1066,23 +1254,23 @@ class View3d(aph.AbstractPlotHandler):
             The style with which to render the text, or None for rctxt.default(). Default is rctxt.default().
         """
         if (len(pq) != 2) and (len(pq) != 3):
-            lt.error_and_raise(RuntimeError, 'ERROR: In draw_pq_text(), len(pq)=', len(pq), ' is not equal to 2 or 3.')
+            lt.error_and_raise(RuntimeError, "ERROR: In draw_pq_text(), len(pq)=", len(pq), " is not equal to 2 or 3.")
         if style is None:
             style = rctxt.default()
 
-        if self.view_spec['type'] == '3d':
+        if self.view_spec["type"] == "3d":
             lt.error_and_raise(
                 RuntimeError,
                 "ERROR: In View3d.draw_pq_text(), incompatible view_spec['type'] = '"
-                + str(self.view_spec['type'])
+                + str(self.view_spec["type"])
                 + "' encountered.",
             )
         elif (
-            (self.view_spec['type'] == 'xy')
-            or (self.view_spec['type'] == 'xz')
-            or (self.view_spec['type'] == 'yz')
-            or (self.view_spec['type'] == 'vplane')
-            or (self.view_spec['type'] == 'camera')
+            (self.view_spec["type"] == "xy")
+            or (self.view_spec["type"] == "xz")
+            or (self.view_spec["type"] == "yz")
+            or (self.view_spec["type"] == "vplane")
+            or (self.view_spec["type"] == "camera")
         ):
             self.axis.text(
                 pq[0],
@@ -1102,7 +1290,7 @@ class View3d(aph.AbstractPlotHandler):
             lt.error_and_raise(
                 RuntimeError,
                 "ERROR: In View3d.draw_pq_text(), unrecognized view_spec['type'] = '"
-                + str(self.view_spec['type'])
+                + str(self.view_spec["type"])
                 + "' encountered.",
             )
 
@@ -1148,7 +1336,19 @@ class View3d(aph.AbstractPlotHandler):
                 + "Should be one of {allowed_types}.",
             )
 
-    def draw_p_list(self, input_p_list, style=rcps.default(), label=None):
+    def draw_p_list(self, input_p_list: list[numbers.Number], style: dict = rcps.default(), label: str = None) -> None:
+        """
+        Draw a list of points in 3D space.
+
+        Parameters
+        ----------
+        input_p_list : list
+            The list of points to draw.
+        style : dict
+            The style to use for drawing, defaults to rcps.default().
+        label : str
+            The label to use for the drawn points, defaults to None.
+        """
         pq_list = [(i, input_p_list[i]) for i in range(len(input_p_list))]
         self.draw_pq_list(pq_list, style=style, label=label)
 
@@ -1236,12 +1436,12 @@ class View3d(aph.AbstractPlotHandler):
             # construct the color map
             cmap = gradient
             if gradient == True:
-                cmap = 'viridis'
+                cmap = "viridis"
             if isinstance(cmap, str):
                 cmap = matplotlib.colormaps[cmap]
 
             # set the color map
-            self.axis.set_prop_cycle('color', [cmap(i) for i in np.linspace(0.0, 1.0, len(pq_list) - 1)])
+            self.axis.set_prop_cycle("color", [cmap(i) for i in np.linspace(0.0, 1.0, len(pq_list) - 1)])
 
             # draw the line segments
             for i in range(len(pq_list) - 1):
@@ -1266,6 +1466,23 @@ class View3d(aph.AbstractPlotHandler):
         style: rcps.RenderControlPointSeq = rcps.default(),
         label: str = None,
     ):
+        """
+        Draw a list of 3D points with direction vectors.
+
+        Parameters
+        ----------
+        input_xyzdxyz_list : list[list[list, list]]
+            A list of 3D points with direction vectors, where each point is represented as [[x, y, z], [dx, dy, dz]].
+        close : bool, optional
+            Whether to draw the points as a closed polygon (from the last point back to the first).
+            If less than three points are provided, this parameter is ignored.
+            Default is False.
+        style : rcps.RenderControlPointSeq, optional
+            The rendering style for the points and vectors. Default is rcps.default().
+        label : str, optional
+            A label for the drawn points and vectors, for the legend. Default is None.
+        """
+
         if len(input_xyzdxyz_list) > 0:
             # No need to close the xyzdxyz list, since draw_xyz_list will do it.
             xyzdxyz_list = input_xyzdxyz_list
@@ -1300,6 +1517,23 @@ class View3d(aph.AbstractPlotHandler):
         style=rcps.default(),
         label=None,
     ):
+        """
+        Draw a list of 2D points with direction vectors.
+
+        Parameters
+        ----------
+        input_pqdpq_list : list[list[list, list]]
+            A list of 2D points with direction vectors, where each point is represented as [[p, q], [dp, dq]].
+        close : bool, optional
+            Whether to draw the points as a closed polygon (from the last point back to the first).
+            If less than three points are provided, this parameter is ignored.
+            Default is False.
+        style : rcps.RenderControlPointSeq, optional
+            The rendering style for the points and vectors. Default is rcps.default().
+        label : str, optional
+            A label for the drawn points and vectors, for the legend. Default is None.
+        """
+
         if len(input_pqdpq_list) > 0:
             # No need to close the pqdpq list, since draw_pq_list will do it.
             pqdpq_list = input_pqdpq_list

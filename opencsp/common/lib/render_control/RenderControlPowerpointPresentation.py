@@ -9,6 +9,8 @@ import opencsp.common.lib.tool.time_date_tools as tdt
 
 
 class RenderControlPowerpointPresentation:
+    """Create a new presentation instance to which to add slides."""
+
     def __init__(self, new_slides: list[pps.PowerpointSlide] = None, existing_presentation_path_name_ext: str = None):
         """Create a new presentation instance to which to add slides.
 
@@ -47,9 +49,30 @@ class RenderControlPowerpointPresentation:
         self.presentation = pptx.Presentation()
 
     def get_title_layout(self):
+        """
+        Gets the layout of the presentation's title slide.
+
+        Returns
+        -------
+        layout : pptx.slide_layout
+            The layout of the presentation's title slide.
+        """
         return self.presentation.slide_layouts[0]
 
     def get_content_layout(self):
+        """
+        Gets the layout of the presentation's content slides, as determined by
+        the slide master's second layout.
+
+        See also:
+            - :py:attr:`Presentation.slide_layout`
+            - :py:class:`SlideMasters`
+
+        Returns
+        -------
+        layout : pptx.slide_layout
+            The layout of the presentation's content slides.
+        """
         return self.presentation.slide_layouts[1]
 
     def add_slide(self, slide: pps.PowerpointSlide):
@@ -61,12 +84,36 @@ class RenderControlPowerpointPresentation:
         slide.save()
 
     def save(self, dest_path_name_ext: str, overwrite=False):
+        """
+        Saves the presentation to a pptx formatted file.
+
+        This process can take a little while (10s of seconds) depending on
+        the size of the presentation and especially the number of images.
+
+        It is suggested that :py:meth:`clear_tmp` be called after the presentation
+        has been rendered/saved for the last time.
+
+        Parameters
+        ----------
+        dest_path_name_ext : str
+            The path to save the presentation to.
+        overwrite : bool
+            Whether to overwrite the file if it already exists.
+
+        Raises
+        ------
+        RuntimeError
+            If the file already exists and overwrite is False. A check is done
+            both when this function starts and before the final file is written
+            to, in case the file was created by another process in the
+            intervening time.
+        """
         # check if the file already exists
         if ft.file_exists(dest_path_name_ext):
             if not overwrite:
                 lt.error_and_raise(
                     FileExistsError,
-                    f"Error: in RenderControlPowerpointPresentation.save: trying to save presentation to \"{dest_path_name_ext}\" but the file already exists",
+                    f'Error: in RenderControlPowerpointPresentation.save: trying to save presentation to "{dest_path_name_ext}" but the file already exists',
                 )
 
         dest_path, _, _ = ft.path_components(dest_path_name_ext)
@@ -74,7 +121,7 @@ class RenderControlPowerpointPresentation:
         if not ft.directory_exists(dest_path):
             lt.error_and_raise(
                 FileNotFoundError,
-                f"Error: in RenderControlPowerpointPresentation.save: destination directory \"{dest_path}\" doesn't exist",
+                f'Error: in RenderControlPowerpointPresentation.save: destination directory "{dest_path}" doesn\'t exist',
             )
 
         # setup
@@ -121,5 +168,8 @@ class RenderControlPowerpointPresentation:
 
     @staticmethod
     def clear_tmp():
+        """
+        Clears the temporary files associated with rendering the presentation.
+        """
         pps.PowerpointImage.clear_tmp_save_all()
         pps.PowerpointText.clear_tmp_save_all()

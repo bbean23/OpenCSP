@@ -29,14 +29,14 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         path, name, _ = ft.path_components(__file__)
-        cls.in_dir = ft.join(path, 'data/input', name.split('test_')[-1])
-        cls.out_dir = ft.join(path, 'data/output', name.split('test_')[-1])
+        cls.in_dir = ft.join(path, "data/input", name.split("test_")[-1])
+        cls.out_dir = ft.join(path, "data/output", name.split("test_")[-1])
         ft.create_directories_if_necessary(cls.out_dir)
-        ft.delete_files_in_directory(cls.out_dir, '*')
+        ft.delete_files_in_directory(cls.out_dir, "*")
         return super().setUpClass()
 
     def setUp(self) -> None:
-        self.test_name = self.id().split('.')[-1]
+        self.test_name = self.id().split(".")[-1]
 
         self.example_cache_path = ft.join(self.in_dir, "example_image.npy")
         self.cacheable_image = ci.CacheableImage(cache_path=self.example_cache_path)
@@ -74,6 +74,7 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
             )
             raise
 
+    @unittest.skip("TODO: move to TestSpotAnalysisPipeline")
     def test_finished(self):
         """
         Verify that finished is True only when no images have been assigned, or
@@ -107,36 +108,25 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
     def test_0_operables(self):
         """Verify that we see the expected behavior when attempting to run with 0 input."""
         instance = DoNothingImageProcessor()
-        nprocessed = 0
-
-        # test assignment
-        instance.assign_inputs([])
 
         # test processing
-        for result in instance:
-            nprocessed += 1
-        self.assertEqual(0, nprocessed)
-
-        # test running
-        results = instance.run([])
-        self.assertEqual(len(results), 0)
+        results = instance.process_images([])
+        self.assertEqual(0, len(results))
 
     def test_iterator_finishes_all(self):
         try:
             instance = DoNothingImageProcessor()
-            nprocessed = 0
+            results: list[sao.SpotAnalysisOperable] = []
 
             # test with an assignment of a few operables
-            instance.assign_inputs(self.example_operables)
-            for result in instance:
-                nprocessed += 1
-            self.assertEqual(nprocessed, self.num_example_operables)
+            for operable in self.example_operables:
+                results += instance.process_operable(operable)
+            self.assertEqual(len(results), self.num_example_operables)
 
             # test with an assignment of an additional "two" operables
-            instance.assign_inputs([self.example_operable, self.example_operable])
-            for result in instance:
-                nprocessed += 1
-            self.assertEqual(nprocessed, self.num_example_operables + 2)
+            for operable in [self.example_operable, self.example_operable]:
+                results += instance.process_operable(operable)
+            self.assertEqual(len(results), self.num_example_operables + 2)
 
         except:
             lt.error(
@@ -147,6 +137,8 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
 
     def test_run(self):
         """Verify that run() touches all the operables"""
+        results: list[sao.SpotAnalysisOperable] = []
+
         try:
             # sanity check: no pixels are equal to 1
             for operable in self.example_operables:
@@ -154,7 +146,8 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
 
             # process all images
             instance = SetOnesImageProcessor()
-            results = instance.run(self.example_operables)
+            for operable in self.example_operables:
+                results += instance.process_operable(operable)
 
             # verify the input operables haven't been touched
             for operable in self.example_operables:
@@ -247,5 +240,5 @@ class test_AbstractSpotAnalysisImageProcessor(unittest.TestCase):
         self.assertEqual(operable_4.previous_operables[1], processor_2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

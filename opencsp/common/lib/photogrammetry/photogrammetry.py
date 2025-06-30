@@ -91,7 +91,7 @@ def valid_camera_pose(
 
     Parameters
     ----------
-    camera : Camera
+    camera : opencsp.common.lib.camera.Camera.Camera
         Camera object.
     rvecs : ndarray
         Shape (3,) rvec array.
@@ -122,10 +122,10 @@ def valid_camera_pose(
     # Check if z < 0 or reprojection error is large
     valid = True
     if pts_cam_z.min() < 0:
-        lt.debug('Object points located behind camera during camera pose calculation.')
+        lt.debug("Object points located behind camera during camera pose calculation.")
         valid = False
     if error.max() > reproj_thresh:
-        lt.debug(f'Reprojection error above {reproj_thresh:.2f} during camera pose calculation')
+        lt.debug(f"Reprojection error above {reproj_thresh:.2f} during camera pose calculation")
         valid = False
     return valid
 
@@ -193,19 +193,19 @@ def plot_pts_3d(ax: plt.Axes, pts_obj: ndarray, rots: list[Rotation], tvecs: Vxy
         rot_cam_obj = rot_obj_cam.inv()
         # Point
         vec_obj = -v_cam.rotate(rot_cam_obj)
-        ax.scatter3D(*vec_obj.data.squeeze(), color='k')
+        ax.scatter3D(*vec_obj.data.squeeze(), color="k")
         # Pose arrow
         vec_obj_pose = Pxyz((0, 0, needle_length)).rotate(rot_cam_obj)
         xs = [vec_obj.x[0], vec_obj.x[0] + vec_obj_pose.x[0]]
         ys = [vec_obj.y[0], vec_obj.y[0] + vec_obj_pose.y[0]]
         zs = [vec_obj.z[0], vec_obj.z[0] + vec_obj_pose.z[0]]
-        ax.plot(xs, ys, zs, color='red')
+        ax.plot(xs, ys, zs, color="red")
         # Text
         ax.text3D(*vec_obj.data.squeeze(), idx)
     # Axis labels
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
 
 
 def align_points(pts_obj: Vxyz, vals: Vxyz, scale: bool = False) -> tuple[TransformXYZ, float, ndarray[float]]:
@@ -219,13 +219,13 @@ def align_points(pts_obj: Vxyz, vals: Vxyz, scale: bool = False) -> tuple[Transf
     pts_obj : Vxyz
         Object points, meters.
     vals : Vxyz
-        [(x1, y1, z1), (x2, y2, z2), ...] The expected coordinate values
+        ``[(x1, y1, z1), (x2, y2, z2), ...]`` The expected coordinate values
         of each coordinate index that correspond to points in pts_obj.
         If a coordinate is to be ignored, set it to np.nan.
-        Example:
-            [(np.nan, 0, np.nan), (np.nan, 0, np.nan), (0, 0, np.nan)]
+
+        For example: ``[(np.nan, 0, np.nan), (np.nan, 0, np.nan), (0, 0, np.nan)]``
     scale : bool
-        To apply a scaling factor to points, by default False
+        To apply a scaling factor to points (default False)
 
     Returns
     -------
@@ -233,7 +233,6 @@ def align_points(pts_obj: Vxyz, vals: Vxyz, scale: bool = False) -> tuple[Transf
         Point cloud Transform object
         Point cloud scale factor
         Point alignment error, meters
-
     """
 
     def calc_point_errors(vec: ndarray):
@@ -270,7 +269,7 @@ def align_points(pts_obj: Vxyz, vals: Vxyz, scale: bool = False) -> tuple[Transf
         vec = np.array([0, 0, 0, 0, 0, 0, 1], dtype=float)
     else:
         vec = np.array([0, 0, 0, 0, 0, 0], dtype=float)
-    x = minimize(align_merit_fcn, vec, method='Powell')
+    x = minimize(align_merit_fcn, vec, method="Powell")
 
     # Calculate final alignment error
     e_final = calc_point_errors(x.x)
@@ -383,7 +382,7 @@ def triangulate(
 
     Parameters
     ----------
-    cameras : list[Camera]
+    cameras : list[opencsp.common.lib.camera.Camera.Camera]
         N Camera objects used to capture images
     rots : list[Rotation]
         N world to camera Rotations

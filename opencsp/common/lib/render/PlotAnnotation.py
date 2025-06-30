@@ -38,16 +38,16 @@ class PlotAnnotation:
         Plot the annotation.  assumes that desired plot is active.
         """
         # Point sequence.
-        if self.type == 'point_seq':
+        if self.type == "point_seq":
             if (self.pt_list != None) and (len(self.pt_list) > 0):
                 pt0 = self.pt_list[0]  # Sample for length check.
                 if len(pt0) == 2:
                     cropped_pt_list = self.crop_pt_list_to_box(self.pt_list, crop_box)
                     if (len(cropped_pt_list) < len(self.pt_list)) and (
-                        (isinstance(self.style, type(rcps.default()))) and (self.style.linestyle != 'None')
+                        (isinstance(self.style, type(rcps.default()))) and (self.style.linestyle != "None")
                     ):
                         print(
-                            'WARNING: In PlotAnnotation.plot(), current implementation of point cropping does not ensure proper drawing of lines connecting points.'
+                            "WARNING: In PlotAnnotation.plot(), current implementation of point cropping does not ensure proper drawing of lines connecting points."
                         )
                     plt.plot(
                         [pt[0] for pt in cropped_pt_list],
@@ -86,7 +86,7 @@ class PlotAnnotation:
                     assert False
 
         # Text.
-        elif self.type == 'text':
+        elif self.type == "text":
             if (self.pt_list != None) and (len(self.pt_list) > 0):
                 pt = self.pt_list[0]  # Any points beyond first are ignored.
                 if len(pt) == 2:
@@ -158,7 +158,7 @@ class PlotAnnotation:
             cv.imwrite(img_dir_body_ext, img)
         """
         # Point sequence.
-        if self.type == 'point_seq':
+        if self.type == "point_seq":
             if (self.pt_list != None) and (len(self.pt_list) > 0):
                 pt0 = self.pt_list[0]  # Sample for length check.
                 if (
@@ -174,16 +174,16 @@ class PlotAnnotation:
                     # Crop to box, if given.  (Recall that OpenCV automatically crops to image boundary.)
                     cropped_pt_list = self.crop_pt_list_to_box(self.pt_list, crop_box)
                     if (len(cropped_pt_list) < len(self.pt_list)) and (
-                        (isinstance(self.style, type(rcps.default()))) and (self.style.linestyle != 'None')
+                        (isinstance(self.style, type(rcps.default()))) and (self.style.linestyle != "None")
                     ):
                         print(
-                            'WARNING: In PlotAnnotation.image_draw(), current implementation of point cropping does not ensure proper drawing of lines connecting points.'
+                            "WARNING: In PlotAnnotation.image_draw(), current implementation of point cropping does not ensure proper drawing of lines connecting points."
                         )
                     # Connecting lines.
-                    if (len(cropped_pt_list) > 1) and (self.style.linestyle != 'None'):
-                        if (self.style.linestyle != '-') and (self.style.linestyle != 'solid'):
+                    if (len(cropped_pt_list) > 1) and (self.style.linestyle != "None"):
+                        if (self.style.linestyle != "-") and (self.style.linestyle != "solid"):
                             print(
-                                'WARNING: In PlotAnnotation.image_draw(), dashed or dotted lines are not implemented yet.  Drawing a solid line instead.'
+                                "WARNING: In PlotAnnotation.image_draw(), dashed or dotted lines are not implemented yet.  Drawing a solid line instead."
                             )
                         color = self.opencv_color(self.style.color)
                         thickness = int(self.style.linewidth)
@@ -198,7 +198,7 @@ class PlotAnnotation:
                                 cv.line(image, prev_int_pt, int_pt, color, thickness, connect_line_type)
                             prev_int_pt = int_pt
                     # Markers.
-                    if self.style.marker != 'None':
+                    if self.style.marker != "None":
                         for int_or_float_pt in cropped_pt_list:
                             center = [int(int_or_float_pt[0]), int(int_or_float_pt[1])]
                             radius = int(
@@ -207,10 +207,10 @@ class PlotAnnotation:
                             if radius == 0:
                                 radius = 1
                             marker = self.style.marker
-                            if marker == '.':
+                            if marker == ".":
                                 plot_color = self.style.markerfacecolor
                                 thickness = -1  # Filled
-                            elif marker == 'o':
+                            elif marker == "o":
                                 plot_color = self.style.markeredgecolor
                                 thickness = int(
                                     self.style.markeredgewidth
@@ -231,11 +231,11 @@ class PlotAnnotation:
                     # Label text.
                     if (self.text is not None) and (len(self.text) > 0):
                         print(
-                            'WARNING: In PlotAnnotation.image_draw(), drawing legend labels for points is not implemented yet.'
+                            "WARNING: In PlotAnnotation.image_draw(), drawing legend labels for points is not implemented yet."
                         )
 
         # Text.
-        elif self.type == 'text':
+        elif self.type == "text":
             if (self.pt_list != None) and (len(self.pt_list) > 0):
                 int_or_float_pt0 = self.pt_list[0]  # Any points beyond first are ignored.
                 if len(int_or_float_pt0) != 2:
@@ -271,7 +271,23 @@ class PlotAnnotation:
             print('ERROR: In PlotAnnotation.image_draw(), unexpected type="' + str(type) + '" encountered.')
             assert False
 
-    def crop_pt_list_to_box(self, input_point_list, crop_box):
+    def crop_pt_list_to_box(self, input_point_list: list[tuple[float, float]], crop_box: list[tuple, tuple]) -> list:
+        """
+        Crop a list of points to a specified box.
+
+        Parameters
+        ----------
+        input_point_list : list
+            List of points, where each point is a [x, y] pair.
+        crop_box : list, optional
+            Box defined by the corners [xy_min, xy_max]. If None, no cropping is performed.
+
+        Returns
+        -------
+        list
+            A new list of the points that are within the crop box, or the input list
+            if crop_box is None.
+        """
         if crop_box is None:
             return input_point_list
         else:
@@ -289,7 +305,22 @@ class PlotAnnotation:
                     cropped_pt_list.append(pt)
             return cropped_pt_list
 
-    def point_is_in_crop_box(self, point, crop_box):
+    def point_is_in_crop_box(self, point: list, crop_box: list) -> bool:
+        """
+        Check if a point is within a specified box.
+
+        Parameters
+        ----------
+        point : list
+            Point defined by a [x, y] pair.
+        crop_box : list, optional
+            Box defined by the corners [xy_min, xy_max]. If None, then return True.
+
+        Returns
+        -------
+        bool
+            True if the point is within the crop box, False otherwise.
+        """
         if crop_box is None:
             return True
         else:
@@ -310,21 +341,21 @@ class PlotAnnotation:
         """
         OpenCV colors are (B,G,R) tuples.
         """
-        if (plot_color == 'k') or (plot_color == 'black'):
+        if (plot_color == "k") or (plot_color == "black"):
             return (0, 0, 0)
-        elif (plot_color == 'w') or (plot_color == 'white'):
+        elif (plot_color == "w") or (plot_color == "white"):
             return (255, 255, 255)
-        elif (plot_color == 'r') or (plot_color == 'red'):
+        elif (plot_color == "r") or (plot_color == "red"):
             return (0, 0, 255)
-        elif (plot_color == 'g') or (plot_color == 'green'):
+        elif (plot_color == "g") or (plot_color == "green"):
             return (0, 255, 0)
-        elif (plot_color == 'b') or (plot_color == 'blue'):
+        elif (plot_color == "b") or (plot_color == "blue"):
             return (255, 0, 0)
-        elif (plot_color == 'c') or (plot_color == 'cyan'):
+        elif (plot_color == "c") or (plot_color == "cyan"):
             return (255, 255, 0)
-        elif (plot_color == 'm') or (plot_color == 'magenta'):
+        elif (plot_color == "m") or (plot_color == "magenta"):
             return (255, 0, 255)
-        elif (plot_color == 'y') or (plot_color == 'yellow'):
+        elif (plot_color == "y") or (plot_color == "yellow"):
             return (0, 255, 255)
         else:
             print(
@@ -356,12 +387,12 @@ class PlotAnnotation:
         """
         See https://codeyarns.com/tech/2015-03-11-fonts-in-opencv.html
         """
-        if plot_fontstyle == 'normal':
+        if plot_fontstyle == "normal":
             font = cv.FONT_HERSHEY_SIMPLEX
-        elif plot_fontstyle == 'italic':
+        elif plot_fontstyle == "italic":
             font = cv.FONT_HERSHEY_SIMPLEX
             font += cv.FONT_ITALIC
-        elif plot_fontstyle == 'oblique':
+        elif plot_fontstyle == "oblique":
             font = cv.FONT_HERSHEY_SIMPLEX
             font += cv.FONT_ITALIC
         else:
@@ -380,19 +411,19 @@ class PlotAnnotation:
         standard_scale = 0.4
         if mt.is_number(plot_fontsize):
             scale = standard_scale * plot_fontsize
-        elif plot_fontsize == 'xx-small':
+        elif plot_fontsize == "xx-small":
             scale = standard_scale * 0.25
-        elif plot_fontsize == 'x-small':
+        elif plot_fontsize == "x-small":
             scale = standard_scale * 0.50
-        elif plot_fontsize == 'small':
+        elif plot_fontsize == "small":
             scale = standard_scale * 0.75
-        elif plot_fontsize == 'medium':
+        elif plot_fontsize == "medium":
             scale = standard_scale * 1.00
-        elif plot_fontsize == 'large':
+        elif plot_fontsize == "large":
             scale = standard_scale * 1.5
-        elif plot_fontsize == 'x-large':
+        elif plot_fontsize == "x-large":
             scale = standard_scale * 2.0
-        elif plot_fontsize == 'xx-large':
+        elif plot_fontsize == "xx-large":
             scale = standard_scale * 3.0
         else:
             print(
@@ -407,11 +438,11 @@ class PlotAnnotation:
         """
         OpenCV font thickness must be an integer.
         """
-        if plot_fontweight == 'light':
+        if plot_fontweight == "light":
             thickness = 1
-        elif plot_fontweight == 'normal':
+        elif plot_fontweight == "normal":
             thickness = 3
-        elif plot_fontweight == 'bold':
+        elif plot_fontweight == "bold":
             thickness = 6
         else:
             print(
@@ -423,8 +454,45 @@ class PlotAnnotation:
         return thickness
 
     def opencv_origin(
-        self, text, int_pt, font, font_scale, font_thickness, plot_horizontalalignment, plot_verticalalignment
+        self,
+        text,
+        int_pt,
+        font=0,
+        font_scale=1.0,
+        font_thickness=1,
+        plot_horizontalalignment: str = None,
+        plot_verticalalignment: str = None,
     ):
+        """
+        Compute the origin point for OpenCV text drawing.
+
+        Parameters
+        ----------
+        text : str
+            The text to be drawn.
+        int_pt : list[int, int]
+            The input point (x, y) where the text will be drawn.
+        font : int, optional
+            The OpenCV font type. Default 0.
+        font_scale : float, optional
+            The font scale. Default 1.0.
+        font_thickness : int, optional
+            The font thickness. Default 1.
+        plot_horizontalalignment : str, optional
+            The horizontal alignment of the text. Can be 'left', 'center', or 'right'. Default "center".
+        plot_verticalalignment : str, optional
+            The vertical alignment of the text. Can be 'bottom', 'center', or 'top'. Default "center".
+
+        Returns
+        -------
+        list[int, int]
+            The origin point (x, y) for OpenCV text drawing.
+
+        Notes
+        -----
+        This method uses OpenCV's getTextSize function to determine the size of the text,
+        and then computes the origin point based on the input point and the text alignment.
+        """
         # Determine size of text.
         text_box, baseline = cv.getTextSize(text, font, font_scale, font_thickness)
         width = text_box[0]
@@ -433,11 +501,11 @@ class PlotAnnotation:
         input_x = int_pt[0]
         input_y = int_pt[1]
         # Compute origin x.
-        if plot_horizontalalignment == 'left':
+        if plot_horizontalalignment == "left":
             origin_x = input_x
-        elif plot_horizontalalignment == 'center':
+        elif plot_horizontalalignment == "center" or plot_horizontalalignment is None:
             origin_x = input_x - int(width / 2)
-        elif plot_horizontalalignment == 'right':
+        elif plot_horizontalalignment == "right":
             origin_x = input_x - width
         else:
             print(
@@ -447,11 +515,11 @@ class PlotAnnotation:
             )
             assert False
         # Compute origin y.
-        if plot_verticalalignment == 'bottom':
+        if plot_verticalalignment == "bottom":
             origin_y = input_y
-        elif plot_verticalalignment == 'center':
+        elif plot_verticalalignment == "center" or plot_verticalalignment is None:
             origin_y = input_y + int(height / 2)  # Recall that in images, y is flipped.
-        elif plot_verticalalignment == 'top':
+        elif plot_verticalalignment == "top":
             origin_y = input_y + height  # Recall that in images, y is flipped.
         else:
             print(
@@ -467,35 +535,35 @@ class PlotAnnotation:
 # COMMON CASES
 
 
-def outline_annotation(point_list, color='k', linewidth=1):
+def outline_annotation(point_list, color="k", linewidth=1):
     """
     Outlines of physical objects.
     """
-    return PlotAnnotation('point_seq', point_list, None, rcps.outline(color=color, linewidth=linewidth))
+    return PlotAnnotation("point_seq", point_list, None, rcps.outline(color=color, linewidth=linewidth))
 
 
-def data_curve_annotation(point_list, color='b', linewidth=1):
+def data_curve_annotation(point_list, color="b", linewidth=1):
     """
     A data curve with data points identified.
     """
-    return PlotAnnotation('point_seq', point_list, None, rcps.data_curve(color=color, linewidth=linewidth))
+    return PlotAnnotation("point_seq", point_list, None, rcps.data_curve(color=color, linewidth=linewidth))
 
 
-def marker_annotation(point_list, marker='o', color='b', markersize=3):
+def marker_annotation(point_list, marker="o", color="b", markersize=3):
     """
     A data curve with data points identified.
     """
-    return PlotAnnotation('point_seq', point_list, None, rcps.marker(marker='o', color='b', markersize=3))
+    return PlotAnnotation("point_seq", point_list, None, rcps.marker(marker="o", color="b", markersize=3))
 
 
 def text_annotation(
-    point, text_str, fontsize='medium', color='b', horizontalalignment='center', verticalalignment='center'
+    point, text_str, fontsize="medium", color="b", horizontalalignment="center", verticalalignment="center"
 ):
     """
     A text annotation.
     """
     return PlotAnnotation(
-        'text',
+        "text",
         [point],
         text_str,
         rctxt.RenderControlText(

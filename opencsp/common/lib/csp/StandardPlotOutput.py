@@ -372,6 +372,13 @@ class StandardPlotOutput:
 
         # Draw reference if available
         if self._has_reference_ray_trace:
+            # fig_rec.axis.plot(
+            #     self._ray_trace_output_reference.ensquared_energy_widths,
+            #     self._ray_trace_output_reference.ensquared_energy_values,
+            #     label="Reference",
+            #     color="k",
+            #     linestyle="--",
+            # )
             widths_and_vals = list(
                 zip(
                     self._ray_trace_output_reference.ensquared_energy_widths,
@@ -384,6 +391,13 @@ class StandardPlotOutput:
 
         # Draw measured if available
         if self._has_measured_ray_trace:
+            # fig_rec.axis.plot(
+            #     self._ray_trace_output_measured.ensquared_energy_widths,
+            #     self._ray_trace_output_measured.ensquared_energy_values,
+            #     label="Measured",
+            #     color="k",
+            #     linestyle="-",
+            # )
             widths_and_vals = list(
                 zip(
                     self._ray_trace_output_measured.ensquared_energy_widths,

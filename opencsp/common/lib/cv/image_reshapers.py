@@ -76,6 +76,60 @@ def _map_jet_human_rgb(input_color: int):
 
 
 def nchannels_reshaper(from_image: np.ndarray, new_nchannels: int):
+    """
+    Reshape the number of channels in an image.
+
+    This function takes an input image and reshapes it to have a specified
+    number of channels. It supports conversions between single-channel (grayscale),
+    three-channel (RGB), and four-channel (RGBA) images. The function handles
+    broadcasting for single-channel images and converts RGBA images to RGB or
+    grayscale as needed.
+
+    Parameters
+    ----------
+    from_image : np.ndarray
+        The input image array. It can be a 2D array (height, width) for
+        single-channel images or a 3D array (height, width, channels) for
+        multi-channel images.
+
+    new_nchannels : int
+        The desired number of channels for the output image. Must be one of
+        the following: 1 (grayscale), 3 (RGB), or 4 (RGBA).
+
+    Returns
+    -------
+    np.ndarray
+        A new image array with the specified number of channels. The output
+        will have the shape (height, width, new_nchannels).
+
+    Raises
+    ------
+    ValueError
+        If the conversion from the old number of channels to the new number
+        of channels is not supported.
+
+    Notes
+    -----
+    - If the input image has fewer than 3 dimensions, it will be expanded
+      to have a third dimension.
+    - If the input image is in RGBA format and the new number of channels
+      is set to 1, the image will be converted to grayscale.
+    - If the input image is in RGBA format and the new number of channels
+      is set to 3, the alpha channel will be discarded.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> img = np.random.rand(100, 100, 4)  # Example RGBA image
+    >>> reshaped_img = nchannels_reshaper(img, 3)  # Convert to RGB
+    >>> reshaped_img.shape
+    (100, 100, 3)
+
+    >>> gray_img = nchannels_reshaper(img, 1)  # Convert to grayscale
+    >>> gray_img.shape
+    (100, 100, 1)
+    """
+    # ChatGPT 4o-mini assisted with generating this docstring
     (height, width), old_nchannels = it.dims_and_nchannels(from_image)
     new_image = from_image
 
