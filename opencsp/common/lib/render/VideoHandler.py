@@ -101,8 +101,8 @@ class VideoHandler:
         Create a VideoHandler for inspecting a video.
 
         Video inspectors can be useful for retrieving properties of a video,
-        such as with the methods :py:func:`get_width_height`,
-        :py:func:`get_duration`, or :py:func:`get_num_frames`.
+        such as with the methods :py:meth:`get_width_height`,
+        :py:meth:`get_duration`, or :py:meth:`get_num_frames`.
 
         Parameters
         ----------

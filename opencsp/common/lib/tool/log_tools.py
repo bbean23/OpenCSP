@@ -492,7 +492,7 @@ def log_progress(
     Parameters
     ----------
     percentage : int | float
-        The current progress. If an integer, than the range is clipped to 0-100.
+        The current progress. If an integer, then the range is clipped to 0-100.
         If a float, then the range is clipped to 0-1, unless >1 then it is cast
         to an integer.
     carriage_return : bool | 'auto', optional

@@ -1294,7 +1294,7 @@ class View3d(aph.AbstractPlotHandler):
                 + "' encountered.",
             )
 
-    def draw_pq(self, pq: tuple[list, list], style=rcps.default(), label=None):  # A pq is [p,q]
+    def draw_pq(self, pq: tuple[list, list], style=None, label=None):  # A pq is [p,q]
         """
         Draws the given points to this view. Only draws the points.
 
@@ -1309,6 +1309,9 @@ class View3d(aph.AbstractPlotHandler):
         label : str, optional
             The label for this plot for use in the legend, or None for no label. By default None.
         """
+        # set defualt parameters
+        if style is None:
+            style = rcps.default()
 
         if (len(pq) != 2) and (len(pq) != 3):
             lt.error_and_raise(ValueError, "Error in View3d.draw_pq(): " + f"{len(pq)=} is not equal to 2 or 3.")
@@ -1336,7 +1339,9 @@ class View3d(aph.AbstractPlotHandler):
                 + "Should be one of {allowed_types}.",
             )
 
-    def draw_p_list(self, input_p_list: list[numbers.Number], style: dict = rcps.default(), label: str = None) -> None:
+    def draw_p_list(
+        self, input_p_list: list[numbers.Number], style: rcps.RenderControlPointSeq = None, label: str = None
+    ) -> None:
         """
         Draw a list of points in 3D space.
 
@@ -1344,11 +1349,15 @@ class View3d(aph.AbstractPlotHandler):
         ----------
         input_p_list : list
             The list of points to draw.
-        style : dict
+        style : rcps.RenderControlPointSeq
             The style to use for drawing, defaults to rcps.default().
         label : str
             The label to use for the drawn points, defaults to None.
         """
+        # set defualt parameters
+        if style is None:
+            style = rcps.default()
+
         pq_list = [(i, input_p_list[i]) for i in range(len(input_p_list))]
         self.draw_pq_list(pq_list, style=style, label=label)
 
@@ -1463,7 +1472,7 @@ class View3d(aph.AbstractPlotHandler):
         self,
         input_xyzdxyz_list: list[list[list, list]],  # An xyzdxyz is [[x,y,z], [dx,dy,dz]]
         close: bool = False,  # Draw as a closed polygon. Ignore if less than three points.
-        style: rcps.RenderControlPointSeq = rcps.default(),
+        style: rcps.RenderControlPointSeq = None,
         label: str = None,
     ):
         """
@@ -1482,6 +1491,9 @@ class View3d(aph.AbstractPlotHandler):
         label : str, optional
             A label for the drawn points and vectors, for the legend. Default is None.
         """
+        # set defualt parameters
+        if style is None:
+            style = rcps.default()
 
         if len(input_xyzdxyz_list) > 0:
             # No need to close the xyzdxyz list, since draw_xyz_list will do it.
@@ -1514,7 +1526,7 @@ class View3d(aph.AbstractPlotHandler):
         self,
         input_pqdpq_list,  # A pqdpq is [[p,q], [dp,dq]]
         close=False,  # Draw as a closed polygon. Ignore if less than three points.
-        style=rcps.default(),
+        style=None,
         label=None,
     ):
         """
@@ -1533,6 +1545,9 @@ class View3d(aph.AbstractPlotHandler):
         label : str, optional
             A label for the drawn points and vectors, for the legend. Default is None.
         """
+        # use default parameter values
+        if style is None:
+            style = rcps.default()
 
         if len(input_pqdpq_list) > 0:
             # No need to close the pqdpq list, since draw_pq_list will do it.

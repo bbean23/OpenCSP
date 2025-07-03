@@ -19,5 +19,5 @@ class Drawable(ABC):
             instantiation.
         style : rcps.RenderControlPointSeq | Any
             The style used to render this instance. The implementing class will
-            typically override this to use its own stype class type.
+            typically override this to use its own style class type.
         """
