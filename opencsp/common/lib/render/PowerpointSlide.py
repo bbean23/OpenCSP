@@ -500,7 +500,7 @@ class PowerpointSlide:
 
     def render(self, presentation, layout, tmp_render_path: str):
         """Generates a slide, and adds all images and texts to be rendered to the slide.
-        This has the side effect of calling :pyt:meth:`save_and_bake`."""
+        This has the side effect of calling :py:meth:`save_and_bake`."""
         lt.info("In PowerpointSlide.render()")
         import opencsp.common.lib.render_control.RenderControlPowerpointPresentation as rcpp  # import here to avoid import loops
 

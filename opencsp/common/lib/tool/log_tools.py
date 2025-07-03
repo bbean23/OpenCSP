@@ -342,13 +342,17 @@ def error_and_raise(exception_class: Exception.__class__, msg: str, base_excepti
         The exception that caused this code to be called, if any. This will be
         added onto the newly created exception_class' history.
 
-    Example::
+    Example
+    -------
+    ::
 
         import log_tools as lt
         lt.logger(home_dir() + 'current.log')
         lt.error_and_raise(ValueError, 'In my_function(), non-positive value x=' + str(x) + ' encountered.')
 
-    See https://docs.python.org/3/library/exceptions.html for a list of built-in exceptions::
+    Built-in Exception Types
+    ------------------------
+    See `the python exceptions documentation <https://docs.python.org/3/library/exceptions.html>`_ for a list of built-in exceptions::
 
         BaseException
         ├── BaseExceptionGroup
@@ -357,53 +361,53 @@ def error_and_raise(exception_class: Exception.__class__, msg: str, base_excepti
         ├── SystemExit
         └── Exception
             ├── ArithmeticError
-            │    ├── FloatingPointError
-            │    ├── OverflowError
-            │    └── ZeroDivisionError
+            |   ├── FloatingPointError
+            |   ├── OverflowError
+            |   └── ZeroDivisionError
             ├── AssertionError
             ├── AttributeError
             ├── BufferError
             ├── EOFError
             ├── ImportError
-            │    └── ModuleNotFoundError
+            |   └── ModuleNotFoundError
             ├── LookupError
-            │    ├── IndexError
-            │    └── KeyError
+            |   ├── IndexError
+            |   └── KeyError
             ├── MemoryError
             ├── NameError
-            │    └── UnboundLocalError
+            |   └── UnboundLocalError
             ├── OSError
-            │    ├── BlockingIOError
-            │    ├── ChildProcessError
-            │    ├── ConnectionError
-            │    │    ├── BrokenPipeError
-            │    │    ├── ConnectionAbortedError
-            │    │    ├── ConnectionRefusedError
-            │    │    └── ConnectionResetError
-            │    ├── FileExistsError
-            │    ├── FileNotFoundError
-            │    ├── InterruptedError
-            │    ├── IsADirectoryError
-            │    ├── NotADirectoryError
-            │    ├── PermissionError
-            │    ├── ProcessLookupError
-            │    └── TimeoutError
+            |   ├── BlockingIOError
+            |   ├── ChildProcessError
+            |   ├── ConnectionError
+            |   |   ├── BrokenPipeError
+            |   |   ├── ConnectionAbortedError
+            |   |   ├── ConnectionRefusedError
+            |   |   └── ConnectionResetError
+            |   ├── FileExistsError
+            |   ├── FileNotFoundError
+            |   ├── InterruptedError
+            |   ├── IsADirectoryError
+            |   ├── NotADirectoryError
+            |   ├── PermissionError
+            |   ├── ProcessLookupError
+            |   └── TimeoutError
             ├── ReferenceError
             ├── RuntimeError
-            │    ├── NotImplementedError
-            │    └── RecursionError
+            |   ├── NotImplementedError
+            |   └── RecursionError
             ├── StopAsyncIteration
             ├── StopIteration
             ├── SyntaxError
-            │    └── IndentationError
-            │         └── TabError
+            |   └── IndentationError
+            |        └── TabError
             ├── SystemError
             ├── TypeError
             ├── ValueError
-            │    └── UnicodeError
-            │         ├── UnicodeDecodeError
-            │         ├── UnicodeEncodeError
-            │         └── UnicodeTranslateError
+            |   └── UnicodeError
+            |        ├── UnicodeDecodeError
+            |        ├── UnicodeEncodeError
+            |        └── UnicodeTranslateError
             └── Warning
                 ├── BytesWarning
                 ├── DeprecationWarning
@@ -444,7 +448,9 @@ def critical_and_raise(exception_class: Exception.__class__, msg: str, base_exce
         The exception that caused this code to be called, if any. This will be
         added onto the newly created exception_class' history.
 
-    Example::
+    Example
+    -------
+    ::
 
         import log_tools as lt
         lt.logger(home_dir() + 'current.log')
@@ -490,7 +496,7 @@ def log_progress(
         If a float, then the range is clipped to 0-1, unless >1 then it is cast
         to an integer.
     carriage_return : bool | 'auto', optional
-        If True, then a carriage return '\r' is printed instead of a newline, which will cause the next line printed to overwrite this line.
+        If True, then a carriage return '\\r' is printed instead of a newline, which will cause the next line printed to overwrite this line.
         This can be used to "draw" the progress interactively in the terminal.
         If 'auto', then this will be True when percentage != 100.
         By default 'auto'.

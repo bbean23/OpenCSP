@@ -2,7 +2,7 @@
 Image plotting, with annotations.
 """
 
-from cv2 import cv2 as cv
+import cv2 as cv
 import matplotlib.pyplot as plt
 import os
 
@@ -25,6 +25,9 @@ def plot_image_figure(
 ):  # Whether to auto-index the filenames.
     """
     Plots an image with optional annotations and saves it to disk.
+
+    This is meant to be a simplistic version of a plot. For a more standard OpenCSP plot,
+    please use something similar to the example in :py:func:`.figure_management.setup_figure`.
 
     This function creates a figure to display an image, optionally drawing annotations
     and saving the figure to a specified directory. The image can be displayed in either
