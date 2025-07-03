@@ -349,6 +349,43 @@ def get_exif_value(
 
 
 def set_exif_value(data_dir: str, image_path_name_ext: str, exif_val: str, exif_name: str = "EXIF:ISO"):
+    """
+    Set the specified EXIF tag value for an image file.
+
+    This function uses the ExifTool to set the value of a specified EXIF tag
+    (defaulting to "EXIF:ISO") for a given image file located in the specified
+    directory. It attempts to overwrite the original image file with the new
+    EXIF data. If the initial attempt fails due to an execution error, the
+    function is designed to handle the error gracefully (though the error
+    handling code is currently commented out and requires implementation).
+
+    Parameters:
+    -----------
+    data_dir : str
+        The directory where the image file is located.
+
+    image_path_name_ext : str
+        The name of the image file, including its extension.
+
+    exif_val : str
+        The value to set for the specified EXIF tag.
+
+    exif_name : str, optional
+        The name of the EXIF tag to set (default is "EXIF:ISO").
+
+    Raises:
+    -------
+    exiftool.exceptions.ExifToolExecuteError
+        If the ExifTool encounters an error while attempting to set the EXIF tag.
+
+    Notes:
+    ------
+    The function currently contains commented-out code for handling poorly
+    formatted images by rewriting them using the Pillow library. This
+    functionality is intended to be implemented in the future.
+    """
+    # "ChatGPT 4o" assisted with generating this docstring.
+    # TODO is calling set_tags twice intended and necessary?
     with exiftool.ExifToolHelper() as et:
         et.set_tags(
             ft.join(data_dir, image_path_name_ext),
