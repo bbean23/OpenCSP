@@ -58,7 +58,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             The (x, y) pixel location to take cross sections through.
         single_plot : bool, optional
             If True, then draw both the horizational and vertical cross section
-            graphs on the same plot. If False, then use two separate plots.
+            plots on the same graph. If False, then use two separate graphs.
             Default is True.
         crop_to_threshold : int | None, optional
             Crops the input image horizontally and vertically to the first/last
@@ -199,14 +199,14 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         hstyle : rcps.RenderControlPointSeq, optional
             Style to draw the horizontal cross section with, by default :py:attr:`horizontal_style`
         vlabel: str, optional
-            The label to apply to the vertical graph, by default "Vertical Cross Section"
+            The label to apply to the vertical plot, by default "Vertical Cross Section"
         hlabel: str, optional
-            The label to apply to the horizontal graph, by default "Horizontal Cross Section"
+            The label to apply to the horizontal plot, by default "Horizontal Cross Section"
 
         Returns
         -------
-        int
-            _description_
+        plots_per_graph: int
+            The number of plots being superimposed on a single graph. 2 if self.single_plot, or 1 otherwise.
         """
         # get default values
         if hstyle is None:
@@ -240,7 +240,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             v_p_list = [i + crop_top for i in v_p_list]
             h_p_list = [i + crop_left for i in h_p_list]
 
-        # Draw the cross section graphs
+        # Draw the cross section plots
         v_fig_record, h_fig_record = self._figure_records
         v_fig_record.view.draw_pq_list(zip(v_p_list, v_cross_section), style=vstyle, label=vlabel)
         h_fig_record.view.draw_pq_list(zip(h_p_list, h_cross_section), style=hstyle, label=hlabel)
@@ -335,13 +335,13 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
 
         # Draw the cross sections for the no-sun image.
         # Draw the cross sections for the primary image using the same axes.
-        graphs_per_plot_cnt = 0
-        graphs_per_plot_cnt += self._draw_null_image_cross_section(operable, cs_loc_cropped, cropped_region)
-        graphs_per_plot_cnt += self._draw_cross_section(np_image, cs_loc, cropped_region)
+        plots_per_graph_cnt = 0
+        plots_per_graph_cnt += self._draw_null_image_cross_section(operable, cs_loc_cropped, cropped_region)
+        plots_per_graph_cnt += self._draw_cross_section(np_image, cs_loc, cropped_region)
 
         # draw
         for view in self.views:
-            legend = graphs_per_plot_cnt > 1
+            legend = plots_per_graph_cnt > 1
             view.show(block=False, legend=legend)
 
         # explicitly set the y-axis range
