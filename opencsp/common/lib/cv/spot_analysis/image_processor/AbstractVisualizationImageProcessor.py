@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 import copy
 import dataclasses
 from typing import Callable
-
-import numpy as np
+import weakref
 
 from opencsp.common.lib.cv.CacheableImage import CacheableImage
 from opencsp.common.lib.cv.spot_analysis.ImageType import ImageType
@@ -141,6 +140,9 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         self.initialized_figure_records = False
         """ True if init_figure_records() has been called, False otherwise. """
+        self.first_figure_record: weakref.ReferenceType[rcfr.RenderControlFigureRecord] = None
+        """ The first of the initialized figure records.
+        For use when there is no visualization coordinator. """
 
     @property
     @abstractmethod
@@ -281,6 +283,8 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         ret = self.init_figure_records(render_control_fig)
         self.initialized_figure_records = True
+        if len(ret) > 0:
+            self.first_figure_record = weakref.ref(ret[0])
         return ret
 
     @staticmethod
@@ -369,12 +373,20 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             new_visualizations = self._visualize_operable(operable, is_last)
 
             # get the visualization images list
-            visualization_images = copy.copy(ret.visualization_images)
+            visualization_images = copy.copy(operable.visualization_images)
             if self not in visualization_images:
                 visualization_images[self] = []
             else:
                 visualization_images[self] = copy.copy(visualization_images[self])
             visualization_images[self] += new_visualizations
+
+            # if interactive, then wait for any button to be pressed
+            # TODO check for enter key to be pressed, specifically
+            if self.interactive:
+                if self.first_figure_record is not None:
+                    fig_record = self.first_figure_record()
+                    if fig_record is not None:
+                        fig_record.figure.waitforbuttonpress(60 * 60)
 
             # update the return value
             ret = dataclasses.replace(operable, visualization_images=visualization_images)
