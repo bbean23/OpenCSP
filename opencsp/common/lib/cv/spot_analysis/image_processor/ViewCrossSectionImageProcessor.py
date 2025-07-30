@@ -334,7 +334,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             i_view = self.figure_records[0].view
             i_view.draw_image(base_image.nparray, (0, 0), (cropped_width, cropped_height))
             i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
-        i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
+            i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
 
         # Draw the cross sections for the no-sun image.
         # Draw the cross sections for the primary image using the same axes.
@@ -344,11 +344,11 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.draw_legend = plots_per_graph_cnt > 1
 
         return self.figure_records
-    
+
     def show_visualization(self, figure_records: list[rcfr.RenderControlFigureRecord]):
         # draw
         for fig_record in figure_records:
-            fig_record.view.show(block = False, legend=self.draw_legend)
+            fig_record.view.show(block=False, legend=self.draw_legend)
 
         # explicitly set the y-axis range
         if self.y_range is not None:
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     #        [97, 97, 97, ..., 97, 97, 97],
     #        [98, 98, 98, ..., 98, 98, 98],
     #        [99, 99, 99, ..., 99, 99, 99]])
-    cacheable_rows = CacheableImage(rows, source_path=__file__)
+    cacheable_rows = CacheableImage(rows)
 
     processor = ViewCrossSectionImageProcessor((50, 50), single_plot=False, interactive=True, crop_to_threshold=20)
     processor.process_operable(SpotAnalysisOperable(cacheable_rows))

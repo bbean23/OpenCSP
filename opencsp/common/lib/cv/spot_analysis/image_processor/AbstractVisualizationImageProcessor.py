@@ -227,19 +227,29 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         will be passed through to :py:meth:`visualize_operable` as the
         base_image.
         """
+        err_src = "Error in AbstractVisualizationImageProcessor._get_image_for_visualization(): "
         if self.base_image_selector is None or self.base_image_selector == ImageType.PRIMARY:
             return operable.primary_image
         elif self.base_image_selector == ImageType.VISUALIZATION:
-            if self.base_image_selector.lower() == 'visualization':
+            try:
                 return list(operable.visualization_images.values())[-1][0]
-            elif self.base_image_selector.lower() == 'algorithm':
-        elif self.base_image_selector == ImageType.ALGORITHM:
-                return list(operable.algorithm_images.values())[-1][0]
-            else:
+            except IndexError:
                 lt.error_and_raise(
-                    RuntimeError,
-                    "Error in AbstractVisualizationImageProcessor._get_image_for_visualization(): "
-                    + f"unknown base_image_selector string value '{self.base_image_selector}'",
+                    IndexError,
+                    err_src
+                    + "failed to get the latest visualization image! "
+                    + "Maybe there isn't a previous visualization image processor?",
+                )
+        elif self.base_image_selector == ImageType.ALGORITHM:
+            try:
+                return list(operable.algorithm_images.values())[-1][0]
+            except IndexError:
+                lt.error_and_raise(
+                    IndexError,
+                    err_src
+                    + "failed to get the latest algorithm image! "
+                    + "Maybe there isn't a previous image processor, or "
+                    + "maybe it didn't produce any algorithm images?",
                 )
         elif self.base_image_selector in [
             ImageType.REFERENCE,
@@ -247,12 +257,18 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             ImageType.COMPARISON,
             ImageType.BACKGROUND_MASK,
         ]:
-            return operable.supporting_images[self.base_image_selector]
+            try:
+                return operable.supporting_images[self.base_image_selector]
+            except IndexError:
+                lt.error_and_raise(
+                    IndexError, err_src + f"the operable does not have a {self.base_image_selector} image!"
+                )
         else:
             lt.error_and_raise(
                 RuntimeError,
-                "Error in AbstractVisualizationImageProcessor._get_image_for_visualization(): "
-                + f"unknown base_image_selector of type {type(self.base_image_selector)}: {self.base_image_selector}",
+                err_src
+                + f"unknown base_image_selector of type {type(self.base_image_selector)}: "
+                + f"{self.base_image_selector}",
             )
 
     def _get_base_for_visualizing(

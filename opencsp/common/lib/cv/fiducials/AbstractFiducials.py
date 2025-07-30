@@ -37,7 +37,7 @@ class AbstractFiducials(ABC):
         ----------
         style : RenderControlPointSeq, optional
             How to render this fiducial when using the default
-            :py:meth:`render_to_plot` method. By default rcps.default().
+            :py:meth:`render_to_figure` method. By default rcps.default().
         pixels_to_meters : Callable[[p2.Pxy], v3.Vxyz], optional
             Conversion function to get the physical point in space for the given x/y position information. Used in the
             default self.scale implementation. A good implementation of this function will correct for many factors such
@@ -112,7 +112,7 @@ class AbstractFiducials(ABC):
             Rotation.from_euler(
                 'yz',
                 [[np.pi, 0],
-                [0,     np.pi]]
+                 [0,     np.pi]]
             )
 
         Note that this just describes rotation, and not the translation. We call the rotation and translation together
@@ -221,8 +221,7 @@ class AbstractFiducials(ABC):
         Renders this fiducial to a new image on top of the given image.
 
         The default implementation creates a new matplotlib plot, and then
-        renders to it with either :py:meth:`render_to_figure` or
-        :py:meth:`render_to_plot`, depending on which has been implemented.
+        renders to it with :py:meth:`render_to_figure`.
 
         Parameters
         ----------
