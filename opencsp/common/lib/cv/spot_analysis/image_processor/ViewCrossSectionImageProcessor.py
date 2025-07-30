@@ -74,7 +74,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             The title to use for the plots, or the boolean value False to
             supress the title. Default is the image name.
         """
-        super().__init__(interactive, base_image_selector)
+        super().__init__(interactive, base_image_selector, accepts_external_figure_record=True)
 
         # validate input
         if cross_section_location is None:
@@ -290,7 +290,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
                 base_image.title = title
 
     def visualize_operable(
-        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         np_image = operable.primary_image.nparray
         width, height = np_image.shape[1], np_image.shape[0]
@@ -326,9 +326,14 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         vstyle = self.vertical_style
 
         # Draw the image w/ cross section line overlays
-        i_view = self.figure_records[0].view
-        i_view.draw_image(base_image.nparray, (0, 0), (cropped_width, cropped_height))
-        i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
+        if isinstance(base_image, rcfr.RenderControlFigureRecord):
+            i_view = base_image.view
+            i_view.draw_pq_list([(cross_sec_x, y_start), (cross_sec_x, y_end)], style=vstyle)
+            i_view.draw_pq_list([(x_start, cross_sec_y), (y_end, cross_sec_y)], style=hstyle)
+        else:
+            i_view = self.figure_records[0].view
+            i_view.draw_image(base_image.nparray, (0, 0), (cropped_width, cropped_height))
+            i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
         i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
 
         # Draw the cross sections for the no-sun image.

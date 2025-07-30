@@ -43,7 +43,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
             If set, then the annotations that get rendered are only those that
             match this filter.
         """
-        super().__init__(interactive, base_image_selector)
+        super().__init__(interactive, base_image_selector, accepts_external_figure_record=True)
 
         self.annotations_filter = annotations_filter
 
@@ -98,13 +98,11 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         return False
 
     def visualize_operable(
-        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         """
         Updates the figures for this instance with the data from the given operable.
         """
-        image = base_image.nparray
-
         # get a list of the fiducials to be rendered
         to_render: list[AbstractFiducials] = []
         to_render += list(filter(self._annotations_match_filter, operable.given_fiducials))
@@ -112,12 +110,18 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         to_render += filter(self._annotations_match_filter, operable.annotations)
 
         # initialize the figure
-        self.figure_records[0].view.imshow(image)
+        if isinstance(base_image, CacheableImage):
+            image = base_image.nparray
+            self.figure_records[0].view.imshow(image)
 
         # render
         self.draw_legend = len(to_render) > 1
-        for fiducials in to_render:
-            fiducials.render_to_figure(self.figure_records[0], image, self.draw_legend)
+        if isinstance(base_image, CacheableImage):
+            for fiducials in to_render:
+                fiducials.render_to_figure(self.figure_records[0], base_image.nparray, self.draw_legend)
+        else:  # if isinstance(base_image, rcfr.RenderControlFigureRecord):
+            for fiducials in to_render:
+                fiducials.render_to_figure(base_image, None, self.draw_legend)
 
         return self.figure_records
 

@@ -93,6 +93,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         interactive: bool | Callable[[SpotAnalysisOperable], bool],
         base_image_selector: str | ImageType = None,
         name: str = None,
+        accepts_external_figure_record: bool = False,
     ):
         """
         Parameters
@@ -106,6 +107,11 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             image.
         name : str
             Passed through to AbstractSpotAnalysisImageProcessor.__init__()
+        accepts_external_figure_record : bool
+            True if the visualization has been designed to allow
+            :py:class:`RenderControlFigureRecord` as the base upon which to draw.
+            False to limit base_images in :py:meth:`visualize_operable` to just
+            :py:class:`CacheableImage`. Default is False.
         """
         # import here to avoid circular dependencies
         from opencsp.common.lib.cv.spot_analysis.VisualizationCoordinator import VisualizationCoordinator
@@ -115,21 +121,32 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         # validate arguments
         if isinstance(base_image_selector, str):
             acceptable_values = ["visualization", "algorithm"]
-            if base_image_selector.lower() not in acceptable_values:
+            if base_image_selector.lower() == "algorithm":
+                base_image_selector = ImageType.ALGORITHM
+            elif base_image_selector.lower() == "visualization":
+                base_image_selector = ImageType.VISUALIZATION
+            else:
                 lt.error_and_raise(
                     ValueError,
                     "Error in AbstractVisualizationImageProcessor(): "
                     + f"base_image_selector must be either an ImageType or one of {acceptable_values}, "
-                    + "but it is '{base_image_selector}'",
+                    + f"but it is '{base_image_selector}'",
                 )
 
         # register arguments
         self.interactive = interactive
-        self.base_image_selector = base_image_selector
+        self.base_image_selector: ImageType = base_image_selector
         """
         Determines the image returned from
         :py:meth:`_get_image_for_visualizing`. Typically this will be one of
         None/ImageType.PRIMARY or 'visualization'.
+        """
+        self.accepts_external_figure_record = accepts_external_figure_record
+        """
+        If True, then the :py:class:`VisualizationCoordinator` will attempt to use the
+        figure record of a previous image processor instead of the corresponding cacheable
+        image. For base_image_selector = 'visualization' this will be the previous
+        AbstractVisualizationImageProcessor.
         """
 
         # internal values
@@ -175,6 +192,34 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         pass
 
+    def _get_figure_record_for_visualizing(
+        self, operable: SpotAnalysisOperable
+    ) -> rcfr.RenderControlFigureRecord | None:
+        """
+        Chooses the figure record from the most recent AbstractVisualizationImageProcessor
+        as the base upon which to render the current visualization.
+
+        If the most recent AbstractVisualizationImageProcessor is not a good target for drawing on,
+        such as when there is no previous AbstractVisualizationImageProcessor in the operable's
+        history, then this method returns None instead.
+        """
+        # find the most recent visualization processor in the history, if there is one
+        previous_operables, previous_image_processor = operable.previous_operables
+
+        # Check if there are any previous visualization processors
+        if previous_operables and isinstance(previous_image_processor, AbstractVisualizationImageProcessor):
+            # Get the figure record from the previous image processor
+            figure_records = previous_image_processor.figure_records
+
+            # Return the figure record if it exists, otherwise return None
+            if figure_records is not None and len(figure_records) > 0:
+                return figure_records[0]
+            else:
+                return None
+        else:
+            # There are no previous visualization processors
+            return None
+
     def _get_image_for_visualizing(self, operable: SpotAnalysisOperable) -> CacheableImage:
         """
         Chooses one of the operable's images to use to draw visualizations on
@@ -184,10 +229,11 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         if self.base_image_selector is None or self.base_image_selector == ImageType.PRIMARY:
             return operable.primary_image
-        elif isinstance(self.base_image_selector, str):
+        elif self.base_image_selector == ImageType.VISUALIZATION:
             if self.base_image_selector.lower() == 'visualization':
                 return list(operable.visualization_images.values())[-1][0]
             elif self.base_image_selector.lower() == 'algorithm':
+        elif self.base_image_selector == ImageType.ALGORITHM:
                 return list(operable.algorithm_images.values())[-1][0]
             else:
                 lt.error_and_raise(
@@ -208,6 +254,20 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
                 "Error in AbstractVisualizationImageProcessor._get_image_for_visualization(): "
                 + f"unknown base_image_selector of type {type(self.base_image_selector)}: {self.base_image_selector}",
             )
+
+    def _get_base_for_visualizing(
+        self, operable: SpotAnalysisOperable
+    ) -> CacheableImage | rcfr.RenderControlFigureRecord:
+        # attempt to use a RenderControlFigureRecord for visualizing
+        if self.base_image_selector is not None:
+            if self.base_image_selector == ImageType.ALGORITHM:
+                if self.accepts_external_figure_record:
+                    fig_record = self._get_figure_record_for_visualizing(operable)
+                    if fig_record is not None:
+                        return fig_record
+
+        # fall back on using an image for visualizing
+        return self._get_image_for_visualizing(operable)
 
     def prepare_for_visualization(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
@@ -248,7 +308,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
 
     @abstractmethod
     def visualize_operable(
-        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
     ) -> list[CacheableImage | rcfr.RenderControlFigureRecord]:
         """
         Updates the figures for this instance with the data from the given operable.
@@ -263,10 +323,14 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             The operable to draw the visualization for.
         is_last : bool
             True if this is the last operable to be drawn by this processor.
-        base_image : CacheableImage
+        base_image : CacheableImage | rcfr.RenderControlFigureRecord
             The base image on which to draw the visualization. Value is
             determined by :py:attr:`base_image_selector` and retrieved with
             :py:meth:`_get_image_for_visualizing`.
+
+            If self.:py:attr:`accepts_external_figure_record` is False, then
+            this will never be a figure record and will always be a
+            cacheable image.
 
         Returns
         -------
@@ -466,9 +530,17 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         list[CacheableImage]
             This processor's visualizations.
         """
+        # get the image to render onto
+        base_image = self._get_base_for_visualizing(operable)
+
+        # clear the previous visualization
+        if isinstance(base_image, rcfr.RenderControlFigureRecord):
+            # don't clear a record that is being used as the base
+            pass
+        else:
+            self.prepare_for_visualization(operable, is_last, base_image)
+
         # visualize the operable
-        base_image = self._get_image_for_visualizing(operable)
-        self.prepare_for_visualization(operable, is_last, base_image)
         visualizations = self.visualize_operable(operable, is_last, base_image)
 
         # show the figure records
