@@ -49,7 +49,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
 
         self.axis_control = rca.image(grid=False)
         self.view_spec = vs.view_spec_im()
-        self.figure: rcfr.RenderControlFigureRecord
+        self.draw_legend = False
 
     @property
     def num_figures(self) -> int:
@@ -76,7 +76,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         figures: list[rcfr.RenderControlFigureRecord]
             The list of newly created figure windows.
         """
-        self.figure = fm.setup_figure(
+        ret = fm.setup_figure(
             render_control_fig,
             self.axis_control,
             self.view_spec,
@@ -84,7 +84,7 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
             title=f"{self.name}",
             code_tag=f"{__file__}.init_figure_records()",
         )
-        return [self.figure]
+        return [ret]
 
     def _annotations_match_filter(self, annotations: AbstractFiducials) -> bool:
         if self.annotations_filter is None:
@@ -112,26 +112,18 @@ class ViewAnnotationsImageProcessor(AbstractVisualizationImageProcessor):
         to_render += filter(self._annotations_match_filter, operable.annotations)
 
         # initialize the figure
-        self.figure.clear()
-        self.figure.view.imshow(image)
+        self.figure_records[0].view.imshow(image)
 
         # render
-        include_label = len(to_render) > 1
+        self.draw_legend = len(to_render) > 1
         for fiducials in to_render:
-            fiducials.render_to_figure(self.figure, image, include_label)
+            fiducials.render_to_figure(self.figure_records[0], image, self.draw_legend)
 
-        # show the visualization
-        self.figure.view.show(block=False, legend=include_label)
+        return self.figure_records
 
-        return [self.figure]
-
-    def close_figures(self):
-        """
-        Closes all visualization windows created by this instance.
-        """
-        if self.figure is not None:
-            self.figure.close()
-            self.figure = None
+    def show_visualization(self, figure_records: list[rcfr.RenderControlFigureRecord]):
+        for fig_record in figure_records:
+            fig_record.view.show(block=False, legend=self.draw_legend)
 
 
 if __name__ == "__main__":

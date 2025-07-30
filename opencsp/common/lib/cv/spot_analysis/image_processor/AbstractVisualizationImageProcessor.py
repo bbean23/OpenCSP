@@ -12,6 +12,7 @@ from opencsp.common.lib.cv.spot_analysis.image_processor.AbstractSpotAnalysisIma
 )
 import opencsp.common.lib.render_control.RenderControlFigure as rcf
 import opencsp.common.lib.render_control.RenderControlFigureRecord as rcfr
+import opencsp.common.lib.tool.exception_tools as et
 import opencsp.common.lib.tool.image_tools as it
 import opencsp.common.lib.tool.log_tools as lt
 
@@ -140,9 +141,10 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         self.initialized_figure_records = False
         """ True if init_figure_records() has been called, False otherwise. """
-        self.first_figure_record: weakref.ReferenceType[rcfr.RenderControlFigureRecord] = None
-        """ The first of the initialized figure records.
-        For use when there is no visualization coordinator. """
+        self.figure_records: list[rcfr.RenderControlFigureRecord] = []
+        """
+        The records returned by :py:meth:`init_figure_records` in :py:meth:`_init_figure_records`.
+        """
 
     @property
     @abstractmethod
@@ -207,6 +209,43 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
                 + f"unknown base_image_selector of type {type(self.base_image_selector)}: {self.base_image_selector}",
             )
 
+    def prepare_for_visualization(
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
+    ):
+        """
+        Called just prior to :py:meth:`visualize_operable`. The default
+        implementation of this method simply clears the figure records
+        returned in :py:meth:`init_figure_records`.
+
+        Parameters
+        ----------
+        operable : SpotAnalysisOperable
+            The operable object being processed.
+        is_last : bool
+            A flag indicating whether this is the last operable to be processed.
+        base_image : CacheableImage | rcfr.RenderControlFigureRecord
+            The base image to be used for visualization.
+        """
+        if len(self.figure_records) == 0:
+            if not self.initialized_figure_records:
+                lt.error_and_raise(
+                    RuntimeError,
+                    "Programmer error in AbstractVisualizationImageProcessor.prepare_for_visualization(): "
+                    + "expected _init_figure_records() to have been called before this method, "
+                    + f"but {self.initialized_figure_records=}!",
+                )
+            else:
+                lt.error_and_raise(
+                    RuntimeError,
+                    "Programmer error in AbstractVisualizationImageProcessor.prepare_for_visualization(): "
+                    + "expected _init_figure_records() to have been called before this method, "
+                    + f"but {len(self.figure_records)=}!",
+                )
+
+        # clear the previously plotted results
+        for fig_record in self.figure_records:
+            fig_record.clear()
+
     @abstractmethod
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
@@ -237,12 +276,34 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         pass
 
-    @abstractmethod
+    def show_visualization(self, figure_records: list[rcfr.RenderControlFigureRecord]):
+        """
+        Call ".view.show()" on all the figure_records.
+        Called immediately after :py:meth:`visualize_operable`.
+
+        A common reason to override this method is to call show with the parameter legend=True.
+        The default implementation calls show with the parameter block=False.
+
+        Parameters
+        ----------
+        figure_records : list[rcfr.RenderControlFigureRecord]
+            The figure records returned from :py:meth:`visualize_operable`.
+        """
+        for fig_record in figure_records:
+            fig_record.view.show(block=False)
+
     def close_figures(self):
         """
         Closes all visualization windows created by this instance.
+
+        The default implementation closes the view of all the :py:attr:`figure_records`
+        and then clears the figure_records list.
         """
-        pass
+        for fig_record in self.figure_records:
+            with et.ignored(Exception):
+                fig_record.view.close()
+
+        self.figure_records.clear()
 
     @property
     def has_visualization_coordinator(self) -> bool:
@@ -283,8 +344,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         ret = self.init_figure_records(render_control_fig)
         self.initialized_figure_records = True
-        if len(ret) > 0:
-            self.first_figure_record = weakref.ref(ret[0])
+        self.figure_records = copy.copy(ret)
         return ret
 
     @staticmethod
@@ -383,10 +443,7 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
             # if interactive, then wait for any button to be pressed
             # TODO check for enter key to be pressed, specifically
             if self.interactive:
-                if self.first_figure_record is not None:
-                    fig_record = self.first_figure_record()
-                    if fig_record is not None:
-                        fig_record.figure.waitforbuttonpress(60 * 60)
+                self.figure_records[0].figure.waitforbuttonpress(60 * 60)
 
             # update the return value
             ret = dataclasses.replace(operable, visualization_images=visualization_images)
@@ -411,7 +468,17 @@ class AbstractVisualizationImageProcessor(AbstractSpotAnalysisImageProcessor, AB
         """
         # visualize the operable
         base_image = self._get_image_for_visualizing(operable)
+        self.prepare_for_visualization(operable, is_last, base_image)
         visualizations = self.visualize_operable(operable, is_last, base_image)
+
+        # show the figure records
+        visualizations_as_records = [
+            fig_record for fig_record in visualizations if isinstance(fig_record, rcfr.RenderControlFigureRecord)
+        ]
+        if len(visualizations_as_records) > 0:
+            self.show_visualization(visualizations_as_records)
+        else:
+            self.show_visualization(self.figure_records)
 
         # verify the returned type
         if not isinstance(visualizations, list):

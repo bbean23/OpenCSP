@@ -53,14 +53,13 @@ class ViewFalseColorImageProcessor(AbstractVisualizationImageProcessor):
 
         self.axis_control = rca.image(grid=False)
         self.view_spec = vs.view_spec_im()
-        self.figure: rcfr.RenderControlFigureRecord = None
 
     @property
     def num_figures(self) -> int:
         return 1
 
     def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
-        self.figure = fm.setup_figure(
+        ret = fm.setup_figure(
             render_control_fig,
             self.axis_control,
             self.view_spec,
@@ -68,7 +67,7 @@ class ViewFalseColorImageProcessor(AbstractVisualizationImageProcessor):
             title=f"{self.name}",
             code_tag=f"{__file__}.init_figure_records",
         )
-        return [self.figure]
+        return [ret]
 
     def apply_mapping_jet_custom(self, operable: SpotAnalysisOperable, image: CacheableImage) -> CacheableImage:
         """
@@ -139,7 +138,7 @@ class ViewFalseColorImageProcessor(AbstractVisualizationImageProcessor):
             lt.error_and_raise(
                 ValueError,
                 f"Error in {self.name}.visualize_operable(): "
-                + f"image should be in grayscale, but {nchannels} color channels were found ({base_image.shape=})!",
+                + f"image should be in grayscale, but {nchannels} color channels were found ({base_image.nparray.shape=})!",
             )
 
         # apply the false color mapping
@@ -149,8 +148,3 @@ class ViewFalseColorImageProcessor(AbstractVisualizationImageProcessor):
             ret = [self.apply_mapping_jet(operable, base_image)]
 
         return ret
-
-    def close_figures(self):
-        if self.figure is not None:
-            self.figure.close()
-            self.figure = None

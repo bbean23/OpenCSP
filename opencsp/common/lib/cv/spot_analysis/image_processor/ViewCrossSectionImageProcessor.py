@@ -85,6 +85,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         self.crop_to_threshold = crop_to_threshold
         self.y_range = y_range
         self.plot_title = plot_title
+        self.draw_legend = False
 
         # initialize certain visualization values
         self.horizontal_style = rcps.RenderControlPointSeq(color=color.magenta(), linewidth=2, marker='None')
@@ -93,9 +94,6 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         # declare future values
         self.view_specs: list[dict]
         self.rc_axises: list[rca.RenderControlAxis]
-        self.fig_records: list[rcfr.RenderControlFigureRecord]
-        self.views: list[v3d.View3d]
-        self.axes: list[matplotlib.axes.Axes]
         self.plot_titles: list[str]
 
     @property
@@ -108,12 +106,10 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
     def init_figure_records(
         self, render_control_figure: rcfg.RenderControlFigure
     ) -> list[rcfr.RenderControlFigureRecord]:
+        ret: list[rcfr.RenderControlFigureRecord] = []
 
         self.view_specs = []
         self.rc_axises = []
-        self.fig_records = []
-        self.views = []
-        self.axes = []
         self.plot_titles = []
 
         setup_figure = lambda rc_axis, view_spec, name: fm.setup_figure(
@@ -153,22 +149,20 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
                 view_spec = vs.view_spec_xy()
                 fig_record = setup_figure(rc_axis, view_spec, name)
 
+            ret.append(fig_record)
             self.view_specs.append(view_spec)
             self.rc_axises.append(rc_axis)
-            self.fig_records.append(fig_record)
-            self.views.append(fig_record.view)
-            self.axes.append(fig_record.figure.gca())
             self.plot_titles.append(plot_title)
 
-        return self.fig_records
+        return ret
 
     @property
-    def _figure_records(self) -> tuple[rcfr.RenderControlFigureRecord, rcfr.RenderControlFigureRecord]:
+    def vh_figure_records(self) -> tuple[rcfr.RenderControlFigureRecord, rcfr.RenderControlFigureRecord]:
         """The vertical and horizontal figure records. They might be the same instance."""
-        v_fig_record = self.fig_records[1]
-        h_fig_record = self.fig_records[1]
+        v_fig_record = self.figure_records[1]
+        h_fig_record = self.figure_records[1]
         if not self.single_plot:
-            v_fig_record = self.fig_records[2]
+            v_fig_record = self.figure_records[2]
         return v_fig_record, h_fig_record
 
     def _draw_cross_section(
@@ -241,7 +235,7 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
             h_p_list = [i + crop_left for i in h_p_list]
 
         # Draw the cross section plots
-        v_fig_record, h_fig_record = self._figure_records
+        v_fig_record, h_fig_record = self.vh_figure_records
         v_fig_record.view.draw_pq_list(zip(v_p_list, v_cross_section), style=vstyle, label=vlabel)
         h_fig_record.view.draw_pq_list(zip(h_p_list, h_cross_section), style=hstyle, label=hlabel)
 
@@ -271,6 +265,29 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
 
         else:
             return 0
+
+    def prepare_for_visualization(
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
+    ):
+        # Clear the previous plots
+        super().prepare_for_visualization(operable, is_last, base_image)
+
+        # Update the title
+        for i, (plot_title_prefix, fig_record) in enumerate(zip(self.plot_titles, self.figure_records)):
+            if self.plot_title is False:
+                title = None
+            else:
+                _plot_title = operable.best_primary_pathnameext
+                if isinstance(self.plot_title, str):
+                    _plot_title = self.plot_title
+                elif isinstance(self.plot_title, Callable):
+                    _plot_title = self.plot_title(operable)
+                title = plot_title_prefix + _plot_title
+
+            fig_record.title = title
+            if isinstance(base_image, rcfr.RenderControlFigureRecord) and i == 0:
+                # update the title for the record being used as the base image
+                base_image.title = title
 
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
@@ -304,31 +321,12 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         # matplotlib puts the origin in the bottom left instead of the top left
         cs_cropped_y_mlab = cropped_height - cs_cropped_y
 
-        # Clear the previous plot
-        for fig_record in self.fig_records:
-            fig_record.clear()
-
-        # Update the title
-        for plot_title_prefix, fig_record in zip(self.plot_titles, self.fig_records):
-            if self.plot_title is False:
-                fig_record.title = None
-            else:
-                _plot_title = operable.best_primary_pathnameext
-                if isinstance(self.plot_title, str):
-                    _plot_title = self.plot_title
-                elif isinstance(self.plot_title, Callable):
-                    _plot_title = self.plot_title(operable)
-                fig_record.title = plot_title_prefix + _plot_title
-
-        # get the horizontal and vertical figure records
-        v_fig_record, h_fig_record = self._figure_records
-
         # get the style
         hstyle = self.horizontal_style
         vstyle = self.vertical_style
 
         # Draw the image w/ cross section line overlays
-        i_view = self.views[0]
+        i_view = self.figure_records[0].view
         i_view.draw_image(base_image.nparray, (0, 0), (cropped_width, cropped_height))
         i_view.draw_pq_list([(cs_cropped_x, 0), (cs_cropped_x, cropped_height)], style=vstyle)
         i_view.draw_pq_list([(0, cs_cropped_y_mlab), (cropped_width, cs_cropped_y_mlab)], style=hstyle)
@@ -338,29 +336,25 @@ class ViewCrossSectionImageProcessor(AbstractVisualizationImageProcessor):
         plots_per_graph_cnt = 0
         plots_per_graph_cnt += self._draw_null_image_cross_section(operable, cs_loc_cropped, cropped_region)
         plots_per_graph_cnt += self._draw_cross_section(np_image, cs_loc, cropped_region)
+        self.draw_legend = plots_per_graph_cnt > 1
 
+        return self.figure_records
+    
+    def show_visualization(self, figure_records: list[rcfr.RenderControlFigureRecord]):
         # draw
-        for view in self.views:
-            legend = plots_per_graph_cnt > 1
-            view.show(block=False, legend=legend)
+        for fig_record in figure_records:
+            fig_record.view.show(block = False, legend=self.draw_legend)
 
         # explicitly set the y-axis range
         if self.y_range is not None:
-            h_fig_record.view.axis.set_ylim(self.y_range)
-            v_fig_record.view.axis.set_ylim(self.y_range)
-
-        return self.fig_records
+            self.vh_figure_records[0].view.axis.set_ylim(self.y_range)
+            self.vh_figure_records[1].view.axis.set_ylim(self.y_range)
 
     def close_figures(self):
-        for view in self.views:
-            with et.ignored(Exception):
-                view.close()
+        super().close_figures()
 
         self.view_specs.clear()
         self.rc_axises.clear()
-        self.fig_records.clear()
-        self.views.clear()
-        self.axes.clear()
         self.plot_titles.clear()
 
 

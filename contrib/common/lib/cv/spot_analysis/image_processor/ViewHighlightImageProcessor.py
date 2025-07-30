@@ -66,14 +66,13 @@ class ViewHighlightImageProcessor(AbstractVisualizationImageProcessor):
 
         self.axis_control = rca.image(grid=False)
         self.view_spec = vs.view_spec_im()
-        self.figure: rcfr.RenderControlFigureRecord
 
     @property
     def num_figures(self) -> int:
         return 1
 
     def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
-        self.figure = fm.setup_figure(
+        ret = fm.setup_figure(
             render_control_fig,
             self.axis_control,
             self.view_spec,
@@ -81,7 +80,7 @@ class ViewHighlightImageProcessor(AbstractVisualizationImageProcessor):
             title=f"{self.name}",
             code_tag=f"{__file__}.init_figure_records()",
         )
-        return [self.figure]
+        return [ret]
 
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
@@ -113,17 +112,7 @@ class ViewHighlightImageProcessor(AbstractVisualizationImageProcessor):
             )
             new_image[white_selector] = highlight_color.rgb_255()
 
-        # show the visualization
-        self.figure.clear()
-        self.figure.view.imshow(new_image)
-        self.figure.view.show(block=False)
+        # draw the visualization
+        self.figure_records[0].view.imshow(new_image)
 
-        # build the return value
-        cacheable_image = CacheableImage(new_image)
-
-        return [cacheable_image]
-
-    def close_figures(self):
-        if self.figure is not None:
-            self.figure.close()
-            self.figure = None
+        return self.figure_records

@@ -59,17 +59,12 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
             self.rca = label
         self.rcs = rcs.RenderControlSurface(alpha=1.0, color=None, contour='xyz')
 
-        # declare future values
-        self.fig_record: rcfr.RenderControlFigureRecord
-        self.view: v3d.View3d
-        self.axes: matplotlib.axes.Axes
-
     @property
     def num_figures(self) -> int:
         return 1
 
     def init_figure_records(self, render_control_fig: rcf.RenderControlFigure) -> list[rcfr.RenderControlFigureRecord]:
-        self.fig_record = fm.setup_figure_for_3d_data(
+        ret = fm.setup_figure_for_3d_data(
             render_control_fig,
             self.rca,
             equal=False,
@@ -77,10 +72,17 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
             name=self.rca.z_label,
             code_tag=f"{__file__}.init_figure_records()",
         )
-        self.view = self.fig_record.view
-        self.axes = self.fig_record.figure.gca()
 
-        return [self.fig_record]
+        return [ret]
+
+    def prepare_for_visualization(
+        self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage | rcfr.RenderControlFigureRecord
+    ):
+        # clear the previous plots
+        super().prepare_for_visualization(operable, is_last, base_image)
+
+        # set the plot title
+        self.figure_records[0].title = operable.best_primary_nameext
 
     def visualize_operable(
         self, operable: SpotAnalysisOperable, is_last: bool, base_image: CacheableImage
@@ -99,32 +101,15 @@ class View3dImageProcessor(AbstractVisualizationImageProcessor):
             height = np.min([y_end - y_start, self.max_resolution[1]])
             image = cv.resize(image, (height, width), interpolation=cv.INTER_AREA)
 
-        # Clear the previous data
-        self.fig_record.clear()
-
-        # Update the title
-        self.fig_record.title = operable.best_primary_nameext
-
         # Draw the new data
         if self.crop_to_threshold is None and self.max_resolution is None:
-            self.view.draw_xyz_surface(image, self.rcs)
+            self.figure_records[0].view.draw_xyz_surface(image, self.rcs)
         else:
             width = image.shape[1]
             height = image.shape[0]
             x_arr = (np.arange(0, width) * (x_end - x_start) / width) + x_start
             y_arr = (np.arange(0, height) * (y_end - y_start) / height) + y_start
             x_mesh, y_mesh = np.meshgrid(x_arr, y_arr)
-            self.view.draw_xyz_surface_customshape(x_mesh, y_mesh, image, self.rcs)
+            self.figure_records[0].view.draw_xyz_surface_customshape(x_mesh, y_mesh, image, self.rcs)
 
-        # draw
-        self.view.show(block=False)
-
-        return [self.fig_record]
-
-    def close_figures(self):
-        with et.ignored(Exception):
-            self.view.close()
-
-        self.fig_record = None
-        self.view = None
-        self.axes = None
+        return self.figure_records
