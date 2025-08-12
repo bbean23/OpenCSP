@@ -523,9 +523,6 @@ def setup_figure_for_3d_data(
     # Hide the axes, as appropriate
     hide_axes(fig_record, figure_control)
 
-    # Hide the axes, as appropriate
-    hide_axes(fig_record, figure_control)
-
     # Return.
     return fig_record
 
