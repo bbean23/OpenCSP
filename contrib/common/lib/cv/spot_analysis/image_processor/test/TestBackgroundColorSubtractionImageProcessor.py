@@ -45,6 +45,22 @@ class TestBackgroundColorSubtractionImageProcessor(unittest.TestCase):
 
         return img
 
+    def _compare_images(
+        self, expected_path_name_ext: str, actual_data: np.ndarray, actual_path_name_ext: str, err_msg: str
+    ):
+        # save the actual data for later debugging
+        Image.fromarray(actual_data).save(actual_path_name_ext)
+
+        # load the expected data
+        expected_data = np.array(Image.open(expected_path_name_ext))
+
+        # compare
+        npt.assert_array_equal(
+            expected_data,
+            actual_data,
+            err_msg=err_msg + f" Expected {expected_path_name_ext}, actual {actual_path_name_ext}",
+        )
+
     def test_three_point_regions(self):
         self.setUpClass()
         processor = BackgroundColorSubtractionImageProcessor()
@@ -52,42 +68,62 @@ class TestBackgroundColorSubtractionImageProcessor(unittest.TestCase):
         # square image
         image = np.ndarray((100, 100), dtype=np.uint8)
         three_points, three_points_regions = processor._get_three_point_regions(image)
-        vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
-        Image.fromarray(vis).save(ft.join(self.out_dir, "test_three_point_regions_square.png"))
-        expected_vis = np.array(Image.open(ft.join(self.data_dir, "test_three_point_regions_square.png")))
+        actual_vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
+        actual_pne = ft.join(self.out_dir, "test_three_point_regions_square.png")
+        expected_pne = ft.join(self.data_dir, "test_three_point_regions_square.png")
         npt.assert_array_equal(np.array([0, 100, 50]), three_points.x)
         npt.assert_array_equal(np.array([0, 0, 100]), three_points.y)
-        npt.assert_array_equal(expected_vis, vis)
+        self._compare_images(
+            expected_pne,
+            actual_vis,
+            actual_pne,
+            err_msg="The expected regions and the actual regions for a 'square' image don't match!",
+        )
 
         # short rectangular
         image = np.ndarray((100, 150), dtype=np.uint8)
         three_points, three_points_regions = processor._get_three_point_regions(image)
-        vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
-        Image.fromarray(vis).save(ft.join(self.out_dir, "test_three_point_regions_short_rectangular.png"))
-        expected_vis = np.array(Image.open(ft.join(self.data_dir, "test_three_point_regions_short_rectangular.png")))
+        actual_vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
+        actual_pne = ft.join(self.out_dir, "test_three_point_regions_short_rectangular.png")
+        expected_pne = ft.join(self.data_dir, "test_three_point_regions_short_rectangular.png")
         npt.assert_array_equal(np.array([0, 150, 75]), three_points.x)
         npt.assert_array_equal(np.array([0, 0, 100]), three_points.y)
-        npt.assert_array_equal(expected_vis, vis)
+        self._compare_images(
+            expected_pne,
+            actual_vis,
+            actual_pne,
+            err_msg="The expected regions and the actual regions for a 'short rectangular' image don't match!",
+        )
 
         # rectangular
         image = np.ndarray((100, 200), dtype=np.uint8)
         three_points, three_points_regions = processor._get_three_point_regions(image)
-        vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
-        Image.fromarray(vis).save(ft.join(self.out_dir, "test_three_point_regions_rectangular.png"))
-        expected_vis = np.array(Image.open(ft.join(self.data_dir, "test_three_point_regions_rectangular.png")))
+        actual_vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
+        actual_pne = ft.join(self.out_dir, "test_three_point_regions_rectangular.png")
+        expected_pne = ft.join(self.data_dir, "test_three_point_regions_rectangular.png")
         npt.assert_array_equal(np.array([0, 200, 100]), three_points.x)
         npt.assert_array_equal(np.array([0, 0, 100]), three_points.y)
-        npt.assert_array_equal(expected_vis, vis)
+        self._compare_images(
+            expected_pne,
+            actual_vis,
+            actual_pne,
+            err_msg="The expected regions and the actual regions for a 'rectangular' image don't match!",
+        )
 
         # long rectangular
         image = np.ndarray((100, 250), dtype=np.uint8)
         three_points, three_points_regions = processor._get_three_point_regions(image)
-        vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
-        Image.fromarray(vis).save(ft.join(self.out_dir, "test_three_point_regions_long_rectangular.png"))
-        expected_vis = np.array(Image.open(ft.join(self.data_dir, "test_three_point_regions_long_rectangular.png")))
+        actual_vis = self._visualize_three_point_regions(image, three_points, three_points_regions)
+        actual_pne = ft.join(self.out_dir, "test_three_point_regions_long_rectangular.png")
+        expected_pne = ft.join(self.data_dir, "test_three_point_regions_long_rectangular.png")
         npt.assert_array_equal(np.array([0, 250, 125]), three_points.x)
         npt.assert_array_equal(np.array([0, 0, 100]), three_points.y)
-        npt.assert_array_equal(expected_vis, vis)
+        self._compare_images(
+            expected_pne,
+            actual_vis,
+            actual_pne,
+            err_msg="The expected regions and the actual regions for a 'long rectangular' image don't match!",
+        )
 
     def test_build_background_image(self):
         self.setUpClass()
@@ -107,4 +143,4 @@ class TestBackgroundColorSubtractionImageProcessor(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    TestBackgroundColorSubtractionImageProcessor().test_build_background_image()
+    unittest.main()

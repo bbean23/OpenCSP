@@ -138,6 +138,11 @@ class ImageComparisonTool:
         fit_width = (fit_height / img_height) * img_width
         fit_width = int(fit_width)
         fit_height = int(fit_height)
+        if can_width < fit_width:
+            fit_width = min(can_width, img_width)
+            fit_height = (fit_width / img_width) * img_height
+            fit_width = int(fit_width)
+            fit_height = int(fit_height)
 
         # sanity check
         assert fit_width <= can_width
@@ -254,9 +259,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--base-path", required=False, dest="basepath", default="", help="The directory to open images relative to."
     )
+    parser.add_argument(
+        "--scale", required=False, default="", help="How much to scale the input images by. Default is 1."
+    )
     parser.add_argument("paths", nargs="+", type=str, help="Paths to images")
     args = parser.parse_args()
     basepath: str = args.basepath
+    scale: float = 1 if args.scale == "" else float(args.scale)
     paths: list[str] = list(args.paths)
 
     # To facilitate the usage of multiline strings (such as from error logs) use double quotes
@@ -310,16 +319,24 @@ if __name__ == "__main__":
     img1 = imgs[0]
     img2 = imgs[1]
 
-    try:
-        # Resize second image if necessary
-        if img1.shape != img2.shape:
-            lt.info(f"Resizing second image from {img2.shape} to {img1.shape} to match the shape of the first image.")
-            img2 = cv2.resize(img2, (img1.shape[1], img1.shape[0]), interpolation=cv2.INTER_LANCZOS4)
-    except Exception as ex:
-        raise RuntimeError(
-            f"In image_diff: failed to resize img2 to match the shape of img1.\n"
-            + f"\t{image1_path=}\n\t{image2_path=}"
-        ) from ex
+    # Scale the images
+    if scale != 1:
+        shape = int(img1.shape[1] * scale), int(img1.shape[0] * scale)
+        img1 = cv2.resize(img1, shape, interpolation=cv2.INTER_NEAREST)
+        img2 = cv2.resize(img2, shape, interpolation=cv2.INTER_NEAREST)
+    else:
+        try:
+            # Resize second image if necessary
+            if img1.shape != img2.shape:
+                lt.info(
+                    f"Resizing second image from {img2.shape} to {img1.shape} to match the shape of the first image."
+                )
+                img2 = cv2.resize(img2, (img1.shape[1], img1.shape[0]), interpolation=cv2.INTER_LANCZOS4)
+        except Exception as ex:
+            raise RuntimeError(
+                f"In image_diff: failed to resize img2 to match the shape of img1.\n"
+                + f"\t{image1_path=}\n\t{image2_path=}"
+            ) from ex
 
     # Start the GUI
     root = tk.Tk()
